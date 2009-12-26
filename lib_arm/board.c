@@ -392,8 +392,11 @@ void start_armboot (void)
 #endif
 
 	/* IP Address */
+#ifdef CONFIG_CMD_NET
 	gd->bd->bi_ip_addr = getenv_IPaddr ("ipaddr");
-
+#else
+	gd->bd->bi_ip_addr = 0;
+#endif
 	stdio_init ();	/* get the devices list going. */
 
 	jumptable_init ();
