@@ -272,4 +272,6 @@
 #undef CONFIG_JFFS2_CMDLINE
 #define CONFIG_JFFS2_DEV	"nand0"
 
+#define CONFIG_CMD_XMODEM
+
 #endif				/* __CONFIG_H */

@@ -27,9 +27,10 @@ LIB	= $(obj)lib$(CPU).a
 
 START	:= start.o
 COBJS	:= cpu.o
+SOBJS	:= xmodemReceive.o
 
-SRCS	:= $(START:.o=.S) $(COBJS:.o=.c)
-OBJS	:= $(addprefix $(obj),$(COBJS))
+SRCS	:= $(START:.o=.S) $(COBJS:.o=.c) $(SOBJS:.o=.S)
+OBJS	:= $(addprefix $(obj),$(COBJS)) $(addprefix $(obj),$(SOBJS))
 START	:= $(addprefix $(obj),$(START))
 
 all:	$(obj).depend $(START) $(LIB)
