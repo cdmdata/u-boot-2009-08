@@ -5,3 +5,4 @@ sinclude $(OBJTREE)/board/$(VENDOR)/$(BOARD)/config.tmp
 ifndef TEXT_BASE
 	TEXT_BASE = 0x97800000
 endif
+CONFIG_HW_WATCHDOG=y

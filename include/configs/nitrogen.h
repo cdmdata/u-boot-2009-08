@@ -183,6 +183,7 @@
 
 #define CONFIG_LOADADDR		0x90800000	/* loadaddr env var */
 
+#define CONFIG_BOOTARGS		"console=ttymxc0,115200 DEBUG=1 mem=256M "
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
 		"ethprime=FEC0\0"					\
 		"bootargs_base=setenv bootargs console=ttymxc0,115200\0" \
@@ -273,5 +274,6 @@
 #define CONFIG_JFFS2_DEV	"nand0"
 
 #define CONFIG_CMD_XMODEM
+#define CONFIG_HW_WATCHDOG
 
 #endif				/* __CONFIG_H */
