@@ -26,6 +26,7 @@
 #include <malloc.h>
 #include <stdio_dev.h>
 #include <exports.h>
+#include <watchdog.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -316,6 +317,7 @@ int tstc(void)
 		return 0;
 #endif
 
+	WATCHDOG_RESET();
 	if (gd->flags & GD_FLG_DEVINIT) {
 		/* Test the standard input */
 		return ftstc(stdin);
