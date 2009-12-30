@@ -18,7 +18,7 @@
  */
 
 #include <common.h>
-
+#include <watchdog.h>
 #define __REG(x)     (*((volatile u32 *)(x)))
 
 #define UART_PHYS CONFIG_UART_BASE_ADDR
@@ -153,7 +153,9 @@ void serial_setbrg (void)
 
 int serial_getc (void)
 {
-	while (__REG(UART_PHYS + UTS) & UTS_RXEMPTY);
+	while (__REG(UART_PHYS + UTS) & UTS_RXEMPTY) {
+		WATCHDOG_RESET();
+	}
 	return (__REG(UART_PHYS + URXD) & URXD_RX_DATA); /* mask out status from upper word */
 }
 
