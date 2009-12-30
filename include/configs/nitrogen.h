@@ -267,6 +267,9 @@
 #else
 	#define CONFIG_ENV_IS_NOWHERE	1
 #endif
+
+#define CONFIG_DEFAULT_SPI_BUS 1 /* PMIC on eCSPI-1 */
+
 /*
  * JFFS2 partitions
  */
@@ -275,5 +278,6 @@
 
 #define CONFIG_CMD_XMODEM
 #define CONFIG_HW_WATCHDOG
-
+#define CONFIG_MXC_SPI
+#define CONFIG_CMD_SPI
 #endif				/* __CONFIG_H */

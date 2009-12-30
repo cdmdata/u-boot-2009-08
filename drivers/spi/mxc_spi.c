@@ -53,17 +53,32 @@
 #define MXC_CSPICTRL_PHA	(1 << 5)
 #define MXC_CSPICTRL_SSCTL	(1 << 6)
 #define MXC_CSPICTRL_SSPOL	(1 << 7)
-#define MXC_CSPICTRL_CHIPSELECT(x)	(((x) & 0x3) << 24)
-#define MXC_CSPICTRL_BITCOUNT(x)	(((x) & 0x1f) << 8)
-#define MXC_CSPICTRL_DATARATE(x)	(((x) & 0x7) << 16)
+
+#if defined(CONFIG_MX31)
+   #define MXC_CSPICTRL_CHIPSELECT(x)	(((x) & 0x3) << 24)
+   #define MXC_CSPICTRL_BITCOUNT(x)	(((x) & 0x1f) << 8)
+   #define MXC_CSPICTRL_DATARATE(x)	(((x) & 0x7) << 16)
+   static unsigned long spi_bases[] = {
+   	0x43fa4000,
+   	0x50010000,
+   	0x53f84000,
+   };
+   
+#elif defined(CONFIG_MX51)
+   #define MXC_CSPICTRL_CHIPSELECT(x)	(((x) & 0x3) << 12)
+   #define MXC_CSPICTRL_BITCOUNT(x)	(((x) & 0xfff) << 20)
+   #define MXC_CSPICTRL_DATARATE(x)	(((x) & 0x7) << 16)
+   static unsigned long spi_bases[] = {
+   	0x83FC0000,
+   	0x70010000,
+   	0x83FAC000,
+   };
+   
+#else
+   #error SPI not yet defined for this architecture
+#endif
 
 #define MXC_CSPIPERIOD_32KHZ	(1 << 15)
-
-static unsigned long spi_bases[] = {
-	0x43fa4000,
-	0x50010000,
-	0x53f84000,
-};
 
 #endif
 
