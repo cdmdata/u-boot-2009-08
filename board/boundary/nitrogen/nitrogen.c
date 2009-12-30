@@ -973,7 +973,7 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	printf("Board: MX51 BABBAGE ");
+	printf("Board: MX51 Nitrogen ");
 
 	if (is_soc_rev(CHIP_REV_3_0) == 0) {
 		printf("3.0 [");
