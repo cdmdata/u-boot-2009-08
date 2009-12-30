@@ -281,7 +281,7 @@
 #define MXC_GPIO_SPLIT_IRQ_2
 
 #define IIM_SREV	0x24
-#define ROM_SI_REV	0x48
+#define ROM_SI_REV	0x83f98024
 
 #define NFC_BUF_SIZE	0x1000
 
