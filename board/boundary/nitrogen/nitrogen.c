@@ -673,6 +673,83 @@ static void setup_core_voltage_spi(void)
 }
 #endif
 
+static void setup_pmic(void)
+{
+	/*
+	 * eCSPI1 pads (for PMIC)
+	 */
+	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST ;
+	mxc_request_iomux(MX51_PIN_CSPI1_MOSI,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_CSPI1_MOSI, pad);
+	mxc_request_iomux(MX51_PIN_CSPI1_MISO,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_CSPI1_MISO,pad);
+	mxc_request_iomux(MX51_PIN_CSPI1_SS0,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_CSPI1_SS0,pad);
+	mxc_request_iomux(MX51_PIN_CSPI1_SS1,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_CSPI1_SS1,pad);
+	mxc_request_iomux(MX51_PIN_CSPI1_RDY,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_CSPI1_RDY,pad);
+	mxc_request_iomux(MX51_PIN_CSPI1_SCLK,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_CSPI1_SCLK,pad);
+}
+
+static void setup_display(void)
+{
+	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_LOW | PAD_CTL_SRE_FAST ;
+	mxc_request_iomux(MX51_PIN_DISP1_DAT0,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT0,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT1,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT1,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT2,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT2,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT3,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT3,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT4,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT4,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT5,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT5,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT6,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT6,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT7,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT7,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT8,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT8,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT9,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT9,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT10,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT10,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT11,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT11,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT12,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT12,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT13,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT13,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT14,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT14,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT15,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT15,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT16,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT16,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT17,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT17,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT18,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT18,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT19,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT19,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT20,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT20,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT21,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT21,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT22,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT22,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT23,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT23,pad);
+	mxc_request_iomux(MX51_PIN_DI1_PIN11,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_PIN12,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_PIN13,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_D0_CS,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_D1_CS,IOMUX_CONFIG_ALT4);
+}
 #ifdef CONFIG_NET_MULTI
 
 int board_eth_init(bd_t *bis)
@@ -852,22 +929,8 @@ int board_init(void)
 	setup_i2c(I2C1_BASE_ADDR);
 #endif
 
-	/*
-	 * eCSPI1 pads (for PMIC)
-	 */
-	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST ;
-	mxc_request_iomux(MX51_PIN_CSPI1_MOSI,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_CSPI1_MOSI, pad);
-	mxc_request_iomux(MX51_PIN_CSPI1_MISO,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_CSPI1_MISO,pad);
-	mxc_request_iomux(MX51_PIN_CSPI1_SS0,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_CSPI1_SS0,pad);
-	mxc_request_iomux(MX51_PIN_CSPI1_SS1,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_CSPI1_SS1,pad);
-	mxc_request_iomux(MX51_PIN_CSPI1_RDY,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_CSPI1_RDY,pad);
-	mxc_request_iomux(MX51_PIN_CSPI1_SCLK,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_CSPI1_SCLK,pad);
+	setup_pmic();
+	setup_display();
 	return 0;
 }
 
