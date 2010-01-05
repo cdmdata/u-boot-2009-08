@@ -202,6 +202,8 @@
  */
 #define CONFIG_ARP_TIMEOUT	200UL
 
+#define CONFIG_BOOTCOMMAND	"if mmc init || mmc init || mmc init ; then fatload mmc 0 92000000 uImage && fatload mmc 0 92200000 initrd.u-boot && bootm 92000000 92200000 ; fi"
+
 /*
  * Miscellaneous configurable options
  */
@@ -280,4 +282,8 @@
 #define CONFIG_HW_WATCHDOG
 #define CONFIG_MXC_SPI
 #define CONFIG_CMD_SPI
+#define CONFIG_CMD_ECHO
+#define CONFIG_CMD_SOURCE
+#define CONFIG_CMD_RUN
+
 #endif				/* __CONFIG_H */
