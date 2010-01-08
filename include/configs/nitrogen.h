@@ -261,7 +261,7 @@
 
 #if defined(CONFIG_FSL_ENV_IN_MMC)
 	#define CONFIG_ENV_IS_IN_MMC	1
-	#define CONFIG_ENV_OFFSET	(768 * 1024)
+	#define CONFIG_ENV_OFFSET	(14 * 512)
 #elif defined(CONFIG_FSL_ENV_IN_SF)
 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
 	#define CONFIG_ENV_SPI_CS		1
