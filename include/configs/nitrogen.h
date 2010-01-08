@@ -187,7 +187,7 @@
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
 		"ethprime=FEC0\0"					\
 		"bootargs_base=setenv bootargs console=ttymxc0,115200\0" \
-		"bootcmd=ping 192.168.0.1 ; mmc init ; mmc init ; mmc init ; "	\
+		"bootcmd=ping 192.168.0.1 ; "	\
 		   "fatload mmc 0 92000000 uImage && fatload mmc 0 92400000 && bootm 92000000 92400000 ;\0"\
 
 /*
@@ -202,7 +202,7 @@
  */
 #define CONFIG_ARP_TIMEOUT	200UL
 
-#define CONFIG_BOOTCOMMAND	"if mmc init || mmc init || mmc init ; then fatload mmc 0 92000000 uImage && fatload mmc 0 92200000 initrd.u-boot && bootm 92000000 92200000 ; fi"
+#define CONFIG_BOOTCOMMAND	"fatload mmc 0 92000000 uImage && fatload mmc 0 92200000 initrd.u-boot && bootm 92000000 92200000"
 
 /*
  * Miscellaneous configurable options
