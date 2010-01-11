@@ -177,13 +177,14 @@
 
 #undef CONFIG_CMD_IMLS
 
-#define CONFIG_BOOTDELAY	1
+#define CONFIG_BOOTDELAY	0
 
 #define CONFIG_PRIME	"FEC0"
 
 #define CONFIG_LOADADDR		0x90800000	/* loadaddr env var */
 
-#define CONFIG_BOOTARGS		"console=ttymxc0,115200 DEBUG=1 mem=224M root=/dev/ram0"
+#define CONFIG_BOOTARGS		"console=ttymxc0,115200 DEBUG=1 mem=224M root=/dev/ram0 " \
+				"video=mxcfb:raw:12000000,480,272,1,0,0,0,41,15,15,10,1,6,1,0,888"
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
 		"ethprime=FEC0\0"					\
 		"bootargs_base=setenv bootargs console=ttymxc0,115200\0" \
