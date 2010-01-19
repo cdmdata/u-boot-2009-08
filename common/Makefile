@@ -105,6 +105,7 @@ COBJS-$(CONFIG_CMD_IIM) += cmd_iim.o
 COBJS-$(CONFIG_CMD_I2C) += cmd_i2c.o
 COBJS-$(CONFIG_CMD_IDE) += cmd_ide.o
 COBJS-$(CONFIG_CMD_IMMAP) += cmd_immap.o
+COBJS-$(CONFIG_CMD_IMX_SPI_PMIC) += cmd_imx_spi_pmic.o
 COBJS-$(CONFIG_CMD_IRQ) += cmd_irq.o
 COBJS-$(CONFIG_CMD_ITEST) += cmd_itest.o
 COBJS-$(CONFIG_CMD_JFFS2) += cmd_jffs2.o
