@@ -272,6 +272,7 @@
 #endif
 
 #define CONFIG_DEFAULT_SPI_BUS 1 /* PMIC on eCSPI-1 */
+#define CONFIG_IMX_SPI
 
 /*
  * JFFS2 partitions
@@ -281,7 +282,7 @@
 
 #define CONFIG_CMD_XMODEM
 #define CONFIG_HW_WATCHDOG
-#define CONFIG_MXC_SPI
+#define CONFIG_CMD_IMX_SPI_PMIC
 #define CONFIG_CMD_SPI
 #define CONFIG_CMD_ECHO
 #define CONFIG_CMD_SOURCE
