@@ -55,6 +55,7 @@ u32 pmic_reg(struct spi_slave *slave, u32 reg, u32 val, u32 write)
 
 	if (spi_xfer(slave, 4 << 3, (u8 *)&pmic_tx, (u8 *)&pmic_rx,
 			SPI_XFER_BEGIN | SPI_XFER_END)) {
+		printf( "SPI transfer error\n");
 		return -1;
 	}
 
@@ -62,6 +63,7 @@ u32 pmic_reg(struct spi_slave *slave, u32 reg, u32 val, u32 write)
 		pmic_tx &= ~(1 << 31);
 		if (spi_xfer(slave, 4 << 3, (u8 *)&pmic_tx, (u8 *)&pmic_rx,
 			SPI_XFER_BEGIN | SPI_XFER_END)) {
+			printf( "SPI transfer error\n");
 			return -1;
 		}
 	}
@@ -77,7 +79,7 @@ void show_pmic_info(struct spi_slave *slave)
 		return;
 
 	rev_id = pmic_reg(slave, 7, 0, 0);
-	debug("PMIC ID: 0x%08x [Rev: ", rev_id);
+	printf("PMIC ID: 0x%08x [Rev: ", rev_id);
 	switch (rev_id & 0x1F) {
 	case 0x1:
 		printf("1.0");
