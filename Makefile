@@ -474,6 +474,12 @@ $(obj)include/autoconf.mk: $(obj)include/config.h
 		sed -n -f tools/scripts/define2mk.sed > $@.tmp && \
 	mv $@.tmp $@
 
+init.scr: init.script
+	tools/mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "autoscript" -d $< $@
+
+upgrade.scr: upgrade.script
+	tools/mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "U-Boot upgrade script" -d $< $@
+
 #########################################################################
 else	# !config.mk
 all $(obj)u-boot.hex $(obj)u-boot.srec $(obj)u-boot.bin \
