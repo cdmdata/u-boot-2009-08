@@ -200,10 +200,13 @@ void board_mmu_init(void)
 }
 #endif
 
+#define ESDCTL1 0x83fd9008
 int dram_init(void)
 {
+	unsigned shift;
+	shift = readl(ESDCTL1) >> 31;
 	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
-	gd->bd->bi_dram[0].size = PHYS_SDRAM_1_SIZE;
+	gd->bd->bi_dram[0].size = PHYS_SDRAM_1_SIZE << shift;
 	return 0;
 }
 
