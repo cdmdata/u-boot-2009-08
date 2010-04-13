@@ -730,12 +730,24 @@ void dbgFecRegs(struct eth_device *dev)
 }
 #endif
 
+static void set_hw_mac(volatile fec_t *fecp, const u8 *ea)
+{
+	fecp->palr = (ea[0] << 24) | (ea[1] << 16) | (ea[2] << 8) | (ea[3]);
+	fecp->paur = (ea[4] << 24) | (ea[5] << 16);
+}
+
+extern void mxc_fec_eth_set_mac_addr(const unsigned char *macaddr)
+{
+	struct fec_info_s *info = &fec_info[0];
+	volatile fec_t *fecp = (fec_t *)(info->iobase);
+	set_hw_mac(fecp, macaddr);
+}
+
 int fec_init(struct eth_device *dev, bd_t *bd)
 {
 	struct fec_info_s *info = dev->priv;
 	volatile fec_t *fecp = (fec_t *) (info->iobase);
 	int i;
-	u8 *ea = NULL;
 
 	fec_reset(dev);
 
@@ -764,9 +776,7 @@ int fec_init(struct eth_device *dev, bd_t *bd)
 	fecp->eir = 0xffffffff;
 
 	/* Set station address   */
-	ea = dev->enetaddr;
-	fecp->palr = (ea[0] << 24) | (ea[1] << 16) | (ea[2] << 8) | (ea[3]);
-	fecp->paur = (ea[4] << 24) | (ea[5] << 16);
+	set_hw_mac(fecp, dev->enetaddr);
 
 	/* Clear unicast address hash table */
 	fecp->iaur = 0;

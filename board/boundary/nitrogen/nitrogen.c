@@ -1014,6 +1014,51 @@ int board_init(void)
 	return 0;
 }
 
+extern void mxc_fec_eth_set_mac_addr(const unsigned char *macaddr);
+
+int parse_mac(char const *cmac, unsigned char *mac)
+{
+	int i = 0;
+	char *end;
+	int ret = (cmac) ? 0 : -1;
+
+	do {
+		mac[i++] = cmac ? simple_strtoul(cmac, &end, 16) : 0;
+		if (i == 6)
+			break;
+		if (cmac) {
+			cmac = (*end) ? end+1 : end;
+			if ((*end != '-') && (*end != ':'))
+				ret = -1;
+		}
+	} while (1);
+	return ret;
+}
+
+static int get_rom_mac(unsigned char *mac)
+{
+	char *cmac = getenv("ethaddr");
+	if (cmac) {
+		if (!parse_mac(cmac, mac)) {
+			mxc_fec_eth_set_mac_addr(mac);
+			return 0;
+		}
+	}
+	return -1;
+}
+
+int misc_init_r(void)
+{
+	unsigned char macAddr[6];
+	if (!get_rom_mac(macAddr)) {
+		printf( "Mac address %02x:%02x:%02x:%02x:%02x:%02x\n",
+				macAddr[0], macAddr[1], macAddr[2],
+				macAddr[3], macAddr[4], macAddr[5] );
+	} else
+		printf( "No mac address assigned\n" );
+	return 0;
+}
+
 #ifdef CONFIG_ANDROID_RECOVERY
 struct reco_envs supported_reco_envs[BOOT_DEV_NUM] = {
 	{

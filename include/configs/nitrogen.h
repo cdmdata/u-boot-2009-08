@@ -172,6 +172,7 @@
 #define CONFIG_FEC0_PHY_ADDR	0x05
 #define CONFIG_FEC0_MIIBASE 	-1
 
+#define CONFIG_MISC_INIT_R
 
 
 /* Enable below configure when supporting nand */
