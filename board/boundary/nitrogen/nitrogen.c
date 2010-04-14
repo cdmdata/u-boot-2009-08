@@ -388,90 +388,54 @@ int fec_get_mac_addr(unsigned char *mac)
 }
 #endif
 
+unsigned short fec_setup_pins[] = {
+	/** MDIO, EIM_EB2, alt 3, IOMUXC_FEC_FEC_MDI_SELECT_INPUT */
+	0x3, 0x0d4,  0x01fd, 0x468,  0x0, 0x954,
+	/** RDATA[1], EIM_EB3, alt 3, IOMUXC_FEC_FEC_RDATA_1_SELECT_INPUT */
+	0x3, 0x0d8,  0x0180, 0x46c,  0x0, 0x95c,
+	/** RDATA[2], EIM_CS2, alt 3, IOMUXC_FEC_FEC_RDATA_2_SELECT_INPUT */
+	0x3, 0x0e8,  0x0180, 0x47c,  0x0, 0x960,
+	/** RDATA[3], EIM_CS3, alt 3, IOMUXC_FEC_FEC_RDATA_3_SELECT_INPUT */
+	0x3, 0x0ec,  0x0180, 0x480,  0x0, 0x964,
+	/** FEC RX_ER, EIM_CS4, alt 3, IOMUXC_FEC_FEC_RX_ER_SELECT_INPUT */
+	0x3, 0x0f0,  0x0180, 0x484,  0x0, 0x970,
+	/** CRS, EIM_CS5, alt 3, IOMUXC_FEC_FEC_CRS_SELECT_INPUT */
+	0x3, 0x0f4,  0x0180, 0x488,  0x0, 0x950,
+	/** COL, NANDF_RB2, alt 1, IOMUXC_FEC_FEC_COL_SELECT_INPUT */
+	0x1, 0x124,  0x2180, 0x500,  0x0, 0x94c,
+	/** RX_CLK, NANDF_RB3, alt 1, IOMUXC_FEC_FEC_RX_CLK_SELECT_INPUT */
+	0x1, 0x128,  0x2180, 0x504,  0x0, 0x968,
+	/* TX_ER, NANDF_CS2 */
+	0x2, 0x138,  0x2004, 0x520,
+	/** MDC, NANDF_CS3, alt 2 */
+	0x2, 0x13c,  0x2004, 0x524,
+	/** TDATA[1], NANDF_CS4 */
+	0x2, 0x140,  0x2004, 0x528,
+	/** TDATA[2], NANDF_CS5 */
+	0x2, 0x144,  0x2004, 0x52c,
+	/** TDATA[3], NANDF_CS6 */
+	0x2, 0x148,  0x2004, 0x530,
+	/** TX_EN, NANDF_CS7 */
+	0x1, 0x14c,  0x2004, 0x534,
+	/** TX_CLK, NANDF_RDY_INT, alt 1, IOMUXC_FEC_FEC_TX_CLK_SELECT_INPUT */
+	0x1, 0x150,  0x2180, 0x538,  0x0, 0x974,
+	/** RX_DV, NANDF_D11, alt 2, IOMUXC_FEC_FEC_RX_DV_SELECT_INPUT */
+	0x2, 0x164,  0x2180, 0x54c,  0x0, 0x96c,
+	/** RDATA[0], NANDF_D9, alt 2, IOMUXC_FEC_FEC_RDATA_0_SELECT_INPUT */
+	0x2, 0x16c,  0x2180, 0x554,  0x0, 0x958,
+	/** TDATA[0], NANDF_D8 */
+	0x2, 0x170,  0x2004, 0x558
+};
+
 static void setup_fec(void)
 {
-	/*FEC_MDIO*/
-	writel(0x3, IOMUXC_BASE_ADDR + 0x0D4);
-	writel(0x1FD, IOMUXC_BASE_ADDR + 0x0468);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0954);
-
-	/*FEC_MDC*/
-	writel(0x2, IOMUXC_BASE_ADDR + 0x13C);
-	writel(0x2004, IOMUXC_BASE_ADDR + 0x0524);
-
-	/* FEC RDATA[3] */
-	writel(0x3, IOMUXC_BASE_ADDR + 0x0EC);
-	writel(0x180, IOMUXC_BASE_ADDR + 0x0480);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0964);
-
-	/* FEC RDATA[2] */
-	writel(0x3, IOMUXC_BASE_ADDR + 0x0E8);
-	writel(0x180, IOMUXC_BASE_ADDR + 0x047C);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0960);
-
-	/* FEC RDATA[1] */
-	writel(0x3, IOMUXC_BASE_ADDR + 0x0d8);
-	writel(0x180, IOMUXC_BASE_ADDR + 0x046C);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x095C);
-
-	/* FEC RDATA[0] */
-	writel(0x2, IOMUXC_BASE_ADDR + 0x016C);
-	writel(0x2180, IOMUXC_BASE_ADDR + 0x0554);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0958);
-
-	/* FEC TDATA[3] */
-	writel(0x2, IOMUXC_BASE_ADDR + 0x148);
-	writel(0x2004, IOMUXC_BASE_ADDR + 0x0530);
-
-	/* FEC TDATA[2] */
-	writel(0x2, IOMUXC_BASE_ADDR + 0x144);
-	writel(0x2004, IOMUXC_BASE_ADDR + 0x052C);
-
-	/* FEC TDATA[1] */
-	writel(0x2, IOMUXC_BASE_ADDR + 0x140);
-	writel(0x2004, IOMUXC_BASE_ADDR + 0x0528);
-
-	/* FEC TDATA[0] */
-	writel(0x2, IOMUXC_BASE_ADDR + 0x0170);
-	writel(0x2004, IOMUXC_BASE_ADDR + 0x0558);
-
-	/* FEC TX_EN */
-	writel(0x1, IOMUXC_BASE_ADDR + 0x014C);
-	writel(0x2004, IOMUXC_BASE_ADDR + 0x0534);
-
-	/* FEC TX_ER */
-	writel(0x2, IOMUXC_BASE_ADDR + 0x0138);
-	writel(0x2004, IOMUXC_BASE_ADDR + 0x0520);
-
-	/* FEC TX_CLK */
-	writel(0x1, IOMUXC_BASE_ADDR + 0x0150);
-	writel(0x2180, IOMUXC_BASE_ADDR + 0x0538);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0974);
-
-	/* FEC COL */
-	writel(0x1, IOMUXC_BASE_ADDR + 0x0124);
-	writel(0x2180, IOMUXC_BASE_ADDR + 0x0500);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x094c);
-
-	/* FEC RX_CLK */
-	writel(0x1, IOMUXC_BASE_ADDR + 0x0128);
-	writel(0x2180, IOMUXC_BASE_ADDR + 0x0504);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0968);
-
-	/* FEC CRS */
-	writel(0x3, IOMUXC_BASE_ADDR + 0x0f4);
-	writel(0x180, IOMUXC_BASE_ADDR + 0x0488);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0950);
-
-	/* FEC RX_ER */
-	writel(0x3, IOMUXC_BASE_ADDR + 0x0f0);
-	writel(0x180, IOMUXC_BASE_ADDR + 0x0484);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x0970);
-
-	/* FEC RX_DV */
-	writel(0x2, IOMUXC_BASE_ADDR + 0x164);
-	writel(0x2180, IOMUXC_BASE_ADDR + 0x054C);
-	writel(0x0, IOMUXC_BASE_ADDR + 0x096C);
+	unsigned int base = IOMUXC_BASE_ADDR;
+	unsigned short * pins = fec_setup_pins;
+	int i = 0;
+	for (i = 0; i < ARRAY_SIZE(fec_setup_pins); i += 2) {
+		unsigned val = *pins++;
+		writel(val, base + *pins++);
+	}
 }
 #endif
 
