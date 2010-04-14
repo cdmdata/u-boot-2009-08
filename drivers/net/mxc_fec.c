@@ -165,10 +165,19 @@ void fec_reset(struct eth_device *dev);
 
 static void mxc_fec_mii_init(volatile fec_t *fecp)
 {
-	u32 clk;
+	u32 clk, div;
 	clk = mxc_get_clock(MXC_IPG_CLK);
-
-	fecp->mscr = (fecp->mscr & (~0x7E)) | (((clk + 499999) / 5000000) << 1);
+	/*
+	 * max rate of 2.5MHz wanted
+	 * rate = clk / (2 * div), so
+	 * 2.5MHz = clk / (2 * div)
+	 * div = clk /(2 * 2.5 MHz)
+	 */
+	div = ((clk + 499999) / 500000);
+	if ((div > 0x3f) || !div)
+		div = 0x3f;
+	fecp->mscr = (fecp->mscr & (~0x7E)) | (div << 1);
+//	printf("fec div=%i, clk=%i mscr=%p\n", div, clk, &fecp->mscr);
 }
 
 static inline int __fec_mii_read(volatile fec_t *fecp, unsigned char addr,
@@ -178,6 +187,8 @@ static inline int __fec_mii_read(volatile fec_t *fecp, unsigned char addr,
 	if (fecp->eir & FEC_EIR_MII)
 		fecp->eir = FEC_EIR_MII;
 
+	if (!(fecp->mscr & 0x7e))
+		mxc_fec_mii_init(fecp);
 	fecp->mmfr = FEC_MII_READ(addr, reg);
 	while (1) {
 		if (fecp->eir & FEC_EIR_MII) {
@@ -199,6 +210,8 @@ static inline int __fec_mii_write(volatile fec_t *fecp, unsigned char addr,
 	if (fecp->eir & FEC_EIR_MII)
 		fecp->eir = FEC_EIR_MII;
 
+	if (!(fecp->mscr & 0x7e))
+		mxc_fec_mii_init(fecp);
 	fecp->mmfr = FEC_MII_WRITE(addr, reg, value);
 	while (1) {
 		if (fecp->eir & FEC_EIR_MII) {
