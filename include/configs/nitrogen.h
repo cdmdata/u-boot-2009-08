@@ -61,7 +61,7 @@
 /*
  * Size of malloc() pool
  */
-#define CONFIG_SYS_MALLOC_LEN		(CONFIG_ENV_SIZE + 2 * 1024 * 1024)
+#define CONFIG_SYS_MALLOC_LEN		((CONFIG_ENV_SIZE + (2 * 1024 * 1024) + 0x3fff) & ~0x3fff)
 /* size in bytes reserved for initial data */
 #define CONFIG_SYS_GBL_DATA_SIZE	128
 
@@ -260,18 +260,20 @@
 /* #define CONFIG_FSL_ENV_IN_SF */
 #define CONFIG_FSL_ENV_IN_MMC
 
-#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
 #define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
 
 #if defined(CONFIG_FSL_ENV_IN_MMC)
 	#define CONFIG_ENV_IS_IN_MMC	1
 	#define CONFIG_ENV_OFFSET	(14 * 512)
+	#define CONFIG_ENV_SECT_SIZE    (1 * 1024)
 #elif defined(CONFIG_FSL_ENV_IN_SF)
 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
 	#define CONFIG_ENV_SPI_CS		1
 	#define CONFIG_ENV_OFFSET       (768 * 1024)
+	#define CONFIG_ENV_SECT_SIZE    (4 * 1024)
 #else
 	#define CONFIG_ENV_IS_NOWHERE	1
+	#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
 #endif
 
 #define CONFIG_DEFAULT_SPI_BUS 1 /* PMIC on eCSPI-1 */
