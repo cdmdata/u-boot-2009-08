@@ -105,6 +105,8 @@ static inline void setup_boot_device(void)
 		}
 		break;
 	}
+	system_rev = 0x51000 | CHIP_REV_3_0;
+//	printf("%s: forcing chip rev 3.0 (0x%x)\n", __func__, system_rev );
 }
 
 enum boot_device get_boot_device(void)
