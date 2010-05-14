@@ -206,7 +206,7 @@
  */
 #define CONFIG_ARP_TIMEOUT	200UL
 
-#define CONFIG_BOOTCOMMAND	"fatload mmc 0 92000000 uImage && fatload mmc 0 92200000 initrd.u-boot && bootm 92000000 92200000"
+#define CONFIG_BOOTCOMMAND	"fatload mmc 0 92000000 uImage && fatload mmc 0 92400000 initrd.u-boot && bootm 92000000 92400000"
 
 /*
  * Miscellaneous configurable options
