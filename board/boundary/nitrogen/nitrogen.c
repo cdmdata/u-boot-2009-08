@@ -119,26 +119,7 @@ u32 get_board_rev(void)
 
 static inline void setup_soc_rev(void)
 {
-	int reg;
-#ifdef CONFIG_ARCH_MMU
-	reg = __REG(0x20000000 + ROM_SI_REV); /* Virtual address */
-#else
-	reg = __REG(ROM_SI_REV);
-#endif
-
-	switch (reg) {
-	case 0x02:
-		system_rev = 0x51000 | CHIP_REV_1_1;
-		break;
-	case 0x10:
-		system_rev = 0x51000 | CHIP_REV_2_0;
-		break;
-	case 0x20:
-		system_rev = 0x51000 | CHIP_REV_3_0;
-		break;
-	default:
-		system_rev = 0x51000 | CHIP_REV_1_0;
-	}
+	system_rev = 0x51000 | CHIP_REV_3_0;
 }
 
 static inline void set_board_rev(void)

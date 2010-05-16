@@ -49,10 +49,6 @@
         orr r0, r0, #(1 << 22)          /* disable write allocate */
 
 	ldr r1, =0x00000000
-	ldr r3, [r1, #ROM_SI_REV]
-	cmp r3, #0x10    /* r3 contains the silicon rev */
-	orrls r0, r0, #(1 << 25)    /* disable write combine for TO 2 and lower revs */
-
 	mcr 15, 1, r0, c9, c0, 2
 .endm /* init_l2cc */
 
