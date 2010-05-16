@@ -3292,6 +3292,9 @@ mx53_ard_config			\
 mx53_evk_config      : unconfig
 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 mx53_rd freescale mx53
 
+nitrogen_config		: unconfig
+	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 nitrogen boundary mx51
+
 omap2420h4_config	: unconfig
 	@$(MKCONFIG) $(@:_config=) arm arm1136 omap2420h4 NULL omap24xx
 

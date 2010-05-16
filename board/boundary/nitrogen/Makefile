@@ -23,7 +23,7 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).a
 
-COBJS	:= mx51_bbg.o
+COBJS	:= nitrogen.o
 SOBJS	:= lowlevel_init.o flash_header.o
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
