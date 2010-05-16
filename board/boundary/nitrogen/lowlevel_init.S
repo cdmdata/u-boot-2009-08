@@ -320,9 +320,7 @@ lowlevel_init:
 
 	init_debug_board
 
-	/* return from mxc_nand_load */
-	/* r12 saved upper lr*/
-	b mxc_nand_load
+	mov pc,lr
 
 /* Board level setting value */
 DDR_PERCHARGE_CMD:	.word 0x04008008
