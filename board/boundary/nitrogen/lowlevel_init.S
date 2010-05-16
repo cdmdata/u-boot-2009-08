@@ -142,6 +142,17 @@
 .macro init_clock
 	ldr r0, =CCM_BASE_ADDR
 
+	mov r1, #0x00060000
+	str r1, [r0, #CLKCTL_CCDR]
+
+	ldr r1, =0x3fff
+	str r1, [r0,#CLKCTL_CCR]	// Turn on oscillator
+
+waitosc:
+	ldr r1, [r0, #CLKCTL_CSR]
+	tst r1, #0x20		// wait for Oscillator lock
+	beq waitosc
+	
 	/* Gate of clocks to the peripherals first */
 	ldr r1, =0x3FFFFFFF
 	str r1, [r0, #CLKCTL_CCGR0]
