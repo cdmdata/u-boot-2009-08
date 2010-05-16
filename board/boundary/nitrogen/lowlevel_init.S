@@ -224,11 +224,7 @@ waitosc:
 
 	ldr r0, =CCM_BASE_ADDR
 	/* Run TO 3.0 at Full speed, for other TO's wait till we increase VDDGP */
-	ldr r1, =0x0
-	ldr r3, [r1, #ROM_SI_REV]
-	cmp r3, #0x10
-	movls r1, #0x1
-	movhi r1, #0
+	mov r1, #0
 	str r1, [r0, #CLKCTL_CACRR]
 
 	/* Switch ARM back to PLL 1 */
