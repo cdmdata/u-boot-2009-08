@@ -29,7 +29,7 @@
 #include <asm/arch/iomux.h>
 #include <asm/errno.h>
 #include <i2c.h>
-#include "board-imx51.h"
+#include "board-nitrogen.h"
 #ifdef CONFIG_IMX_ECSPI
 #include <imx_spi.h>
 #include <asm/arch/imx_spi_pmic.h>

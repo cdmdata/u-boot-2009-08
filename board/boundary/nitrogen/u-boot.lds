@@ -38,9 +38,9 @@ SECTIONS
 	{
 	  /* WARNING - the following is hand-optimized to fit within	*/
 	  /* the sector layout of our flash chips!	XXX FIXME XXX	*/
-	  board/freescale/mx51_bbg/flash_header.o	(.text.flasheader)
+	  board/boundary/nitrogen/flash_header.o	(.text.flasheader)
 	  cpu/arm_cortexa8/start.o
-	  board/freescale/mx51_bbg/libmx51_bbg.a	(.text)
+	  board/boundary/nitrogen/libnitrogen.a	(.text)
 	  lib_arm/libarm.a		(.text)
 	  net/libnet.a			(.text)
 	  drivers/mtd/libmtd.a		(.text)

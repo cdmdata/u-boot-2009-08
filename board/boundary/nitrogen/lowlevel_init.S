@@ -21,7 +21,7 @@
 
 #include <config.h>
 #include <asm/arch/mx51.h>
-#include "board-imx51.h"
+#include "board-nitrogen.h"
 
 /*
  * return soc version
