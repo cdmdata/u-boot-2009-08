@@ -53,6 +53,9 @@ static int cur_part = 1;
 
 int disk_read (__u32 startblock, __u32 getsize, __u8 * bufptr)
 {
+	if (0 == getsize)
+		return 0 ;
+
 	startblock += part_offset;
 	if (cur_dev == NULL)
 		return -1;
