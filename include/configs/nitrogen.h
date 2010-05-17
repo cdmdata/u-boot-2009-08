@@ -130,6 +130,8 @@
  * */
 #ifdef CONFIG_CMD_MMC
 	#define CONFIG_MMC				1
+	#define CONFIG_MMC_BASE				0
+	#define CONFIG_FSL_MMC				1
 	#define CONFIG_GENERIC_MMC
 	#define CONFIG_IMX_MMC
 	#define CONFIG_SYS_FSL_ESDHC_NUM	2
@@ -158,14 +160,14 @@
 #define CONFIG_NET_MULTI 1
 #define CONFIG_MXC_FEC
 #define CONFIG_MII
-#define CONFIG_DISCOVER_PHY
+// #define CONFIG_DISCOVER_PHY
 
 #define CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
 #define CONFIG_IIM_MAC_ADDR_OFFSET      0x24
 
 #define CONFIG_FEC0_IOBASE	FEC_BASE_ADDR
 #define CONFIG_FEC0_PINMUX	-1
-#define CONFIG_FEC0_PHY_ADDR	0x1F
+#define CONFIG_FEC0_PHY_ADDR	0x05
 #define CONFIG_FEC0_MIIBASE 	-1
 
 
@@ -211,7 +213,7 @@
  * Miscellaneous configurable options
  */
 #define CONFIG_SYS_LONGHELP		/* undef to save memory */
-#define CONFIG_SYS_PROMPT		"BBG U-Boot > "
+#define CONFIG_SYS_PROMPT		"U-Boot > "
 #define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
 /* Print Buffer Size */
@@ -229,6 +231,10 @@
 #define CONFIG_SYS_HZ				1000
 
 #define CONFIG_CMDLINE_EDITING	1
+#define CONFIG_SYS_HUSH_PARSER		1	/* Use the HUSH parser		*/
+#ifdef	CONFIG_SYS_HUSH_PARSER
+#define	CONFIG_SYS_PROMPT_HUSH_PS2	"> "
+#endif
 
 /*-----------------------------------------------------------------------
  * Stack sizes
