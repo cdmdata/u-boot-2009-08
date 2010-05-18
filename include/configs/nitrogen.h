@@ -177,25 +177,17 @@
 
 #undef CONFIG_CMD_IMLS
 
-#define CONFIG_BOOTDELAY	3
+#define CONFIG_BOOTDELAY	1
 
 #define CONFIG_PRIME	"FEC0"
 
 #define CONFIG_LOADADDR		0x90800000	/* loadaddr env var */
 
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
-		"netdev=eth0\0"						\
 		"ethprime=FEC0\0"					\
-		"uboot_addr=0xa0000000\0"				\
-		"uboot=u-boot.bin\0"			\
-		"kernel=uImage\0"				\
-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0"\
-		"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs "\
-			"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0"\
-		"bootcmd=run bootcmd_net\0"				\
-		"bootcmd_net=run bootargs_base bootargs_nfs; "		\
-			"tftpboot ${loadaddr} ${kernel}; bootm\0"	\
-		"load_uboot=tftpboot ${loadaddr} ${uboot}\0"		\
+		"bootargs_base=setenv bootargs console=ttymxc0,115200\0" \
+		"bootcmd=ping 192.168.0.1 ; mmc init ; mmc init ; mmc init ; "	\
+		   "fatload mmc 0 92000000 uImage && fatload mmc 0 92400000 && bootm 92000000 92400000 ;\0"\
 
 /*
  * The MX51 3stack board seems to have a hardware "peculiarity" confirmed under
