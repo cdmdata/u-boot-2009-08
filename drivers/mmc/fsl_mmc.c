@@ -169,10 +169,7 @@ static u32 mmc_acmd(struct mmc_command *cmd, u32 opcode,
 	return 0;
 }
 
-int
-/****************************************************/
-mmc_read(ulong src, uchar *dst, int size)
-/****************************************************/
+int mmc_read_work(ulong src, uchar *dst, int size)
 {
 	struct mmc_command stCmd;
 	u32 u32Offset = src;
@@ -254,6 +251,24 @@ mmc_read(ulong src, uchar *dst, int size)
 	debug("Exit: mmc_read\n");
 
 	return s32ReadRslt;
+}
+int mmc_read(ulong src, uchar *dst, int size)
+{
+	int cnt;
+	int ret = 0;
+	int max = (0xffff * BLK_LEN);
+	while (size) {
+		if (max > size)
+			max = size;
+		cnt = mmc_read_work(src, dst, max);
+		if (cnt < 0)
+			return cnt;
+		src += max;
+		dst += max;
+		size -= max;
+		ret += cnt;
+	}
+	return ret;
 }
 
 int
