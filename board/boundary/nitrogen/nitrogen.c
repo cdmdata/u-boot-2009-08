@@ -67,6 +67,26 @@ static u32 system_rev;
 static enum boot_device boot_dev;
 u32	mx51_io_base_addr;
 
+#define GPIO_DR 0
+#define GPIO_DIR 4
+#define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
+unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR};
+void Set_GPIO_output_val(unsigned gp, unsigned val)
+{
+	unsigned base = gp_base[gp >> 5];
+	unsigned mask = (1 << (gp & 0x1f));
+	unsigned reg = readl(base + GPIO_DR);
+	if (val & 1)
+		reg |= mask;	/* set high */
+	else
+		reg &= ~mask;	/* clear low */
+	writel(reg, base + GPIO_DR);
+
+	reg = readl(base + GPIO_DIR);
+	reg |= mask;		/* configure GPIO line as output */
+	writel(reg, base + GPIO_DIR);
+}
+
 static inline void setup_boot_device(void)
 {
 	uint *fis_addr = (uint *)IRAM_BASE_ADDR;
@@ -522,7 +542,6 @@ static void setup_core_voltage_spi(void)
 {
 	struct spi_slave *slave;
 	unsigned int val;
-	unsigned int reg;
 
 	puts("PMIC Mode: SPI\n");
 
@@ -616,14 +635,7 @@ static void setup_core_voltage_spi(void)
 	val = 0x208;
 	pmic_reg(slave, 33, val, 1);
 	udelay(200);
-
-	reg = readl(GPIO2_BASE_ADDR + 0x0);
-	reg &= ~0x4000;  /* Lower reset line */
-	writel(reg, GPIO2_BASE_ADDR + 0x0);
-
-	reg = readl(GPIO2_BASE_ADDR + 0x4);
-	reg |= 0x4000;  /* configure GPIO lines as output */
-	writel(reg, GPIO2_BASE_ADDR + 0x4);
+	Set_GPIO_output_val(MAKE_GP(2, 14), 0); /* lower reset line  */
 
 	/* Reset the ethernet controller over GPIO */
 	writel(0x1, IOMUXC_BASE_ADDR + 0x0ac);
@@ -634,9 +646,7 @@ static void setup_core_voltage_spi(void)
 
 	udelay(500);
 
-	reg = readl(GPIO2_BASE_ADDR + 0x0);
-	reg |= 0x4000;
-	writel(reg, GPIO2_BASE_ADDR + 0x0);
+	Set_GPIO_output_val(MAKE_GP(2, 14), 1); /* raise reset line */
 
 	spi_pmic_free(slave);
 }
