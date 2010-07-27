@@ -159,91 +159,196 @@ void spi_release_bus(struct spi_slave *slave)
 int spi_xfer(struct spi_slave *slave, unsigned int bitlen, const void *dout,
 		void *din, unsigned long flags)
 {
-	s32 val = SPI_RETRY_TIMES;
-	u32 *p_buf;
-	u32 reg;
-	s32 len = 0,
-		ret_val = 0;
-	s32 burst_bytes = bitlen >> 3;
-	s32 tmp = 0;
+	int ret_val = 0;
+	u32 rem = 0;
+	u32 rem_bits = 0;
+	u32 rem_in_bits = 0;
 	struct imx_spi_dev_t *dev = to_imx_spi_slave(slave);
 	struct spi_reg_t *spi_reg = &(dev->reg);
-
+	u32 temp_buf[MAX_SPI_BYTES >> 2];
 	if (!slave)
 		return -1;
 
-	if (burst_bytes > (MAX_SPI_BYTES)) {
-		printf("Error: maximum burst size is 0x%x bytes, asking 0x%x\n",
-				MAX_SPI_BYTES, burst_bytes);
+	if ((flags & SPI_XFER_NOREORDER) &&
+			((((unsigned)dout) | ((unsigned)din)) & 3)) {
+		printf("Error: dout/din must be word aligned\n");
 		return -1;
 	}
 
-	if (flags & SPI_XFER_BEGIN) {
-		spi_cs_activate(slave);
-
-		if (spi_reg->ctrl_reg == 0) {
-			printf("Error: spi(base=0x%x) has not been initialized yet\n",
-					dev->base);
-			return -1;
+	if (spi_reg->ctrl_reg == 0) {
+		printf("Error: spi(base=0x%x) has not been initialized yet\n",
+				dev->base);
+		return -1;
+	}
+	while (bitlen) {
+		s32 loop_cnt = SPI_RETRY_TIMES;
+		u32 *pin = (u32 *)din;
+		u32 *pout = (u32 *)dout;
+		s32 current_len = bitlen;
+		if (current_len > 64) {
+			current_len &= ~0x1f;
+			if (current_len > (MAX_SPI_BYTES * 8))
+				current_len = (MAX_SPI_BYTES * 8);
+		}
+		if (!(flags & SPI_XFER_NOREORDER)) {
+			if (din) pin = temp_buf;
+			if (dout) {
+				u32 val = 0;
+				u32 v;
+				u32 *p = temp_buf;
+				u32 len = current_len;
+				u32 l = len & 0x1f;
+				if (rem_bits | l) {
+					if (!l) l = 32;
+					do {
+						len -= l;
+						val = *((u8 *)dout++);
+						val = (val << 8) | *((u8 *)dout++);
+						val = (val << 8) | *((u8 *)dout++);
+						val = (val << 8) | *((u8 *)dout++);
+						if (rem_bits) {
+							v = rem;
+							if (rem_bits <= l) {
+								l -= rem_bits;
+								rem_bits = 0;
+							} else {
+								rem_bits -= l;
+								l = 0;
+								v >>= rem_bits; 
+							}
+						} else
+							v = 0;
+						if (l) {
+							v = (v << l) | (val >> (32 - l));
+							rem = val;
+							rem_bits = 32 - l;
+						}
+						*p++ = v;
+						if (!(rem_bits & 7)) {
+							dout = ((u8 *)dout) - (rem_bits >> 3);
+							rem_bits = 0;
+							break;
+						}
+						l = 32;
+					} while (1);
+				}
+				while (len) {
+					len -= 32;
+					val = *((u8 *)dout++);
+					val = (val << 8) | *((u8 *)dout++);
+					val = (val << 8) | *((u8 *)dout++);
+					val = (val << 8) | *((u8 *)dout++);
+					*p++ = val;
+				}
+				pout = temp_buf;
+			}
 		}
 		spi_reg->ctrl_reg = (spi_reg->ctrl_reg & ~0xFFF00000) | \
-					((burst_bytes * 8 - 1) << 20);
+				((current_len - 1) << 20);
 
-		writel(spi_reg->ctrl_reg | 0x1, dev->base + SPI_CON_REG);
-		writel(spi_reg->cfg_reg, dev->base + SPI_CFG_REG);
-		debug("ctrl_reg=0x%x, cfg_reg=0x%x\n",
-					 readl(dev->base + SPI_CON_REG),
-					 readl(dev->base + SPI_CFG_REG));
+		writel(spi_reg->ctrl_reg, dev->base + SPI_CON_REG);
+		debug("ss%x: ctrl_reg=0x%x, cfg_reg=0x%x\n", dev->ss,
+				spi_reg->ctrl_reg, spi_reg->cfg_reg);
+
+		if (flags & SPI_XFER_BEGIN)
+			writel(spi_reg->cfg_reg, dev->base + SPI_CFG_REG);
 
 		/* move data to the tx fifo */
-		if (dout) {
-			for (p_buf = (u32 *)dout, len = burst_bytes; len > 0;
-				p_buf++, len -= 4)
-				writel(*p_buf, dev->base + SPI_TX_DATA);
+		debug("pout=0x%p, current_len=%x\n", pout, current_len);
+		if (pout) {
+			int len;
+			for (len = current_len; len > 0; len -= 32) {
+				debug("rem bits = 0x%x, data %x\n", len, *pout);
+				writel(*pout++, dev->base + SPI_TX_DATA);
+			}
 		} else {
-			for (len = burst_bytes; len > 0; len -= 4)
-				writel(tmp, dev->base + SPI_TX_DATA);
+			int len;
+			for (len = current_len; len > 0; len -= 32) {
+				writel(0, dev->base + SPI_TX_DATA);
+			}
+		}
+		if (flags & SPI_XFER_BEGIN) {
+			spi_cs_activate(slave);
+			flags &= ~SPI_XFER_BEGIN;
 		}
 
-		reg = readl(dev->base + SPI_CON_REG);
-		reg |= (1 << 2); /* set xch bit */
-		debug("control reg = 0x%08x\n", reg);
-		writel(reg, dev->base + SPI_CON_REG);
+		writel(spi_reg->ctrl_reg | (1 << 2), dev->base + SPI_CON_REG);
 
 		/* poll on the TC bit (transfer complete) */
-		while ((val-- > 0) &&
-			(readl(dev->base + SPI_STAT_REG) & (1 << 7)) == 0) {
+		while ((readl(dev->base + SPI_STAT_REG) & (1 << 7)) == 0) {
+			loop_cnt--;
+			if (loop_cnt <= 0) {
+				printf("Error: re-tried %d times without response. Give up\n",
+						SPI_RETRY_TIMES);
+				spi_cs_deactivate(slave);
+				return -1;
+			}
 			udelay(100);
 		}
 
+
+		/* move data in the rx buf */
+		if (pin) {
+			int len;
+			for (len = current_len; len > 0; len -= 32) {
+				*pin++ = readl(dev->base + SPI_RX_DATA);
+				debug("len = 0x%x, read %x\n", len, pin[-1]);
+			}
+		} else {
+			int len;
+			for (len = current_len; len > 0; len -= 32)
+				readl(dev->base + SPI_RX_DATA);
+		}
+
+
 		/* clear the TC bit */
 		writel(3 << 6, dev->base + SPI_STAT_REG);
-		if (val <= 0) {
-			printf("Error: re-tried %d times without response. Give up\n",
-					SPI_RETRY_TIMES);
-			ret_val = -1;
-			goto error;
+	
+		if (din && (!(flags & SPI_XFER_NOREORDER))) {
+			u32 *p = temp_buf;
+			u32 v;
+			u32 len = current_len;
+			u32 l = len & 0x1f;
+			u8 *q = (u8 *)din;
+			if (rem_in_bits | l) {
+				if (!l) l = 32;
+				do {
+					u32 r = (8 - rem_in_bits) & 7;
+					v = *p++;
+					v <<= (32 - l);
+					len -= l;
+					if (r && (l >= r)) {
+						*q++ |= (u8)(v >> (32 - r));
+						l -= r;
+						v <<= r;
+					}
+					while (l >= 8) {
+						*q++ = (u8)(v >> 24);
+						l -= 8;
+						v <<= 8;
+					}
+					if (l) {
+						*q = (u8)(v >> 24);
+					}
+					rem_in_bits = l;
+					l = 32;
+				} while (len);
+			} else {
+				do {
+					v = *p++;
+					len -= 32;
+					*q++ = (u8)(v >> 24);
+					*q++ = (u8)(v >> 16);
+					*q++ = (u8)(v >> 8);
+					*q++ = (u8)(v >> 0);
+				} while (len);
+			}
+			din = q;
 		}
+		bitlen -= current_len;
 	}
-
-	/* move data in the rx buf */
-	if (flags & SPI_XFER_END) {
-		if (din) {
-			for (p_buf = (u32 *)din, len = burst_bytes; len > 0;
-				++p_buf, len -= 4)
-				*p_buf = readl(dev->base + SPI_RX_DATA);
-		} else {
-			for (len = burst_bytes; len > 0; len -= 4)
-				tmp = readl(dev->base + SPI_RX_DATA);
-		}
-
+	if (flags & SPI_XFER_END)
 		spi_cs_deactivate(slave);
-	}
-
-	return ret_val;
-
-error:
-	spi_cs_deactivate(slave);
 	return ret_val;
 }
 
