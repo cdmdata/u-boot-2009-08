@@ -40,7 +40,7 @@ static inline struct imx_spi_dev_t *to_imx_spi_slave(struct spi_slave *slave)
 static s32 spi_reset(struct spi_slave *slave)
 {
 	u32 clk_src = mxc_get_clock(MXC_CSPI_CLK);
-	s32 pre_div = 0, post_div = 0, i, reg_ctrl, reg_config;
+	u32 pre_div = 0, post_div = 0, reg_ctrl, reg_config;
 	struct imx_spi_dev_t *dev = to_imx_spi_slave(slave);
 	struct spi_reg_t *reg = &(dev->reg);
 
@@ -50,57 +50,47 @@ static s32 spi_reset(struct spi_slave *slave)
 	}
 
 	reg_ctrl = readl(dev->base + SPI_CON_REG);
+	reg_config = readl(dev->base + SPI_CFG_REG);
 	/* Reset spi */
 	writel(0, dev->base + SPI_CON_REG);
 	writel((reg_ctrl | 0x1), dev->base + SPI_CON_REG);
 
 	/* Control register setup */
-	if (clk_src > dev->freq) {
-		pre_div = clk_src / dev->freq;
-		if (pre_div > 16) {
-			post_div = pre_div / 16;
-			pre_div = 15;
-		}
-		if (post_div != 0) {
-			for (i = 0; i < 16; i++) {
-				if ((1 << i) >= post_div)
-					break;
-			}
-			if (i == 16) {
-				printf("Error: no divider can meet the freq: %d\n",
-					dev->freq);
-				return -1;
-			}
-			post_div = i;
-		}
+	pre_div = (clk_src + dev->freq - 1)/ dev->freq;
+	while (pre_div > 16) {
+		pre_div = (pre_div + 1) >> 1;
+		post_div++;
 	}
+	if (post_div > 0x0f) {
+		printf("Error: no divider can meet the freq: %d\n", dev->freq);
+		return -1;
+	}
+	if (pre_div)
+		pre_div--;
 
-	debug("pre_div = %d, post_div=%d\n", pre_div, post_div);
-	reg_ctrl = (reg_ctrl & ~(3 << 18)) | dev->ss << 18;
-	reg_ctrl = (reg_ctrl & ~(0xF << 12)) | pre_div << 12;
-	reg_ctrl = (reg_ctrl & ~(0xF << 8)) | post_div << 8;
-	reg_ctrl |= 1 << (dev->ss + 4);	/* always set to master mode !!!! */
-	reg_ctrl &= ~0x1;		/* disable spi */
+	printf("pre_div = %d, post_div=%d, clk_src=%d, spi_freq=%d\n", pre_div, post_div, clk_src, (clk_src/(pre_div + 1)) >> post_div);
+	reg_ctrl &= ~((3 << 18) | (0xF << 12) | (0xF << 8));
+	reg_ctrl |= (dev->ss << 18);
+	reg_ctrl |= (pre_div << 12);
+	reg_ctrl |= (post_div << 8);
+	reg_ctrl |= (1 << (dev->ss + 4));	/* always set to master mode !!!! */
+	reg_ctrl |= 1;
 
-	reg_config = readl(dev->base + SPI_CFG_REG);
 	/* configuration register setup */
-	reg_config = (reg_config & ~(1 << ((dev->ss + 12)))) |
-		(dev->ss_pol << (dev->ss + 12));
-	reg_config = (reg_config & ~(1 << ((dev->ss + 20)))) |
-		(dev->in_sctl << (dev->ss + 20));
-	reg_config = (reg_config & ~(1 << ((dev->ss + 16)))) |
-		(dev->in_dctl << (dev->ss + 16));
-	reg_config = (reg_config & ~(1 << ((dev->ss + 8)))) |
-		(dev->ssctl << (dev->ss + 8));
-	reg_config = (reg_config & ~(1 << ((dev->ss + 4)))) |
-		(dev->sclkpol << (dev->ss + 4));
-	reg_config = (reg_config & ~(1 << ((dev->ss + 0)))) |
-		(dev->sclkpha << (dev->ss + 0));
+	reg_config &= ~(0x111111 << dev->ss);
+	reg_config |= (dev->in_sctl << (dev->ss + 20));
+	reg_config |= (dev->in_dctl << (dev->ss + 16));
+	reg_config |= (dev->ss_pol << (dev->ss + 12));
+	reg_config |= (dev->ssctl << (dev->ss + 8));
+	reg_config |= (dev->sclkpol << (dev->ss + 4));
+	reg_config |= (dev->sclkpha << (dev->ss));
 
-	debug("reg_ctrl = 0x%x\n", reg_ctrl);
-	writel(reg_ctrl, dev->base + SPI_CON_REG);
-	debug("reg_config = 0x%x\n", reg_config);
+	if (dev->ss)
+		reg_config |= (1 << 12);	/* pmic is high active */
+	debug("ss%x, reg_config = 0x%x\n", dev->ss, reg_config);
 	writel(reg_config, dev->base + SPI_CFG_REG);
+	debug("ss%x, reg_ctrl = 0x%x\n", dev->ss, reg_ctrl);
+	writel(reg_ctrl & ~1, dev->base + SPI_CON_REG);
 
 	/* save config register and control register */
 	reg->cfg_reg  = reg_config;
@@ -109,7 +99,6 @@ static s32 spi_reset(struct spi_slave *slave)
 	/* clear interrupt reg */
 	writel(0, dev->base + SPI_INT_REG);
 	writel(3 << 6, dev->base + SPI_STAT_REG);
-
 	return 0;
 }
 
