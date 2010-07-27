@@ -657,7 +657,7 @@ static void setup_pmic(void)
 	/*
 	 * eCSPI1 pads (for PMIC)
 	 */
-	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST ;
+	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST ;
 	mxc_request_iomux(MX51_PIN_CSPI1_MOSI,IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_MOSI, pad);
 	mxc_request_iomux(MX51_PIN_CSPI1_MISO,IOMUX_CONFIG_ALT0);
