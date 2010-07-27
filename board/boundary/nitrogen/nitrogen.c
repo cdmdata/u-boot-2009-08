@@ -347,49 +347,14 @@ s32 spi_get_cfg(struct imx_spi_dev_t *dev)
 	return 0;
 }
 
-#ifdef CONFIG_IMX_ECSPI
-void spi_io_init(struct imx_spi_dev_t *dev)
+void spi_io_init(struct imx_spi_dev_t *dev, int active)
 {
-	switch (dev->base) {
-	case CSPI1_BASE_ADDR:
-		/* 000: Select mux mode: ALT0 mux port: MOSI of instance: ecspi1 */
-		mxc_request_iomux(MX51_PIN_CSPI1_MOSI, IOMUX_CONFIG_ALT0);
-		mxc_iomux_set_pad(MX51_PIN_CSPI1_MOSI, 0x105);
-
-		/* 000: Select mux mode: ALT0 mux port: MISO of instance: ecspi1. */
-		mxc_request_iomux(MX51_PIN_CSPI1_MISO, IOMUX_CONFIG_ALT0);
-		mxc_iomux_set_pad(MX51_PIN_CSPI1_MISO, 0x105);
-
-		if (dev->ss == 0) {
-			/* de-select SS1 of instance: ecspi1. */
-			mxc_request_iomux(MX51_PIN_CSPI1_SS1, IOMUX_CONFIG_ALT3);
-			mxc_iomux_set_pad(MX51_PIN_CSPI1_SS1, 0x85);
-			/* 000: Select mux mode: ALT0 mux port: SS0 of instance: ecspi1. */
-			mxc_request_iomux(MX51_PIN_CSPI1_SS0, IOMUX_CONFIG_ALT0);
-			mxc_iomux_set_pad(MX51_PIN_CSPI1_SS0, 0x185);
-		} else if (dev->ss == 1) {
-			/* de-select SS0 of instance: ecspi1. */
-			mxc_request_iomux(MX51_PIN_CSPI1_SS0, IOMUX_CONFIG_ALT3);
-			mxc_iomux_set_pad(MX51_PIN_CSPI1_SS0, 0x85);
-			/* 000: Select mux mode: ALT0 mux port: SS1 of instance: ecspi1. */
-			mxc_request_iomux(MX51_PIN_CSPI1_SS1, IOMUX_CONFIG_ALT0);
-			mxc_iomux_set_pad(MX51_PIN_CSPI1_SS1, 0x105);
-		}
-
-		/* 000: Select mux mode: ALT0 mux port: RDY of instance: ecspi1. */
-		mxc_request_iomux(MX51_PIN_CSPI1_RDY, IOMUX_CONFIG_ALT0);
-		mxc_iomux_set_pad(MX51_PIN_CSPI1_RDY, 0x180);
-
-		/* 000: Select mux mode: ALT0 mux port: SCLK of instance: ecspi1. */
-		mxc_request_iomux(MX51_PIN_CSPI1_SCLK, IOMUX_CONFIG_ALT0);
-		mxc_iomux_set_pad(MX51_PIN_CSPI1_SCLK, 0x105);
-		break;
-	case CSPI2_BASE_ADDR:
-	default:
-		break;
+	if (dev->ss == 0) {
+		Set_GPIO_output_val(MAKE_GP(4, 24), active ? 1 : 0);
+	} else if (dev->ss == 1) {
+		Set_GPIO_output_val(MAKE_GP(4, 25), active ? 0 : 1);
 	}
 }
-#endif
 #endif
 
 #ifdef CONFIG_MXC_FEC
@@ -658,16 +623,18 @@ static void setup_pmic(void)
 	 * eCSPI1 pads (for PMIC)
 	 */
 	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST ;
+	Set_GPIO_output_val(MAKE_GP(4, 24), 0);	/* SS0 high active */
+	Set_GPIO_output_val(MAKE_GP(4, 25), 1);	/* SS1 low active */
 	mxc_request_iomux(MX51_PIN_CSPI1_MOSI,IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_MOSI, pad);
 	mxc_request_iomux(MX51_PIN_CSPI1_MISO,IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_MISO,pad);
-	mxc_request_iomux(MX51_PIN_CSPI1_SS0,IOMUX_CONFIG_ALT0);
+	mxc_request_iomux(MX51_PIN_CSPI1_SS0,IOMUX_CONFIG_ALT3);
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_SS0,pad);
-	mxc_request_iomux(MX51_PIN_CSPI1_SS1,IOMUX_CONFIG_ALT0);
+	mxc_request_iomux(MX51_PIN_CSPI1_SS1,IOMUX_CONFIG_ALT3);
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_SS1,pad);
 	mxc_request_iomux(MX51_PIN_CSPI1_RDY,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_CSPI1_RDY,pad);
+	mxc_iomux_set_pad(MX51_PIN_CSPI1_RDY, PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_DRV_LOW);
 	mxc_request_iomux(MX51_PIN_CSPI1_SCLK,IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_SCLK,pad);
 }

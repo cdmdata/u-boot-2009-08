@@ -91,6 +91,6 @@ struct imx_spi_dev_t {
 	struct spi_reg_t reg; /* pointer to a set of SPI registers */
 };
 
-extern void spi_io_init(struct imx_spi_dev_t *dev);
+extern void spi_io_init(struct imx_spi_dev_t *dev, int active);
 
 #endif /* __IMX_SPI_H__ */

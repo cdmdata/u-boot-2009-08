@@ -157,7 +157,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 
 	spi_get_cfg(imx_spi_slave);
 
-	spi_io_init(imx_spi_slave);
+	spi_io_init(imx_spi_slave, 0);
 
 	spi_reset(&(imx_spi_slave->slave));
 
@@ -290,13 +290,13 @@ void spi_cs_activate(struct spi_slave *slave)
 {
 	struct imx_spi_dev_t *dev = to_imx_spi_slave(slave);
 
-	spi_io_init(dev);
+	spi_io_init(dev, 1);
 }
 
 void spi_cs_deactivate(struct spi_slave *slave)
 {
 	struct imx_spi_dev_t *dev = to_imx_spi_slave(slave);
-
+	spi_io_init(dev, 0);
 	writel(0, dev->base + SPI_CON_REG);
 }
 
