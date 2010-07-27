@@ -232,10 +232,60 @@ int dram_init(void)
 	return 0;
 }
 
+/*
+ * continued fraction
+ *      2  1  2  1  2
+ * 0 1  2  3  8 11 30
+ * 1 0  1  1  3  4 11
+ */
+static void get_best_ratio(unsigned *pnum, unsigned *pdenom, unsigned max)
+{
+	unsigned a = *pnum;
+	unsigned b = *pdenom;
+	unsigned c;
+	unsigned n[] = {0, 1};
+	unsigned d[] = {1, 0};
+	unsigned whole;
+	unsigned i = 1;
+	while (b) {
+		i ^= 1;
+		whole = a / b;
+		n[i] += (n[i ^ 1] * whole);
+		d[i] += (d[i ^ 1] * whole);
+//		printf("cf=%i n=%i d=%i\n", whole, n[i], d[i]);
+		if ((n[i] | d[i]) > max) {
+			i ^= 1;
+			break;
+		}
+		c = a - (b * whole);
+		a = b;
+		b = c;
+	}
+	*pnum = n[i];
+	*pdenom = d[i];
+}
+
+#define UART1_BASE 0x73fbc000
+#define UFCR           0x0090
+#define UBIR           0x00a4
+#define UBMR           0x00a8
 static void setup_uart(void)
 {
+	u32 uart = UART1_BASE;
+	u32 clk_src = mxc_get_clock(MXC_UART_CLK);
+	u32 mult, div;
 	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE |
 			 PAD_CTL_PUE_PULL | PAD_CTL_DRV_HIGH;
+#define BAUDRATE 115200
+	writel(0x4 << 7, uart + UFCR);	/* divide input clock by 2 */
+	mult = BAUDRATE * 2 * 16;	/* 16 samples/clock */
+	div = clk_src;
+//	writel(611 - 1, uart + UBIR);
+//	writel(11022 - 1, uart + UBMR);
+	get_best_ratio(&mult, &div, 0x10000);
+	writel(mult - 1, uart + UBIR);
+	writel(div - 1, uart + UBMR);
+
 	mxc_request_iomux(MX51_PIN_UART1_RXD, IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_UART1_RXD, pad | PAD_CTL_SRE_FAST);
 	mxc_request_iomux(MX51_PIN_UART1_TXD, IOMUX_CONFIG_ALT0);
@@ -247,6 +297,9 @@ static void setup_uart(void)
 	/* enable GPIO1_9 for CLK0 and GPIO1_8 for CLK02 */
 	writel(0x00000004, 0x73fa83e8);
 	writel(0x00000004, 0x73fa83ec);
+
+	udelay(10);
+//	printf("setup_uart clk_src=%i mult=%i div=%i\n", clk_src, mult, div);
 }
 
 void setup_nfc(void)
@@ -929,6 +982,7 @@ int board_init(void)
 	val &= ~0x1; /*RS bit*/
 	writel(val, OTG_BASE_ADDR + USBCMD);
 #endif
+	setup_uart();
 	setup_boot_device();
 	setup_soc_rev();
 	set_board_rev();
@@ -937,7 +991,6 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
-	setup_uart();
 	setup_nfc();
 	setup_expio();
 #ifdef CONFIG_MXC_FEC
