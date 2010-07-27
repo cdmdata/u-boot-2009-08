@@ -171,6 +171,7 @@ static void get_name (dir_entry *dirent, char *s_name)
 	downcase (s_name);
 }
 
+__u32 g_prev;
 /*
  * Get the entry at index 'entry' in a FAT (12/16/32) table.
  * On failure 0x00 is returned.
@@ -260,8 +261,9 @@ get_fatent(fsdata *mydata, __u32 entry)
 	}
 	break;
 	}
-	FAT_DPRINT("ret: %d, offset: %d\n", ret, offset);
-
+	if ((g_prev + 1) != ret)
+		FAT_DPRINT("ret: %d, offset: %d\n", ret, offset);
+	g_prev = ret;
 	return ret;
 }
 
@@ -282,7 +284,7 @@ get_cluster(fsdata *mydata, __u32 clustnum, __u8 *buffer, unsigned long size)
 		startsect = mydata->rootdir_sect;
 	}
 
-	FAT_DPRINT("gc - clustnum: %d, startsect: %d\n", clustnum, startsect);
+	FAT_DPRINT("gc - clustnum: %d, startsect: %d size: %d\n", clustnum, startsect, size);
 	if (disk_read(startsect, size/FS_BLOCK_SIZE , buffer) < 0) {
 		FAT_DPRINT("Error reading data\n");
 		return -1;
