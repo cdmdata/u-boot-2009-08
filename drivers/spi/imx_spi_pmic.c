@@ -28,7 +28,6 @@
 
 #include <imx_spi.h>
 
-static u32 pmic_tx, pmic_rx;
 
 /*!
  * To read/write to a PMIC register. For write, it does another read for the
@@ -42,6 +41,9 @@ static u32 pmic_tx, pmic_rx;
  */
 u32 pmic_reg(struct spi_slave *slave, u32 reg, u32 val, u32 write)
 {
+	u32 pmic_tx, pmic_rx;
+	if (0) if (write)
+		printf("pmic_reg: write reg=%x, val=%x\n", reg, val);
 	if (!slave)
 		return 0;
 
@@ -54,7 +56,7 @@ u32 pmic_reg(struct spi_slave *slave, u32 reg, u32 val, u32 write)
 	debug("reg=0x%x, val=0x%08x\n", reg, pmic_tx);
 
 	if (spi_xfer(slave, 4 << 3, (u8 *)&pmic_tx, (u8 *)&pmic_rx,
-			SPI_XFER_BEGIN | SPI_XFER_END)) {
+			SPI_XFER_BEGIN | SPI_XFER_END | SPI_XFER_NOREORDER)) {
 		printf( "SPI transfer error\n");
 		return -1;
 	}
@@ -62,12 +64,13 @@ u32 pmic_reg(struct spi_slave *slave, u32 reg, u32 val, u32 write)
 	if (write) {
 		pmic_tx &= ~(1 << 31);
 		if (spi_xfer(slave, 4 << 3, (u8 *)&pmic_tx, (u8 *)&pmic_rx,
-			SPI_XFER_BEGIN | SPI_XFER_END)) {
+			SPI_XFER_BEGIN | SPI_XFER_END | SPI_XFER_NOREORDER)) {
 			printf( "SPI transfer error\n");
 			return -1;
 		}
+	} else {
+//		printf("pmic_reg: read reg=%x, %x\n", reg, pmic_rx);
 	}
-
 	return pmic_rx;
 }
 
@@ -123,7 +126,7 @@ void show_pmic_info(struct spi_slave *slave)
 
 struct spi_slave *spi_pmic_probe(void)
 {
-	return spi_setup_slave(0, CONFIG_IMX_SPI_PMIC_CS, 2500000, 0);
+	return spi_setup_slave(0, CONFIG_IMX_SPI_PMIC_CS, 2000000, 0);
 }
 
 void spi_pmic_free(struct spi_slave *slave)

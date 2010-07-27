@@ -48,6 +48,7 @@
 /* SPI transfer flags */
 #define SPI_XFER_BEGIN	0x01			/* Assert CS before transfer */
 #define SPI_XFER_END	0x02			/* Deassert CS after transfer */
+#define SPI_XFER_NOREORDER	0x04
 
 /*-----------------------------------------------------------------------
  * Representation of a SPI slave, i.e. what we're communicating with.
