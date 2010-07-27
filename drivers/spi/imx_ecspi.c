@@ -30,29 +30,6 @@
 
 #include <imx_spi.h>
 
-#ifdef	DEBUG
-
-/* -----------------------------------------------
- * Helper functions to peek into tx and rx buffers
- * ----------------------------------------------- */
-static const char * const hex_digit = "0123456789ABCDEF";
-
-static char quickhex(int i)
-{
-	return hex_digit[i];
-}
-
-static void memdump(const void *pv, int num)
-{
-
-}
-
-#else /* !DEBUG */
-
-#define	memdump(p, n)
-
-#endif /* DEBUG */
-
 extern s32 spi_get_cfg(struct imx_spi_dev_t *dev);
 
 static inline struct imx_spi_dev_t *to_imx_spi_slave(struct spi_slave *slave)
