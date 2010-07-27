@@ -108,6 +108,14 @@ static const struct atmel_spi_flash_params atmel_spi_flash_table[] = {
 		.nr_sectors		= 32,
 		.name			= "AT45DB642D",
 	},
+	{
+		.idcode1		= 0x26,
+		.l2_page_size		= 9,
+		.pages_per_block	= 8,
+		.blocks_per_sector	= 32,
+		.nr_sectors		= 16,
+		.name			= "AT45DB161D",
+	},
 };
 
 static int at45_wait_ready(struct spi_flash *flash, unsigned long timeout)
