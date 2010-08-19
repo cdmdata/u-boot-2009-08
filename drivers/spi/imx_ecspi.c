@@ -169,6 +169,9 @@ int spi_xfer(struct spi_slave *slave, unsigned int bitlen, const void *dout,
 	if (!slave)
 		return -1;
 
+#ifdef CONFIG_SPI_FLASH_IMX_ATMEL
+	flags |= SPI_XFER_NOREORDER;
+#endif
 	if ((flags & SPI_XFER_NOREORDER) &&
 			((((unsigned)dout) | ((unsigned)din)) & 3)) {
 		printf("Error: dout/din must be word aligned\n");

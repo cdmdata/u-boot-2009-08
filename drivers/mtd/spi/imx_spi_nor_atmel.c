@@ -64,6 +64,13 @@ static const struct imx_spi_flash_params imx_spi_flash_table[] = {
 		.device_size		= SZ_64K * 64,
 		.name			= "AT45DB321D - 4MB",
 	},
+	{
+		.idcode1		= 0x26,
+		.block_size		= SZ_4K,
+		.block_count		= 16 * 32,
+		.device_size		= 16 * 32 * 8 * 512,	/* 16 sectors * 32 blocks/sector * 8 pages/block * 512 bytes/page */
+		.name			= "AT45DB161D",
+	},
 };
 
 static s32 spi_nor_flash_query(struct spi_flash *flash, void* data)

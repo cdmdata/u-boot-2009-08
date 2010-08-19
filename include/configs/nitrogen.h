@@ -117,7 +117,12 @@
  * */
 #ifdef CONFIG_CMD_SF
 	#define CONFIG_FSL_SF		1
+#if 0
+	#define CONFIG_SPI_FLASH       1
+	#define CONFIG_SPI_FLASH_ATMEL 1
+#else
 	#define CONFIG_SPI_FLASH_IMX_ATMEL	1
+#endif
 	#define CONFIG_SPI_FLASH_CS	1
 	#define CONFIG_IMX_ECSPI
 	#define IMX_CSPI_VER_2_3        1
