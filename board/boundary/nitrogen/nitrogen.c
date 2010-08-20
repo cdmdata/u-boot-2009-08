@@ -320,30 +320,25 @@ static void setup_expio(void)
 #ifdef CONFIG_IMX_ECSPI
 s32 spi_get_cfg(struct imx_spi_dev_t *dev)
 {
+	dev->base = CSPI1_BASE_ADDR;
+	dev->freq = 2000000;
+	dev->fifo_sz = 64 * 4;
+	dev->us_delay = 0;
 	switch (dev->slave.cs) {
 	case 0:
 		/* pmic */
-		dev->base = CSPI1_BASE_ADDR;
-		dev->freq = 2500000;
 		dev->ss_pol = IMX_SPI_ACTIVE_HIGH;
 		dev->ss = 0;
-		dev->fifo_sz = 64 * 4;
-		dev->us_delay = 0;
 		break;
 	case 1:
 		/* spi_nor */
-		dev->base = CSPI1_BASE_ADDR;
-		dev->freq = 2500000;
 		dev->ss_pol = IMX_SPI_ACTIVE_LOW;
 		dev->ss = 1;
-		dev->fifo_sz = 64 * 4;
-		dev->us_delay = 0;
 		break;
 	default:
 		printf("Invalid Bus ID! \n");
 		break;
 	}
-
 	return 0;
 }
 
