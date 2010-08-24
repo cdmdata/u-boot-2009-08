@@ -117,9 +117,10 @@
  * */
 #ifdef CONFIG_CMD_SF
 	#define CONFIG_FSL_SF		1
-#if 0
+#if 1
 	#define CONFIG_SPI_FLASH       1
 	#define CONFIG_SPI_FLASH_ATMEL 1
+	#define CONFIG_SPI_FLASH_STMICRO 1
 #else
 	#define CONFIG_SPI_FLASH_IMX_ATMEL	1
 #endif
