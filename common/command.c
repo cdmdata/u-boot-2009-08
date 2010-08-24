@@ -27,6 +27,9 @@
 
 #include <common.h>
 #include <command.h>
+#ifdef CONFIG_LCD
+#include "lcd.h"
+#endif
 
 int
 do_version (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
@@ -76,6 +79,42 @@ U_BOOT_CMD(
 	"    - echo args to console; \\c suppresses newline"
 );
 
+#endif
+
+#if defined( CONFIG_LCD ) || defined( CONFIG_LCD_MULTI )
+void lcd_putc(const char c);
+
+int
+do_lecho (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	int i, putnl = 1;
+
+	for (i = 1; i < argc; i++) {
+		char *p = argv[i], c;
+
+		if (i > 1)
+			lcd_putc(' ');
+		while ((c = *p++) != '\0') {
+			if (c == '\\' && *p == 'c') {
+				putnl = 0;
+				p++;
+			} else {
+				lcd_putc(c);
+			}
+		}
+	}
+
+	if (putnl)
+		lcd_putc('\n');
+	return 0;
+}
+
+U_BOOT_CMD(
+	lecho,	CONFIG_SYS_MAXARGS,	1,	do_lecho,
+	"lecho    - echo args to lcd\n",
+	"[args..]\n"
+	"    - echo args to lcd; \\c suppresses newline\n"
+);
 #endif
 
 #ifdef CONFIG_SYS_HUSH_PARSER
