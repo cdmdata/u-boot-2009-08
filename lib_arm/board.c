@@ -480,6 +480,11 @@ extern void davinci_eth_set_mac_addr (const u_int8_t *addr);
 	reset_phy();
 #endif
 #endif
+
+#if defined(CONFIG_LCD_MULTI)
+	lcd_multi_init();
+#endif
+
 	/* main_loop() can return to retry autoboot, if so just run it again. */
 	for (;;) {
 		main_loop ();
