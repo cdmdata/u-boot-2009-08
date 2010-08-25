@@ -191,6 +191,24 @@ static u32 __get_ipg_clk(void)
 	return __get_periph_clk() / ((ahb_podf + 1) * (ipg_podf + 1));
 }
 
+/* Documentation differs from mach-mx5/clock.c on what values
+ * of 2 and 3 mean in field ipu_hsp_clk_sel of register CBCMR
+ */
+#define CBCMR_IPU_AHB 	   	3
+#define CBCMR_IPU_EMI_SLOW 	2
+
+static u32 __get_ipu_clk(void)
+{
+	u32 clksel = (__REG(MXC_CCM_CBCMR) & MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_MASK) 
+		     >> MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_OFFSET ;
+	if (CBCMR_IPU_AHB == clksel) {
+		return __get_ahb_clk();
+	} else {
+		printf ("%s: unsupported clock %x for IPU\n", __func__, clksel);
+	}
+	return -1U ;
+}
+
 static u32 __get_ipg_per_clk(void)
 {
 	u32 pred1, pred2, podf;
@@ -340,12 +358,47 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return __get_cspi_clk();
 	case MXC_FEC_CLK:
 		return __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
-	case MXC_ESDHC_CLK:
-		return __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
+	case MXC_IPU_CLK:
+		return __get_ipu_clk();
 	default:
 		break;
 	}
 	return -1;
+}
+
+#define DI0_BS_CLKGEN0	0x5E040004
+#define DI1_BS_CLKGEN0	0x5E048004
+
+unsigned get_pixel_clock(unsigned which) {
+	unsigned ipu_clock = __get_ipu_clk();
+	unsigned divisorReg = (0 != which) 
+				? __REG(DI1_BS_CLKGEN0) 
+				: __REG(DI0_BS_CLKGEN0);
+	unsigned divisor = divisorReg&0xffff ;
+	if (0 == divisor) {
+		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
+		divisor = 0x10 ;
+	}
+
+	return (ipu_clock*16)/divisor ;
+}
+
+void set_pixel_clock(int which, unsigned hz)
+{
+	unsigned ipu_clock = __get_ipu_clk();
+	unsigned divisorReg = (0 != which) 
+				? DI1_BS_CLKGEN0
+				: DI0_BS_CLKGEN0 ;
+	unsigned divisor = (ipu_clock*16)/hz ;
+	if (0 == divisor) {
+		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
+		divisor = 0x10 ;
+	}
+	__REG(divisorReg) = divisor ;
+	divisor >>= 4 ;
+	divisor <<= 16 ;
+	__REG(divisorReg+4) = divisor ;
+        udelay(5000);
 }
 
 void mxc_dump_clocks(void)
@@ -357,6 +410,8 @@ void mxc_dump_clocks(void)
 	printf("mx51 pll2: %dMHz\n", freq / 1000000);
 	freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
 	printf("mx51 pll3: %dMHz\n", freq / 1000000);
+	printf("arm clock     : %dHz\n", mxc_get_clock(MXC_ARM_CLK));
+	printf("ahb clock     : %dHz\n", mxc_get_clock(MXC_AHB_CLK));
 	printf("ipg clock     : %dHz\n", mxc_get_clock(MXC_IPG_CLK));
 	printf("ipg per clock : %dHz\n", mxc_get_clock(MXC_IPG_PERCLK));
 	printf("uart clock    : %dHz\n", mxc_get_clock(MXC_UART_CLK));
@@ -366,6 +421,10 @@ void mxc_dump_clocks(void)
 	printf("emi_slow clock: %dHz\n", mxc_get_clock(MXC_EMI_SLOW_CLK));
 	printf("ddr clock     : %dHz\n", mxc_get_clock(MXC_DDR_CLK));
 	printf("esdhc clock   : %dHz\n", mxc_get_clock(MXC_ESDHC_CLK));
+	printf("fec clock     : %dHz\n", mxc_get_clock(MXC_FEC_CLK));
+	printf("ipu clock     : %dHz\n", mxc_get_clock(MXC_IPU_CLK));
+	printf("pixel clock[0]: %dHz\n", get_pixel_clock(0));
+	printf("pixel clock[1]: %dHz\n", get_pixel_clock(1));
 }
 
 #ifdef CONFIG_CMD_CLOCK
@@ -928,3 +987,17 @@ int arch_cpu_init(void)
 	return 0;
 }
 #endif
+
+int
+do_clocks (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+        mxc_dump_clocks();
+	return 0 ;
+}
+
+U_BOOT_CMD(
+	clocks, 1, 0,	do_clocks,
+	"clocks - show system clocks\n",
+	""
+);
+
