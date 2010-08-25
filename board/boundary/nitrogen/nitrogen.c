@@ -228,7 +228,7 @@ int dram_init(void)
 	unsigned shift;
 	shift = readl(ESDCTL1) >> 31;
 	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
-	gd->bd->bi_dram[0].size = PHYS_SDRAM_1_SIZE << shift;
+	gd->bd->bi_dram[0].size = (256 << 20) << shift;
 	return 0;
 }
 
