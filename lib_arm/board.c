@@ -123,6 +123,7 @@ void *sbrk (ptrdiff_t increment)
  ************************************************************************
  * May be supplied by boards if desired
  */
+#if 0
 void inline __coloured_LED_init (void) {}
 void coloured_LED_init(void)__attribute__((weak, alias("__coloured_LED_init")));
 void inline __red_LED_on (void) {}
@@ -142,6 +143,7 @@ void blue_LED_on(void) __attribute__((weak, alias("__blue_LED_on")));
 void inline __blue_LED_off(void) {}
 void blue_LED_off(void) __attribute__((weak, alias("__blue_LED_off")));
 
+#endif
 /************************************************************************
  * Init Utilities							*
  ************************************************************************
