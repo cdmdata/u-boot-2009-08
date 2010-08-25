@@ -125,3 +125,9 @@ void udelay(unsigned long usec)
 	while (get_timer_masked() < tmp)	/* loop till event */
 		 /*NOP*/;
 }
+
+
+unsigned long long get_ticks(void)
+{
+	return get_timer(0);
+}
