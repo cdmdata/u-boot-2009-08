@@ -47,6 +47,7 @@ int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 	disable_interrupts();
 	reset_cpu(0);
+	udelay (50000);				/* wait 50 ms */
 
 	/*NOTREACHED*/
 	return 0;
