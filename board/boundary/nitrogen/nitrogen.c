@@ -576,7 +576,7 @@ static void setup_core_voltage_spi(void)
 	/* power up the system first */
 	pmic_reg(slave, 34, 0x00200000, 1);
 
-	if (is_soc_rev(CHIP_REV_2_0) >= 0) {
+	if (is_soc_rev(CHIP_REV_2_0) <= 0) {
 		/* Set core voltage to 1.1V */
 		val = pmic_reg(slave, 24, 0, 0);
 		val = (val & (~0x1f)) | 0x14;
