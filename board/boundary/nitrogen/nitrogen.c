@@ -71,7 +71,7 @@ u32	mx51_io_base_addr;
 #define GPIO_DIR 4
 #define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
 unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR};
-void Set_GPIO_output_val(unsigned gp, unsigned val)
+inline void Set_GPIO_output_val(unsigned gp, unsigned val)
 {
 	unsigned base = gp_base[gp >> 5];
 	unsigned mask = (1 << (gp & 0x1f));
@@ -687,63 +687,6 @@ static void setup_pmic(void)
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_SCLK,pad);
 }
 
-static void setup_display(void)
-{
-	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_LOW | PAD_CTL_SRE_FAST ;
-	mxc_request_iomux(MX51_PIN_DISP1_DAT0,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT0,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT1,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT1,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT2,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT2,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT3,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT3,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT4,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT4,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT5,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT5,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT6,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT6,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT7,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT7,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT8,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT8,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT9,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT9,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT10,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT10,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT11,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT11,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT12,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT12,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT13,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT13,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT14,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT14,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT15,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT15,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT16,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT16,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT17,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT17,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT18,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT18,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT19,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT19,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT20,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT20,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT21,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT21,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT22,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT22,pad);
-	mxc_request_iomux(MX51_PIN_DISP1_DAT23,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT23,pad);
-	mxc_request_iomux(MX51_PIN_DI1_PIN11,IOMUX_CONFIG_ALT1);
-	mxc_request_iomux(MX51_PIN_DI1_PIN12,IOMUX_CONFIG_ALT1);
-	mxc_request_iomux(MX51_PIN_DI1_PIN13,IOMUX_CONFIG_ALT1);
-	mxc_request_iomux(MX51_PIN_DI1_D0_CS,IOMUX_CONFIG_ALT1);
-	mxc_request_iomux(MX51_PIN_DI1_D1_CS,IOMUX_CONFIG_ALT4);
-}
 #ifdef CONFIG_NET_MULTI
 
 int board_eth_init(bd_t *bis)
@@ -973,6 +916,8 @@ int sdhc_init(void)
 
 #endif
 
+extern void setup_display(void);
+
 int board_init(void)
 {
 #ifdef CONFIG_MFG
@@ -1001,7 +946,6 @@ int board_init(void)
 #endif
 
 	setup_pmic();
-	setup_display();
 	return 0;
 }
 
@@ -1136,6 +1080,16 @@ int check_recovery_cmd_file(void)
 #ifdef BOARD_LATE_INIT
 int board_late_init(void)
 {
+	/* GPIO3[5-6] are used to enable/disable I2C interface to HDMI transmitter */
+	/* set them as GPIOs */
+	mxc_request_iomux(MX51_PIN_NANDF_ALE, IOMUX_CONFIG_ALT3);
+	mxc_request_iomux(MX51_PIN_NANDF_CLE, IOMUX_CONFIG_ALT3);
+
+	Set_GPIO_output_val(MAKE_GP(3, 5), 0);
+	Set_GPIO_output_val(MAKE_GP(3, 6), 1);
+	
+	setup_display();
+
 #ifdef CONFIG_I2C_MXC
 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	if (!i2c_probe(0x34))

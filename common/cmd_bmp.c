@@ -213,8 +213,10 @@ static int bmp_display(ulong addr, int x, int y)
 	extern int video_display_bitmap (ulong, int, int);
 
 	ret = video_display_bitmap ((unsigned long)bmp, x, y);
+#elif defined(CONFIG_LCD_MULTI)
+	ret = display_bmp (bmp,x,y);
 #else
-# error bmp_display() requires CONFIG_LCD or CONFIG_VIDEO
+# error bmp_display() requires CONFIG_LCD or CONFIG_LCD_MULTI or CONFIG_VIDEO
 #endif
 
 	if ((unsigned long)bmp != addr)
