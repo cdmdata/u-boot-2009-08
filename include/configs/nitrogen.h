@@ -266,24 +266,42 @@
 #define CONFIG_SYS_NO_FLASH
 
 /* Monitor at beginning of flash */
-/* #define CONFIG_FSL_ENV_IN_SF */
-#define CONFIG_FSL_ENV_IN_MMC
+/*  */
+#define CONFIG_FSL_ENV_IN_SF		/* check here 1st */
+#define CONFIG_FSL_ENV_IN_SF_FIRST
+#define CONFIG_FSL_ENV_IN_MMC		/* check here next */
 
-#define CONFIG_ENV_SIZE         CONFIG_ENV_SECT_SIZE
 
 #if defined(CONFIG_FSL_ENV_IN_MMC)
-	#define CONFIG_ENV_IS_IN_MMC	1
-	#define CONFIG_ENV_OFFSET	(14 * 512)
-	#define CONFIG_ENV_SECT_SIZE    (1 * 1024)
-#elif defined(CONFIG_FSL_ENV_IN_SF)
+	#define CONFIG_ENV_IS_IN_MMC		1
+	#define CONFIG_ENV_MMC_OFFSET		(14 * 512)
+	#define CONFIG_ENV_MMC_SECT_SIZE	(1 * 1024)
+	#define CONFIG_ENV_MMC_SIZE		CONFIG_ENV_MMC_SECT_SIZE
+#endif
+
+#if defined(CONFIG_FSL_ENV_IN_SF)
 	#define CONFIG_ENV_IS_IN_SPI_FLASH	1
 	#define CONFIG_ENV_SPI_CS		1
-	#define CONFIG_ENV_OFFSET       (768 * 1024)
-	#define CONFIG_ENV_SECT_SIZE    (4 * 1024)
+	#define CONFIG_ENV_SF_OFFSET		(768 * 1024)
+	#define CONFIG_ENV_SF_SECT_SIZE		(4 * 1024)
+	#define CONFIG_ENV_SF_SIZE		CONFIG_ENV_SF_SECT_SIZE
+#endif
+
+#if defined(CONFIG_FSL_ENV_IN_SF)
+	/* choose the greater of the 2 sizes */
+	#define CONFIG_ENV_SECT_SIZE	CONFIG_ENV_SF_SECT_SIZE
+	#define CONFIG_ENV_SIZE		CONFIG_ENV_SF_SIZE
+#else
+#if defined(CONFIG_FSL_ENV_IN_MMC)
+	#define CONFIG_ENV_SECT_SIZE    CONFIG_ENV_MMC_SECT_SIZE
+	#define CONFIG_ENV_SIZE		CONFIG_ENV_MMC_SIZE
 #else
 	#define CONFIG_ENV_IS_NOWHERE	1
 	#define CONFIG_ENV_SECT_SIZE    (128 * 1024)
+	#define CONFIG_ENV_SIZE		CONFIG_ENV_SECT_SIZE
 #endif
+#endif
+
 
 #define CONFIG_DEFAULT_SPI_BUS 1 /* PMIC on eCSPI-1 */
 #define CONFIG_IMX_SPI

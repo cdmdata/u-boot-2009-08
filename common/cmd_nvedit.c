@@ -49,6 +49,7 @@
 #if defined(CONFIG_CMD_NET)
 #include <net.h>
 #endif
+extern unsigned env_size;
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -147,7 +148,7 @@ int do_printenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		if (rcode < 0)
 			return 1;
 		printf("\nEnvironment size: %d/%ld bytes\n",
-			rcode, (ulong)ENV_SIZE);
+			rcode, (ulong)env_size);
 		return 0;
 	}
 
@@ -323,14 +324,14 @@ int _do_setenv (int flag, int argc, char *argv[])
 		++env;
 	/*
 	 * Overflow when:
-	 * "name" + "=" + "val" +"\0\0"  > ENV_SIZE - (env-env_data)
+	 * "name" + "=" + "val" +"\0\0"  > env_size - (env-env_data)
 	 */
 	len = strlen(name) + 2;
 	/* add '=' for first arg, ' ' for all others */
 	for (i=2; i<argc; ++i) {
 		len += strlen(argv[i]) + 1;
 	}
-	if (len > (&env_data[ENV_SIZE]-env)) {
+	if (len > (&env_data[env_size]-env)) {
 		printf ("## Error: environment overflow, \"%s\" deleted\n", name);
 		return 1;
 	}
@@ -518,7 +519,7 @@ char *getenv (char *name)
 		int val;
 
 		for (nxt=i; env_get_char(nxt) != '\0'; ++nxt) {
-			if (nxt >= CONFIG_ENV_SIZE) {
+			if (nxt >= (env_size + ENV_HEADER_SIZE)) {
 				return (NULL);
 			}
 		}
@@ -538,7 +539,7 @@ int getenv_r (char *name, char *buf, unsigned len)
 		int val, n;
 
 		for (nxt=i; env_get_char(nxt) != '\0'; ++nxt) {
-			if (nxt >= CONFIG_ENV_SIZE) {
+			if (nxt >= (env_size + ENV_HEADER_SIZE)) {
 				return (-1);
 			}
 		}
@@ -555,14 +556,19 @@ int getenv_r (char *name, char *buf, unsigned len)
 	return (-1);
 }
 
+
 #if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
+int saveenv_sf(void);
 int do_saveenv (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-	extern char * env_name_spec;
-
-	printf ("Saving Environment to %s...\n", env_name_spec);
-
+#ifdef CONFIG_FSL_ENV_IN_SF_FIRST
+	int ret = saveenv_sf();
+	if (ret)
+		ret = saveenv();
+	return (ret ? 1 : 0);
+#else
 	return (saveenv() ? 1 : 0);
+#endif
 }
 
 U_BOOT_CMD(

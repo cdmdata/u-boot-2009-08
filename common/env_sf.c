@@ -48,17 +48,29 @@ DECLARE_GLOBAL_DATA_PTR;
 /* references to names in env_common.c */
 extern uchar default_environment[];
 
-char * env_name_spec = "SPI Flash";
+static char * env_name_spec = "SPI Flash";
+
+#ifdef CONFIG_FSL_ENV_IN_SF_FIRST
+extern env_t *env_ptr;
+#else
 env_t *env_ptr;
+#endif
 
 static struct spi_flash *env_flash;
 
+#ifndef CONFIG_FSL_ENV_IN_SF_FIRST
 uchar env_get_char_spec(int index)
 {
 	return *((uchar *)(gd->env_addr + index));
 }
+#endif
 
+
+#ifdef CONFIG_FSL_ENV_IN_SF_FIRST
+int saveenv_sf(void)
+#else
 int saveenv(void)
+#endif
 {
 	u32 saved_size, saved_offset;
 	char *saved_buffer = NULL;
@@ -66,14 +78,17 @@ int saveenv(void)
 	int ret;
 
 	if (!env_flash) {
+#ifndef CONFIG_FSL_ENV_IN_SF_FIRST
 		puts("Environment SPI flash not initialized\n");
+#endif
 		return 1;
 	}
+	printf ("Saving Environment to %s...\n", env_name_spec);
 
 	/* Is the sector larger than the env (i.e. embedded) */
-	if (CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE) {
-		saved_size = CONFIG_ENV_SECT_SIZE - CONFIG_ENV_SIZE;
-		saved_offset = CONFIG_ENV_OFFSET + CONFIG_ENV_SIZE;
+	if (CONFIG_ENV_SF_SECT_SIZE > CONFIG_ENV_SF_SIZE) {
+		saved_size = CONFIG_ENV_SF_SECT_SIZE - CONFIG_ENV_SF_SIZE;
+		saved_offset = CONFIG_ENV_SF_OFFSET + CONFIG_ENV_SF_SIZE;
 		saved_buffer = malloc(saved_size);
 		if (!saved_buffer) {
 			ret = 1;
@@ -84,23 +99,23 @@ int saveenv(void)
 			goto done;
 	}
 
-	if (CONFIG_ENV_SIZE > CONFIG_ENV_SECT_SIZE) {
-		sector = CONFIG_ENV_SIZE / CONFIG_ENV_SECT_SIZE;
-		if (CONFIG_ENV_SIZE % CONFIG_ENV_SECT_SIZE)
+	if (CONFIG_ENV_SF_SIZE > CONFIG_ENV_SF_SECT_SIZE) {
+		sector = CONFIG_ENV_SF_SIZE / CONFIG_ENV_SF_SECT_SIZE;
+		if (CONFIG_ENV_SF_SIZE % CONFIG_ENV_SF_SECT_SIZE)
 			sector++;
 	}
 
 	puts("Erasing SPI flash...");
-	ret = spi_flash_erase(env_flash, CONFIG_ENV_OFFSET, sector * CONFIG_ENV_SECT_SIZE);
+	ret = spi_flash_erase(env_flash, CONFIG_ENV_SF_OFFSET, sector * CONFIG_ENV_SF_SECT_SIZE);
 	if (ret)
 		goto done;
 
 	puts("Writing to SPI flash...");
-	ret = spi_flash_write(env_flash, CONFIG_ENV_OFFSET, CONFIG_ENV_SIZE, env_ptr);
+	ret = spi_flash_write(env_flash, CONFIG_ENV_SF_OFFSET, CONFIG_ENV_SF_SIZE, env_ptr);
 	if (ret)
 		goto done;
 
-	if (CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE) {
+	if (CONFIG_ENV_SF_SECT_SIZE > CONFIG_ENV_SF_SIZE) {
 		ret = spi_flash_write(env_flash, saved_offset, saved_size, saved_buffer);
 		if (ret)
 			goto done;
@@ -114,8 +129,13 @@ int saveenv(void)
 		free(saved_buffer);
 	return ret;
 }
+extern unsigned env_size;
 
+#ifdef CONFIG_FSL_ENV_IN_SF_FIRST
+void env_sf_relocate_spec(void)
+#else
 void env_relocate_spec(void)
+#endif
 {
 	int ret;
 
@@ -124,11 +144,12 @@ void env_relocate_spec(void)
 	if (!env_flash)
 		goto err_probe;
 
-	ret = spi_flash_read(env_flash, CONFIG_ENV_OFFSET, CONFIG_ENV_SIZE, env_ptr);
+	ret = spi_flash_read(env_flash, CONFIG_ENV_SF_OFFSET, CONFIG_ENV_SF_SIZE, env_ptr);
 	if (ret)
 		goto err_read;
+	env_size = (CONFIG_ENV_SF_SIZE - ENV_HEADER_SIZE);
 
-	if (crc32(0, env_ptr->data, ENV_SIZE) != env_ptr->crc)
+	if (crc32(0, env_ptr->data, env_size) != env_ptr->crc)
 		goto err_crc;
 
 	gd->env_valid = 1;
@@ -139,12 +160,15 @@ err_read:
 	spi_flash_free(env_flash);
 	env_flash = NULL;
 err_probe:
+#ifdef CONFIG_FSL_ENV_IN_SF_FIRST
+	return;
+#endif
 err_crc:
 	puts("*** Warning - bad CRC, using default environment\n\n");
-
 	set_default_env();
 }
 
+#ifndef CONFIG_FSL_ENV_IN_SF_FIRST
 int env_init(void)
 {
 	/* SPI flash isn't usable before relocation */
@@ -153,3 +177,4 @@ int env_init(void)
 
 	return 0;
 }
+#endif

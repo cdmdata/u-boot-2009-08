@@ -145,9 +145,11 @@ uchar default_environment[] = {
 int default_environment_size = sizeof(default_environment);
 #endif
 
+unsigned env_size = ENV_SIZE;
+
 void env_crc_update (void)
 {
-	env_ptr->crc = crc32(0, env_ptr->data, ENV_SIZE);
+	env_ptr->crc = crc32(0, env_ptr->data, env_size);
 }
 
 static uchar env_get_char_init (int index)
@@ -213,7 +215,7 @@ uchar *env_get_addr (int index)
 
 void set_default_env(void)
 {
-	if (sizeof(default_environment) > ENV_SIZE) {
+	if (sizeof(default_environment) > env_size) {
 		puts ("*** Error - default environment is too large\n\n");
 		return;
 	}
@@ -227,6 +229,8 @@ void set_default_env(void)
 	env_crc_update ();
 	gd->env_valid = 1;
 }
+
+void env_sf_relocate_spec(void);
 
 void env_relocate (void)
 {
@@ -262,7 +266,13 @@ void env_relocate (void)
 		set_default_env();
 	}
 	else {
+#ifdef CONFIG_FSL_ENV_IN_SF_FIRST
+		env_sf_relocate_spec ();
+		if (gd->env_valid == 0)
+			env_relocate_spec ();
+#else
 		env_relocate_spec ();
+#endif
 	}
 	gd->env_addr = (ulong)&(env_ptr->data);
 

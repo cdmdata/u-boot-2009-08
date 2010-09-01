@@ -33,7 +33,7 @@
 /* references to names in env_common.c */
 extern uchar default_environment[];
 
-char *env_name_spec = "MMC";
+static char *env_name_spec = "MMC";
 
 #ifdef ENV_IS_EMBEDDED
 extern uchar environment[];
@@ -108,9 +108,10 @@ int saveenv(void)
 
 	if (init_mmc_for_env(mmc))
 		return 1;
+	printf ("Saving Environment to %s...\n", env_name_spec);
 
 	printf("Writing to MMC(%d)... ", mmc_env_devno);
-	if (write_env(mmc, CONFIG_ENV_SIZE, CONFIG_ENV_OFFSET, env_ptr)) {
+	if (write_env(mmc, CONFIG_ENV_MMC_SIZE, CONFIG_ENV_MMC_OFFSET, env_ptr)) {
 		puts("failed\n");
 		return 1;
 	}
@@ -134,6 +135,8 @@ inline int read_env(struct mmc *mmc, unsigned long size,
 	return (n == blk_cnt) ? 0 : -1;
 }
 
+extern unsigned env_size;
+
 void env_relocate_spec(void)
 {
 #if !defined(ENV_IS_EMBEDDED)
@@ -142,10 +145,11 @@ void env_relocate_spec(void)
 	if (init_mmc_for_env(mmc))
 		return;
 
-	if (read_env(mmc, CONFIG_ENV_SIZE, CONFIG_ENV_OFFSET, env_ptr))
+	if (read_env(mmc, CONFIG_ENV_MMC_SIZE, CONFIG_ENV_MMC_OFFSET, env_ptr))
 		return use_default();
 
-	if (crc32(0, env_ptr->data, ENV_SIZE) != env_ptr->crc)
+	env_size = (CONFIG_ENV_MMC_SIZE - ENV_HEADER_SIZE);
+	if (crc32(0, env_ptr->data, env_size) != env_ptr->crc)
 		return use_default();
 
 	gd->env_valid = 1;
