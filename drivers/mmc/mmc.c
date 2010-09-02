@@ -88,7 +88,13 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void*src)
 
 	if (!mmc)
 		return -1;
-
+	if (!mmc->init_completed) {
+		err = mmc_init(mmc);
+		if (err) {
+			puts("mmc_init failed\n\r");
+			return err;
+		}
+	}
 	blklen = mmc->write_bl_len;
 
 #ifdef CONFIG_EMMC_DDR_MODE
@@ -102,6 +108,7 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void*src)
 
 	if (err) {
 		puts("set write bl len failed\n\r");
+		mmc->init_completed = 0;
 		return err;
 	}
 
@@ -247,6 +254,13 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 
 	if (!mmc)
 		return -1;
+	if (!mmc->init_completed) {
+		err = mmc_init(mmc);
+		if (err) {
+			puts("mmc_init failed\n\r");
+			return err;
+		}
+	}
 
 	if (mmc->bus_width == EMMC_MODE_4BIT_DDR ||
 		mmc->bus_width == EMMC_MODE_8BIT_DDR) {
@@ -259,6 +273,7 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 
 	if (err) {
 		puts("set read bl len failed\n\r");
+		mmc->init_completed = 0;
 		return err;
 	}
 
@@ -1149,8 +1164,8 @@ static int mmc_startup(struct mmc *mmc)
 			(mmc->cid[1] >> 8) & 0xff, mmc->cid[1] & 0xff);
 	sprintf(mmc->block_dev.revision, "%d.%d", mmc->cid[2] >> 28,
 			(mmc->cid[2] >> 24) & 0xf);
+	mmc->init_completed = 1;
 	init_part(&mmc->block_dev);
-
 	return 0;
 }
 
@@ -1221,6 +1236,7 @@ int mmc_init(struct mmc *mmc)
 {
 	int err;
 
+	mmc->init_completed = 0;
 	err = mmc->init(mmc);
 
 	if (err)
