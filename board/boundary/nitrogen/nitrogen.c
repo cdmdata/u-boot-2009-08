@@ -87,6 +87,16 @@ inline void Set_GPIO_output_val(unsigned gp, unsigned val)
 	writel(reg, base + GPIO_DIR);
 }
 
+inline void Set_GPIO_input(unsigned gp)
+{
+	unsigned base = gp_base[gp >> 5];
+	unsigned mask = (1 << (gp & 0x1f));
+	unsigned reg;
+	reg = readl(base + GPIO_DIR);
+	reg &= ~mask;		/* configure GPIO line as input */
+	writel(reg, base + GPIO_DIR);
+}
+
 static inline void setup_boot_device(void)
 {
 	uint *fis_addr = (uint *)IRAM_BASE_ADDR;
@@ -459,21 +469,53 @@ unsigned short fec_setup_pins[] = {
 	/** RDATA[0], NANDF_D9, alt 2, IOMUXC_FEC_FEC_RDATA_0_SELECT_INPUT */
 	0x2, 0x16c,  0x2180, 0x554,  0x0, 0x958,
 	/** TDATA[0], NANDF_D8 */
-	0x2, 0x170,  0x2004, 0x558
+	0x2, 0x170,  0x2004, 0x558,
+	0,0
 };
-
-static void setup_fec(void)
-{
-	unsigned int base = IOMUXC_BASE_ADDR;
-	unsigned short * pins = fec_setup_pins;
-	int i = 0;
-	for (i = 0; i < ARRAY_SIZE(fec_setup_pins); i += 2) {
-		unsigned val = *pins++;
-		writel(val, base + *pins++);
-	}
-}
 #endif
 
+unsigned short gpio_pins[] = {
+	/*
+	 * Outputs: gpio3 pins 3,4,5,6
+	 * Inputs: gpio3 pins 7,8,9,16
+	 */
+	0x3, 0x108, 0x0024, 0x4e4, 0x0, 0x980,	/* NANDF_WE_B - gpio3[3], G_IN_3_SELECT_INPUT */
+	0x3, 0x10c, 0x0024, 0x4e8, 0x0, 0x984,	/* NANDF_RE_B - gpio3[4], G_IN_4_SELECT_INPUT */
+	0x3, 0x110, 0x0004, 0x4ec, 0x0, 0x988,	/* NANDF_ALE - gpio3[5], G_IN_5_SELECT_INPUT */
+	0x3, 0x114, 0x0004, 0x4f0, 0x0, 0x98c,	/* NANDF_CLE - gpio3[6], G_IN_6_SELECT_INPUT */
+	0x3, 0x118, 0x20e4, 0x4f4, 0x0, 0x990,	/* NANDF_WP_B - gpio3[7], G_IN_7_SELECT_INPUT */
+	0x3, 0x11c, 0x20e4, 0x4f8, 0x0, 0x994,	/* NANDF_RB0 - gpio3[8], G_IN_8_SELECT_INPUT */
+	0x3, 0x120, 0x20e4, 0x4fc,		/* NANDF_RB1 - gpio3[9] */
+	0x3, 0x130, 0x20e4, 0x518,		/* NANDF_CS0 - gpio3[16] */
+	0,0
+};
+
+static void setup_pins(unsigned short * pins)
+{
+	unsigned int base = IOMUXC_BASE_ADDR;
+	unsigned val;
+	unsigned offset;
+	for (;;) {
+		val = *pins++;
+		offset = *pins++;
+		if (!offset)
+			break;
+		writel(val, base + offset);
+	}
+}
+
+static void setup_gpios(void)
+{
+	Set_GPIO_output_val(MAKE_GP(3, 3), 1);
+	Set_GPIO_output_val(MAKE_GP(3, 4), 1);
+	Set_GPIO_output_val(MAKE_GP(3, 5), 1);
+	Set_GPIO_output_val(MAKE_GP(3, 6), 1);
+	Set_GPIO_input(MAKE_GP(3, 7));
+	Set_GPIO_input(MAKE_GP(3, 8));
+	Set_GPIO_input(MAKE_GP(3, 9));
+	Set_GPIO_input(MAKE_GP(3, 16));
+	setup_pins(gpio_pins);
+}
 #ifdef CONFIG_I2C_MXC
 static void setup_i2c(unsigned int module_base)
 {
@@ -928,6 +970,7 @@ int board_init(void)
 	writel(val, OTG_BASE_ADDR + USBCMD);
 #endif
 	setup_uart();
+	setup_gpios();
 	setup_boot_device();
 	setup_soc_rev();
 	set_board_rev();
@@ -939,7 +982,7 @@ int board_init(void)
 	setup_nfc();
 	setup_expio();
 #ifdef CONFIG_MXC_FEC
-	setup_fec();
+	setup_pins(fec_setup_pins);
 #endif
 #ifdef CONFIG_I2C_MXC
 	setup_i2c(I2C1_BASE_ADDR);
