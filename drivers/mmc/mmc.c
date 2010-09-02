@@ -325,6 +325,13 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void *src)
 	struct mmc *mmc = find_mmc_device(dev_num);
 	if (!mmc)
 		return 0;
+	if (!mmc->init_completed) {
+		err = mmc_init(mmc);
+		if (err) {
+			puts("mmc_init failed\n\r");
+			return err;
+		}
+	}
 
 	blklen = mmc->write_bl_len;
 
@@ -338,6 +345,7 @@ mmc_bwrite(int dev_num, ulong start, lbaint_t blkcnt, const void *src)
 
 	if (err) {
 		puts("set write bl len failed\n\r");
+		mmc->init_completed = 0;
 		return err;
 	}
 
@@ -409,6 +417,13 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 	struct mmc *mmc = find_mmc_device(dev_num);
 	if (!mmc)
 		return 0;
+	if (!mmc->init_completed) {
+		err = mmc_init(mmc);
+		if (err) {
+			puts("mmc_init failed\n\r");
+			return err;
+		}
+	}
 
 	if ((start + blkcnt) > mmc->block_dev.lba) {
 		printf("MMC: block number 0x%lx exceeds max(0x%lx)\n",
@@ -428,6 +443,7 @@ static ulong mmc_bread(int dev_num, ulong start, lbaint_t blkcnt, void *dst)
 
 	if (err) {
 		puts("set read bl len failed\n\r");
+		mmc->init_completed = 0;
 		return err;
 	}
 
@@ -1492,8 +1508,8 @@ int mmc_startup(struct mmc *mmc)
 			(mmc->cid[1] >> 8) & 0xff, mmc->cid[1] & 0xff);
 	sprintf(mmc->block_dev.revision, "%d.%d", mmc->cid[2] >> 28,
 			(mmc->cid[2] >> 24) & 0xf);
+	mmc->init_completed = 1;
 	init_part(&mmc->block_dev);
-
 	return 0;
 }
 
@@ -1558,6 +1574,7 @@ int mmc_init(struct mmc *mmc)
 
 	mmc->uhs18v = 0;
 
+	mmc->init_completed = 0;
 	err = mmc->init(mmc);
 
 	if (err)

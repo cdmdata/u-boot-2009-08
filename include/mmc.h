@@ -361,6 +361,7 @@ struct mmc {
 	uint write_bl_len;
 	uint erase_grp_size;
 	u64 capacity;
+	uint init_completed;
 	block_dev_desc_t block_dev;
 	int (*send_cmd)(struct mmc *mmc,
 			struct mmc_cmd *cmd, struct mmc_data *data);
