@@ -120,9 +120,6 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 	if (ret)
 		goto err_read_id;
 
-	debug("SF: Got idcode %02x %02x %02x %02x %02x\n", idcode[0],
-			idcode[1], idcode[2], idcode[3], idcode[4]);
-
 	switch (idcode[0]) {
 #ifdef CONFIG_SPI_FLASH_SPANSION
 	case 0x01:
@@ -150,7 +147,6 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 		break;
 #endif
 	default:
-		debug("SF: Unsupported manufacturer %02X\n", idcode[0]);
 		flash = NULL;
 		break;
 	}
@@ -158,11 +154,15 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 	if (!flash)
 		goto err_manufacturer_probe;
 
+	printf("SF: idcode %02x %02x %02x %02x %02x\n", idcode[0],
+		idcode[1], idcode[2], idcode[3], idcode[4]);
 	spi_release_bus(spi);
 
 	return flash;
 
 err_manufacturer_probe:
+	printf("SF: Unsupported idcode %02x %02x %02x %02x %02x\n", idcode[0],
+		idcode[1], idcode[2], idcode[3], idcode[4]);
 err_read_id:
 	spi_release_bus(spi);
 err_claim_bus:
