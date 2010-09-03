@@ -114,7 +114,7 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 	if (!spi_cs_is_valid(bus, cs))
 		return NULL;
 
-	imx_spi_slave = (struct imx_spi_dev_t *)malloc(sizeof(struct imx_spi_dev_t));
+	imx_spi_slave = (struct imx_spi_dev_t *)calloc(sizeof(struct imx_spi_dev_t), 1);
 	if (!imx_spi_slave)
 		return NULL;
 
