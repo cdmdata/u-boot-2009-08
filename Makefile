@@ -141,7 +141,8 @@ endif
 # Don't include stuff already done in $(LIBS)
 SUBDIRS	= tools \
 	  examples/standalone \
-	  examples/api
+	  examples/api	\
+	  imx51_utils
 
 .PHONY : $(SUBDIRS)
 
@@ -292,7 +293,7 @@ __LIBS := $(subst $(obj),,$(LIBS)) $(subst $(obj),,$(LIBBOARD))
 #########################################################################
 
 # Always append ALL so that arch config.mk's can add custom ones
-ALL += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
+ALL += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)ubl_ecspi.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
 
 all:		$(ALL)
 
@@ -330,6 +331,17 @@ $(obj)u-boot.dis:	$(obj)u-boot
 
 $(obj)u-boot-no-padding.bin:	$(obj)u-boot.bin
 		dd if=$< of=$@ bs=1024 skip=1
+
+$(obj)uboot_image.o : $(obj)%.o : $(obj)u-boot-no-padding.bin imx51_utils/uboot_image.lds
+	$(LD) -r -o $(obj)$*-temp.o -b binary $<; \
+	$(LD) -nostdlib -T $(filter %.lds,$^) -o $@  $(obj)$*-temp.o; \
+	rm -f $(obj)$*-temp.o $(obj)u-boot-no-padding.bin
+
+$(obj)ubl_ecspi.o3 : imx51_utils/$(obj)mx51_ecspi.o3 $(obj)uboot_image.o imx51_utils/mx51.lds
+	$(LD) --defsym=hdr_offset=0x400 --defsym=load_addr=0x1ffe2000 -static --no-warn-mismatch -nostdlib -T $(filter %.lds,$^) $(filter-out %.lds,$^) -o $@ -M >$(obj)$*.map
+
+$(obj)ubl_ecspi.bin : $(obj)ubl_ecspi.o3 
+	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
 
 GEN_UBOOT = \
 		UNDEF_SYM=`$(OBJDUMP) -x $(LIBBOARD) $(LIBS) | \

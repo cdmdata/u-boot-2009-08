@@ -1,0 +1,5 @@
+SECTIONS {
+   .uboot_image : {
+      *(.*)
+   }
+}
