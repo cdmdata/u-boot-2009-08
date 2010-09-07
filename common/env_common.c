@@ -219,7 +219,6 @@ void set_default_env(void)
 		puts ("*** Error - default environment is too large\n\n");
 		return;
 	}
-
 	memset(env_ptr, 0, sizeof(env_t));
 	memcpy(env_ptr->data, default_environment,
 	       sizeof(default_environment));
@@ -267,6 +266,7 @@ void env_relocate (void)
 	}
 	else {
 #ifdef CONFIG_FSL_ENV_IN_SF_FIRST
+		gd->env_valid = 0;
 		env_sf_relocate_spec ();
 		if (gd->env_valid == 0)
 			env_relocate_spec ();
