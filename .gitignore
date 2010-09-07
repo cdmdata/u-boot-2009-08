@@ -65,3 +65,6 @@ cscope.*
 /onenand_ipl/board/*/onenand*
 /onenand_ipl/board/*/*.S
 u-boot-no-padding.bin
+*.map
+*.bin
+*.o3
