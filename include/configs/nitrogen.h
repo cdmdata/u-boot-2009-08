@@ -199,9 +199,6 @@
 				"video=mxcfb:raw:12000000,480,272,1,0,0,0,41,15,15,10,1,6,1,0,888"
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
 		"ethprime=FEC0\0"					\
-		"bootargs_base=setenv bootargs console=ttymxc0,115200\0" \
-		"bootcmd=ping 192.168.0.1 ; "	\
-		   "fatload mmc 0 92000000 uImage && fatload mmc 0 92400000 && bootm 92000000 92400000 ;\0"\
 
 /*
  * The MX51 3stack board seems to have a hardware "peculiarity" confirmed under
