@@ -729,6 +729,8 @@ do_fat_read (const char *filename, void *buffer, unsigned long maxsize,
     int files = 0, dirs = 0;
     long ret = 0;
     int firsttime;
+    int haswild = (0 != strchr( filename, '*' ))
+                ||(0 != strchr( filename, '%' ));
 
     if (read_bootsectandvi (&bs, &volinfo, &mydata->fatsize)) {
 	FAT_DPRINT ("Error: reading boot sector\n");
@@ -884,10 +886,14 @@ do_fat_read (const char *filename, void *buffer, unsigned long maxsize,
 		dentptr++;
 		continue;
 	    }
-	    if (strcmp (fnamecopy, s_name) && strcmp (fnamecopy, l_name)) {
+	    if (fnmatch (fnamecopy, s_name,0) && fnmatch (fnamecopy, l_name,0)) {
 		FAT_DPRINT ("RootMismatch: |%s|%s|\n", s_name, l_name);
 		dentptr++;
 		continue;
+	    }
+	    if( haswild ){
+		char const *fn = l_name[0] ? l_name : s_name ;
+		setenv("filename", (char*)fn );
 	    }
 	    if (isdir && !(dentptr->attr & ATTR_DIR))
 		return -1;

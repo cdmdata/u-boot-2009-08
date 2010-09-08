@@ -24,7 +24,7 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)libfat.a
 
 AOBJS	=
-COBJS-$(CONFIG_CMD_FAT)	:= fat.o file.o
+COBJS-$(CONFIG_CMD_FAT)	:= fat.o file.o fnmatch.o
 
 SRCS	:= $(AOBJS:.o=.S) $(COBJS-y:.o=.c)
 OBJS	:= $(addprefix $(obj),$(AOBJS) $(COBJS-y))
