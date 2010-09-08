@@ -384,7 +384,7 @@ static void setup_expio(void)
 s32 spi_get_cfg(struct imx_spi_dev_t *dev)
 {
 	dev->base = CSPI1_BASE_ADDR;
-	dev->freq = 2000000;
+	dev->freq = 54000000;
 	dev->fifo_sz = 64 * 4;
 	dev->us_delay = 0;
 	switch (dev->slave.cs) {

@@ -123,6 +123,9 @@ struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
 
 	spi_get_cfg(imx_spi_slave);
 
+	if(max_hz < imx_spi_slave->freq) {
+		imx_spi_slave->freq = max_hz ;
+	}
 	spi_io_init(imx_spi_slave, 0);
 
 	spi_reset(&(imx_spi_slave->slave));
