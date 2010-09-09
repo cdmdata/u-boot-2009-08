@@ -68,3 +68,4 @@ u-boot-no-padding.bin
 *.map
 *.bin
 *.o3
+custom.h
