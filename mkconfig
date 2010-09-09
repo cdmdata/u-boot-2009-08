@@ -85,7 +85,7 @@ fi
 if [ "$CUSTOM_CONFIG" != "" ]; then
 	cp -fv $CUSTOM_CONFIG ${SRCTREE}/include/custom.h
 else
-	touch include/custom.h
+	touch ${SRCTREE}/include/custom.h
 fi
 
 echo "/* Automatically generated - do not edit */" >>config.h
