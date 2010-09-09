@@ -35,6 +35,8 @@ int interrupt_init(void)
 
 void reset_cpu(ulong addr)
 {
+	disable_lcd_panel();
+
 	/* workaround for ENGcm09397 - Fix SPI NOR reset issue*/
 	/* de-select SS0 of instance: eCSPI1 */
 	writel(0x3, IOMUXC_BASE_ADDR + 0x218);

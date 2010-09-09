@@ -496,6 +496,7 @@ extern int is_soc_rev(int rev);
 extern enum boot_device get_boot_device(void);
 extern void set_pixel_clock(int which, unsigned hz);
 extern void setup_display(void);
+extern void disable_lcd_panel(void);
 
 #endif /* __ASSEMBLER__*/
 
