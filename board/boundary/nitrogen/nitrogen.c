@@ -487,6 +487,7 @@ unsigned short gpio_pins[] = {
 	0x3, 0x11c, 0x20e4, 0x4f8, 0x0, 0x994,	/* NANDF_RB0 - gpio3[8], G_IN_8_SELECT_INPUT */
 	0x3, 0x120, 0x20e4, 0x4fc,		/* NANDF_RB1 - gpio3[9] */
 	0x3, 0x130, 0x20e4, 0x518,		/* NANDF_CS0 - gpio3[16] */
+	0x1, 0x060, 0x0000, 0x3f4,		/* EIM_D17 - gpio2[1] */
 	0,0
 };
 
@@ -506,14 +507,15 @@ static void setup_pins(unsigned short * pins)
 
 static void setup_gpios(void)
 {
-	Set_GPIO_output_val(MAKE_GP(3, 3), 1);
-	Set_GPIO_output_val(MAKE_GP(3, 4), 1);
-	Set_GPIO_output_val(MAKE_GP(3, 5), 1);
-	Set_GPIO_output_val(MAKE_GP(3, 6), 1);
-	Set_GPIO_input(MAKE_GP(3, 7));
-	Set_GPIO_input(MAKE_GP(3, 8));
-	Set_GPIO_input(MAKE_GP(3, 9));
-	Set_GPIO_input(MAKE_GP(3, 16));
+	Set_GPIO_output_val(MAKE_GP(3, 3), 1);	/* Gpio connector pin 5 */
+	Set_GPIO_output_val(MAKE_GP(3, 4), 1);	/* Gpio connector pin 4 */
+	Set_GPIO_output_val(MAKE_GP(3, 5), 1);	/* Gpio connector pin 3 */
+	Set_GPIO_output_val(MAKE_GP(3, 6), 1);	/* Gpio connector pin 2 */
+	Set_GPIO_input(MAKE_GP(3, 7));		/* Gpio connector pin 9 */
+	Set_GPIO_input(MAKE_GP(3, 8));		/* Gpio connector pin 8 */
+	Set_GPIO_input(MAKE_GP(3, 9));		/* Gpio connector pin 7 */
+	Set_GPIO_input(MAKE_GP(3, 16));		/* Gpio connector pin 6 */
+	Set_GPIO_input(MAKE_GP(2, 1));		/* Pic16F616 interrupt */
 	setup_pins(gpio_pins);
 }
 #ifdef CONFIG_I2C_MXC
