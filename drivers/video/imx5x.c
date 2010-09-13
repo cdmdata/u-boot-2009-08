@@ -447,6 +447,8 @@ void setup_display(void)
 {
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_LOW | PAD_CTL_SRE_FAST ;
 	
+        __REG(MIPI_HSC_BASE_ADDR) = 0xF00 ; // indeed!
+
 DEBUG( "%s\n", __func__ );
 	mxc_request_iomux(MX51_PIN_DISP1_DAT0,IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT0,pad);
