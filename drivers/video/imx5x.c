@@ -220,10 +220,6 @@ static unsigned long const init_dc_mappings[] = {
 	0x5e058110, 0x000001ac,
 	0x5e058160, 0x000015fc,
 	0x5e058110, 0x000039ac,
-	0x5e00004c, 0xffffffff,		/* Enable error interrupts by default */
-	0x5e000050, 0xffffffff,
-	0x5e00005c, 0xffffffff,
-	0x5e000060, 0xffffffff,
 	// _ipu_dmfc_init(DMFC_NORMAL, 1);
 	0x5e06001c, 0x00000002,
 	0x5e060004, 0x00000090,
