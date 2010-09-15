@@ -300,9 +300,6 @@ void disable_lcd_panel(void);
 
 static int lcdpanel(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-#if defined(CONFIG_LCD_MULTI)
-	printf( "handle Multi-panel lcdpanel command here\n" );
-#endif
 	if ( 1 == argc ) {
 #if defined(CONFIG_LCD_MULTI)
 		unsigned count = 0 ;
@@ -311,10 +308,13 @@ static int lcdpanel(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			struct lcd_t *lcd = getPanel(i);
 			if(lcd){
 				print_panel_info(&lcd->info);
+				printf("fbAddress      : 0x%08x\n"
+				       "fbMemSize      : %u bytes\n",
+				       lcd->fbAddr,
+				       lcd->fbMemSize );
 				count++ ;
 			}
 		}
-		printf( "%u panel(s) defined\n", count );
 #elif defined(CONFIG_MULTI)
 		if( cur_lcd_panel )
 			print_panel_info( cur_lcd_panel );
@@ -372,9 +372,7 @@ static int lcdpanel(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 #if defined(CONFIG_LCD_MULTI)
 			setCurrentPanel(0);
 #endif
-#if ! nitrogen == BOARD
 			setenv( "panel", argv[1] );
-#endif
 		} else {
 			return 1;
 		}
@@ -384,14 +382,15 @@ static int lcdpanel(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 
 U_BOOT_CMD(
 	lcdpanel,	10,	0,	lcdpanel,
-	"lcdpanel [panelName|?|+|-]\n"
-	"     init lcd panel with panel name\n"
-	"     ? will display the supported panels\n"
-	"     + will prompt for panel details\n"
-#ifdef CONFIG_LCD
-	"     - will disable the panel\n"
-#endif
-	, NULL
+	"lcdpanel [panelName|*|?|+|-]\n"
+	"     initialize lcd panel with panel name",
+	"* will display a short decription of each supported panel\n"
+	"         ? will display a full decription of each\n"
+	"         + will prompt for panel details\n"
+	"         - will disable all panels\n"
+	"\n"
+	"Separate multiple panels with '&'"
 );
+
 #endif	/* CONFIG_LCDPANEL */
 

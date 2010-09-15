@@ -247,7 +247,10 @@ int do_curpanel(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
          struct lcd_t *lcd = getPanel(i);
          if(lcd){
             char const c = ( i == getCurrentPanel() ) ? '*' : ' ' ;
-            printf( "%c%u\t%4u\t%4u\t%06x\t%06x\t%u:%u\t%s\n", c, i, lcd->info.xres, lcd->info.yres, lcd->fg, lcd->bg, lcd->x, lcd->y, lcd->info.name );
+            printf( "%c%u\t%p/%8u bytes\t%4u\t%4u\t%06x\t%06x\t%u:%u\t%s\n", 
+		    c, i, 
+		    lcd->fbAddr, lcd->fbMemSize,
+		    lcd->info.xres, lcd->info.yres, lcd->fg, lcd->bg, lcd->x, lcd->y, lcd->info.name );
          }
       }
       return 0 ;
