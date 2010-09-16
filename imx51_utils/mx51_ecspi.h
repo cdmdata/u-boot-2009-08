@@ -5,6 +5,7 @@
 #define AT45DB642D_STATUS_ID	0x3c
 #define AT45DB161D_STATUS_ID	0x2c
 #define AT45DB081D_STATUS_ID	0x24
+#define AT45DB041D_STATUS_ID	0x1c
 
 #define AT45DB642D_P2_OFFSET_BITS 10	//powerof2 bits for offset
 //page size
@@ -23,6 +24,7 @@
 //bit 0 - 0 528 byte page size, 1 - 512 byte page size
 
 #define AT45DB081D_P2_OFFSET_BITS 8	//powerof2 bits for offset
+#define AT45DB041D_P2_OFFSET_BITS 8	//powerof2 bits for offset
 //page size
 //264 - 2 dc bits, 12 page bits, 9 page offset bits
 //256 - 3 dc bits, 12 page bits, 8 page offset

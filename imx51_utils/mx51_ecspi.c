@@ -478,6 +478,8 @@ unsigned atmel_get_offset_bits(unsigned chip_status, unsigned * pblock_size)
 		offset_bits = AT45DB161D_P2_OFFSET_BITS;
 	else if ((chip_status & ATMEL_STATUS_MASK) == AT45DB081D_STATUS_ID)
 		offset_bits = AT45DB081D_P2_OFFSET_BITS;
+	else if ((chip_status & ATMEL_STATUS_MASK) == AT45DB041D_STATUS_ID)
+		offset_bits = AT45DB041D_P2_OFFSET_BITS;
 	else
 		return 0;
 	if (chip_status & 1) {
