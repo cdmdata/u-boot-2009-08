@@ -598,6 +598,28 @@ static void _ipu_di_sync_config
 	__REG(base_addr+0x0148+((wave_gen-1)/2)*4) = reg ;
 }
 
+static void ipu_read_sync_config
+	( unsigned base_addr,
+	  int wave_gen,
+	  int *run_count, 
+	  int *offset_count, 
+	  int *repeat_count,
+	  int *cnt_down)
+{
+	u32 reg;
+
+	reg = __REG(base_addr+0x000C+(wave_gen-1)*4); // DI_SW_GEN0
+	*run_count = reg >> 19 ;
+	*offset_count = (reg & 0xfff8)>>3 ;
+	
+	reg = __REG(base_addr+0x0030+(wave_gen-1)*4);	// DI_SW_GEN1
+        *cnt_down = (reg&0xfff0000)>>16 ;
+	
+	reg = __REG(base_addr+0x0148+((wave_gen-1)/2)*4);	// DI_STP_REP
+	wave_gen = (wave_gen&1)^1 ;
+	*repeat_count = (reg>>(16*wave_gen)) & 0xffff ;
+}
+
 enum di_sync_wave {
 	DI_SYNC_NONE = -1,
 	DI_SYNC_CLK = 0,
@@ -1030,31 +1052,64 @@ U_BOOT_CMD(
 	""
 );
 
+static struct display_channel_t const *channels[] = {
+	&crt_channel
+,	&lcd_channel
+};
+
 int
-do_timevsync(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+do_panel_regs (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-	unsigned long long start ;
-	unsigned long elapsed ;
-	__REG(IPU_INT_STAT1) = IPU_INT_STAT1_D0 ;
-	
-	/* wait for one sync first */
-	do {
-	} while ( 0 == (__REG(IPU_INT_STAT1)&IPU_INT_STAT1_D0) );
+	int i ;
+	for (i = 0 ; i < ARRAY_SIZE(channels) ; i++) {
+                struct display_channel_t const *ch = channels[i];
+		unsigned enabled = __REG(IPU_DISP_GEN) & (1<<(i+24));
+		printf ("%s: %sabled\n", ch->name, enabled? "en" : "dis");
+		if (enabled) {
+			struct lcd_panel_info_t panel ;
+			unsigned reg ;
+			int run_count, offset_count, repeat_count, cnt_down ;
+			unsigned htotal, vtotal ;
+			memset(&panel,0,sizeof(panel));
+			panel.name = ch->name ;
+			panel.pixclock = get_pixel_clock(i);
+			reg  =__REG(ch->di_base_addr);
+			panel.pclk_redg = (0 != (DI_GEN_DI_PIXCLK_ACTH&reg));
+			panel.hsyn_acth = (0 != (DI_GEN_POLARITY_2&reg));
+			panel.vsyn_acth = (0 != (DI_GEN_POLARITY_3&reg));
+			panel.oepol_actl = 0 ;
 
-	/* once more to measure things */
-        start = get_ticks();
-	__REG(IPU_INT_STAT1) = IPU_INT_STAT1_D0 ;
-	do {
-	} while ( 0 == (__REG(IPU_INT_STAT1)&IPU_INT_STAT1_D0) );
+			ipu_read_sync_config(ch->di_base_addr,DI_SYNC_HSYNC,&run_count,&offset_count,&repeat_count,&cnt_down);
+			panel.hsync_len = cnt_down/2 ;
+                        htotal = run_count+1 ;
 
-	elapsed = (unsigned long)(get_ticks()-start);
-	printf( "%lu ticks: %lu Hz\n", elapsed, CONFIG_SYS_HZ/(elapsed?elapsed:1));
+			ipu_read_sync_config(ch->di_base_addr,DI_SYNC_DE,&run_count,&offset_count,&repeat_count,&cnt_down);
+			panel.xres = repeat_count ;
+
+			panel.left_margin = offset_count - panel.hsync_len ;
+			panel.right_margin = htotal - panel.xres - panel.left_margin - panel.hsync_len ;
+			
+			ipu_read_sync_config(ch->di_base_addr,DI_SYNC_VSYNC,&run_count,&offset_count,&repeat_count,&cnt_down);
+			vtotal = run_count+1 ;
+			panel.vsync_len = cnt_down/2 ;
+			
+			ipu_read_sync_config(ch->di_base_addr,DI_SYNC_OE,&run_count,&offset_count,&repeat_count,&cnt_down);
+
+			panel.yres = repeat_count ;
+			panel.upper_margin = offset_count-panel.vsync_len ;
+			panel.lower_margin = vtotal-panel.vsync_len-panel.upper_margin-panel.yres ;
+			panel.active = 1 ;
+			panel.crt = (0 == i);          // 1 == CRT, not LCD
+			panel.rotation = 0 ;
+                        print_panel_info(&panel);
+		}
+	}
 	return 0 ;
 }
 
 U_BOOT_CMD(
-	timevsync, 1, 0,	do_timevsync,
-	"timevsync - time vsync\n",
-	""
+	panelregs, 1, 0,	do_panel_regs,
+	"Read and display panel information from registers\n",
+	NULL
 );
 
