@@ -57,6 +57,10 @@
 #include "../drivers/net/lan91c96.h"
 #endif
 
+#if defined(CONFIG_LCD_MULTI)
+#include "lcd_multi.h"
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 ulong monitor_flash_len;
