@@ -438,6 +438,25 @@
 #define SPI_NOR_FLASH_BOOT	0x80000000
 #define MMC_FLASH_BOOT		0x40000000
 
+#define IPU_CONF		0x5E000000
+#define IPU_DISP_GEN		0x5E0000C4
+#define IPU_DC_BASE		0x5E058000
+#define DC_WR_CH_CONF_1		0x5e05801c
+#define DC_WR_CH_CONF_5		0x5e05805c
+#define IPU_CPMEM_REG_BASE	0x5F000000
+#define IPU_INT_STAT1		0x5E000200
+#define IPU_INT_STAT1_D0	0x00800000
+#define DI0_BS_CLKGEN0		0x5E040004
+#define DI1_BS_CLKGEN0		0x5E048004
+
+#define DI0_BASE	0x5E040000
+#define DI0_DMACHAN	23
+#define DI0_ENABLEBIT	6	/* bit in IPU_CONF */
+
+#define DI1_BASE	0x5E048000
+#define DI1_DMACHAN	28
+#define DI1_ENABLEBIT	7	/* bit in IPU_CONF */
+
 #ifndef __ASSEMBLER__
 
 enum boot_device {
@@ -495,8 +514,10 @@ extern unsigned int get_board_rev(void);
 extern int is_soc_rev(int rev);
 extern enum boot_device get_boot_device(void);
 extern void set_pixel_clock(int which, unsigned hz);
+unsigned get_pixel_clock(unsigned which);
 extern void setup_display(void);
 extern void disable_lcd_panel(void);
+
 
 #endif /* __ASSEMBLER__*/
 

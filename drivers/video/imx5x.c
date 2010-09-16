@@ -36,20 +36,26 @@ DECLARE_GLOBAL_DATA_PTR;
 static unsigned end_of_ram = 0 ;
 
 struct display_channel_t {
+	char const *name ;
 	unsigned di_base_addr ;
 	unsigned dma_chan ;
+	unsigned clk_reg ;
 	unsigned char enable_bit ; /* bit in IPU_CONF */
 };
 
 static struct display_channel_t const crt_channel = {
+	"hdmi",
 	DI0_BASE,
 	DI0_DMACHAN,
+        DI0_BS_CLKGEN0,
 	DI0_ENABLEBIT
 };
 
 static struct display_channel_t const lcd_channel = {
+	"prgb",
 	DI1_BASE,
 	DI1_DMACHAN,
+        DI1_BS_CLKGEN0,
 	DI1_ENABLEBIT
 };
 
