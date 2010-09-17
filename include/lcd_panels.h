@@ -89,6 +89,7 @@ void disable_lcd_panel( void );
 #endif
 
 void print_panel_info( struct lcd_panel_info_t const *panel );
+void build_panel_name(char* buffer, struct lcd_panel_info_t const *panel);
 
 // parses panel info of the form: name,xres,yres,...
 // returns non-zero to indicate success

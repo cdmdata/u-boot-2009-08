@@ -301,8 +301,6 @@ struct lcd_t * addPanel(struct lcd_panel_info_t const *panel, const char *msg)
 	return lcd;
 }
 
-void build_panel_name(char* buffer, struct lcd_panel_info_t const *panel);
-
 int lcd_multi_init(void)
 {
    char *panelName = getenv( "panel" );
