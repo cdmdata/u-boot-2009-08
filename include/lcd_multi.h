@@ -90,5 +90,7 @@ void setCurrentPanel( unsigned idx );
 
 int display_bmp (bmp_image_t *bmp,int x, int y);
 
+char const *fixupPanelBootArg(char const *cmdline);
+
 #endif
 

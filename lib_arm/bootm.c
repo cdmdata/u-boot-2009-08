@@ -27,6 +27,10 @@
 #include <u-boot/zlib.h>
 #include <asm/byteorder.h>
 
+#ifdef CONFIG_LCD_MULTI
+#include "lcd_multi.h"
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined (CONFIG_SETUP_MEMORY_TAGS) || \
@@ -175,6 +179,9 @@ static void setup_memory_tags (bd_t *bd)
 static void setup_commandline_tag (bd_t *bd, char *commandline)
 {
 	char *p;
+#ifdef CONFIG_LCD_MULTI
+	commandline = fixupPanelBootArg(commandline);
+#endif
 
 	if (!commandline)
 		return;

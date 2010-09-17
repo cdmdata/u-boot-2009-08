@@ -41,6 +41,7 @@ struct display_channel_t {
 	unsigned dma_chan ;
 	unsigned clk_reg ;
 	unsigned char enable_bit ; /* bit in IPU_CONF */
+	char const *kernel_suffix ;
 };
 
 static struct display_channel_t const crt_channel = {
@@ -48,7 +49,8 @@ static struct display_channel_t const crt_channel = {
 	DI0_BASE,
 	DI0_DMACHAN,
         DI0_BS_CLKGEN0,
-	DI0_ENABLEBIT
+	DI0_ENABLEBIT,
+	"888"
 };
 
 static struct display_channel_t const lcd_channel = {
@@ -56,7 +58,8 @@ static struct display_channel_t const lcd_channel = {
 	DI1_BASE,
 	DI1_DMACHAN,
         DI1_BS_CLKGEN0,
-	DI1_ENABLEBIT
+	DI1_ENABLEBIT,
+	"565"
 };
 
 struct ipu_ch_param_word {
@@ -1112,4 +1115,60 @@ U_BOOT_CMD(
 	"Read and display panel information from registers\n",
 	NULL
 );
+
+char const *fixupPanelBootArg(char const *cmdline)
+{
+	unsigned i ;
+	char tempbuf[512];
+	char *nextOut ;
+	int di1_primary = 0 ;
+
+	if (0 != strstr(cmdline,"video=")) {
+		printf( "Don't override specified bootarg in %s\n", cmdline );
+		return cmdline ;
+	}
+
+	if (0 == getPanelCount())
+		return cmdline ;
+
+	nextOut = tempbuf ;
+	*nextOut = '\0' ;
+
+	for (i = 0 ; i < getPanelCount(); i++) {
+		struct lcd_t *lcd = getPanel(i);
+		unsigned di = (lcd->info.crt&1)^1 ;
+		if ((1 == di) && (0 == i)) {
+			di1_primary = 1 ;
+		}
+
+		nextOut += sprintf (nextOut, "video=mxcdi%ufb:", di );
+		lcd->info.name = "raw" ;
+		build_panel_name(nextOut,&lcd->info);
+		nextOut += strlen(nextOut);
+		*nextOut++ = ',' ;
+		strcpy(nextOut,channels[di]->kernel_suffix);
+		nextOut += strlen(nextOut);
+		*nextOut++ = ' ' ;
+		*nextOut = '\0' ;
+	}
+
+	if (di1_primary) {
+		if (0 == strstr(cmdline,"di1_primary")) {
+			strcpy(nextOut,"di1_primary ");
+			nextOut += strlen(nextOut);
+		}
+	}
+	nextOut-- ;
+	*nextOut = '\0' ;
+
+	nextOut = (char *)malloc(strlen(cmdline)+1+(nextOut-tempbuf)+2);
+	if (nextOut) {
+		strcpy(nextOut,cmdline);
+		strcat(nextOut, " " );
+		strcat(nextOut,tempbuf);
+		cmdline = nextOut ;
+	}
+
+	return cmdline ;
+}
 
