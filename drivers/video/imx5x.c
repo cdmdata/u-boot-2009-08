@@ -1022,8 +1022,6 @@ struct lcd_t *newPanel( struct lcd_panel_info_t const *info )
 int
 do_ckregs(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-	DEBUG("%s\n", __func__ );
-
 	if (1 < argc) {
 		unsigned long addr = simple_strtoul (argv[1],0,0);
 		if (addr && (0 == (addr&3))) {
@@ -1032,12 +1030,12 @@ do_ckregs(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 				unsigned long count ;
 				addr = *longs++ ;
 				count = *longs++ ;
-				DEBUG( "check %lu longs at 0x%08lx\n", count, addr );
+				printf( "check %lu longs at 0x%08lx\n", count, addr );
 				while (0 < count--) {
 					unsigned expected = *longs++ ;
 					unsigned val = __REG(addr); 
 					if (val != expected) {
-						DEBUG( "%08lx: %08x not expected %08x\n", addr, val, expected );
+						printf( "%08lx: %08x not expected %08x\n", addr, val, expected );
 					}
                                         addr += 4 ;
 				}
