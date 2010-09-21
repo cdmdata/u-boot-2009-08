@@ -450,7 +450,7 @@ static void disable_ipu_clock(void)
 
 void setup_display(void)
 {
-	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_LOW | PAD_CTL_SRE_FAST ;
+	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
 	
         __REG(MIPI_HSC_BASE_ADDR) = 0xF00 ; // indeed!
 
@@ -503,6 +503,14 @@ DEBUG( "%s\n", __func__ );
 	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT22,pad);
 	mxc_request_iomux(MX51_PIN_DISP1_DAT23,IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT23,pad);
+
+	mxc_request_iomux(MX51_PIN_DI1_PIN2,IOMUX_CONFIG_ALT0);	//Hsync
+	mxc_iomux_set_pad(MX51_PIN_DI1_PIN2,pad);
+	mxc_request_iomux(MX51_PIN_DI1_PIN3,IOMUX_CONFIG_ALT0);	//Vsync
+	mxc_iomux_set_pad(MX51_PIN_DI1_PIN3,pad);
+	mxc_iomux_set_pad(MX51_PIN_DI1_DISP_CLK,pad);		//PCLK
+	mxc_iomux_set_pad(MX51_PIN_DI1_PIN15,pad);		//DRDY - (DE) or (OE) 
+
 	mxc_request_iomux(MX51_PIN_DI1_PIN11,IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX51_PIN_DI1_PIN12,IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX51_PIN_DI1_PIN13,IOMUX_CONFIG_ALT1);
