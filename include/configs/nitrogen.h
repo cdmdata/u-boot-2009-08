@@ -195,8 +195,6 @@
 
 #define CONFIG_LOADADDR		0x90800000	/* loadaddr env var */
 
-#define CONFIG_BOOTARGS		"console=ttymxc0,115200 DEBUG=1 mem=224M root=/dev/ram0 " \
-				"video=mxcfb:raw:12000000,480,272,1,0,0,0,41,15,15,10,1,6,1,0,888"
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
 		"ethprime=FEC0\0"					\
 
@@ -212,7 +210,7 @@
  */
 #define CONFIG_ARP_TIMEOUT	200UL
 
-#define CONFIG_BOOTCOMMAND	"fatload mmc 0 92000000 uImage && fatload mmc 0 92400000 initrd.u-boot && bootm 92000000 92400000"
+#define CONFIG_BOOTCOMMAND	"fatload mmc 0 90008000 nitrogen_bootscript && source 90008000 ; errmsg='Error running bootscript!' ; lecho $errmsg ; echo $errmsg ;"
 
 /*
  * Miscellaneous configurable options
