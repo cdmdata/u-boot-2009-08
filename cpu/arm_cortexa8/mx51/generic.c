@@ -386,7 +386,7 @@ void set_pixel_clock(int which, unsigned hz)
 	unsigned divisorReg = (0 != which) 
 				? DI1_BS_CLKGEN0
 				: DI0_BS_CLKGEN0 ;
-	unsigned divisor = (ipu_clock*16)/hz ;
+	unsigned divisor = hz ? (ipu_clock*16)/hz : 0;
 	if (0 == divisor) {
 		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
 		divisor = 0x10 ;
