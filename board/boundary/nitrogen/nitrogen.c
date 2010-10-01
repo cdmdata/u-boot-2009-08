@@ -1129,6 +1129,8 @@ int board_late_init(void)
 	/* set them as GPIOs */
 	mxc_request_iomux(MX51_PIN_NANDF_ALE, IOMUX_CONFIG_ALT3);
 	mxc_request_iomux(MX51_PIN_NANDF_CLE, IOMUX_CONFIG_ALT3);
+	mxc_request_iomux(MX51_PIN_DISPB2_SER_DIN, IOMUX_CONFIG_ALT4); /* GPIO3[5] */
+	__REG(IOMUXC_GPIO3_IPP_IND_G_IN_5_SELECT_INPUT) = 1 ; /* GPIO3[5] is connected to DISPB2_SER_DIN */
 
 	Set_GPIO_output_val(MAKE_GP(3, 5), 0);
 	Set_GPIO_output_val(MAKE_GP(3, 6), 1);

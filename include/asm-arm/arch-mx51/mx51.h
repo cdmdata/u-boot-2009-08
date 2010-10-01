@@ -457,6 +457,8 @@
 #define DI1_DMACHAN	28
 #define DI1_ENABLEBIT	7	/* bit in IPU_CONF */
 
+#define IOMUXC_GPIO3_IPP_IND_G_IN_5_SELECT_INPUT	0x73fa8988
+
 #ifndef __ASSEMBLER__
 
 enum boot_device {
