@@ -931,7 +931,13 @@ static void init_display
 					| DI_GEN_POLARITY_3*(0 != lcd->info.vsyn_acth);
 	__REG(channel->di_base_addr+0x0054) = ((DI_SYNC_VSYNC-1) << DI_VSYNC_SEL_OFFSET) | 0x00000002 ; // DI_SYNC_AS_GEN
 	__REG(channel->di_base_addr+0x0164) &= ~(DI_POL_DRDY_DATA_POLARITY );	// DI_POL
-	__REG(channel->di_base_addr+0x0164) |= DI_POL_DRDY_POLARITY_15 ;
+	/*
+	 * Backwards to match our panel definitions
+	 */
+	if (0 == lcd->info.oepol_actl)
+		__REG(channel->di_base_addr+0x0164) |= DI_POL_DRDY_POLARITY_15 ;
+	else
+		__REG(channel->di_base_addr+0x0164) &= ~DI_POL_DRDY_POLARITY_15 ;
 
 	__REG(IPU_DC_BASE+0x00E8 + (disp*4)) = lcd->info.xres ;
 
