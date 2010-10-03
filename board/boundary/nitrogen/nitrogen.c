@@ -1135,6 +1135,10 @@ int board_late_init(void)
 	Set_GPIO_output_val(MAKE_GP(3, 5), 0);
 	Set_GPIO_output_val(MAKE_GP(3, 6), 1);
 	
+	/* GPIO1:2 is PWM0 and controls the backlight. Set it as GPIO and high */
+	mxc_request_iomux(MX51_PIN_GPIO1_2, IOMUX_CONFIG_ALT0);
+	Set_GPIO_output_val(MAKE_GP(1, 2), 1);
+
 	setup_display();
 
 #ifdef CONFIG_I2C_MXC
