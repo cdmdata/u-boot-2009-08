@@ -210,7 +210,7 @@
  */
 #define CONFIG_ARP_TIMEOUT	200UL
 
-#define CONFIG_BOOTCOMMAND	"fatload mmc 0 90008000 nitrogen_bootscript && source 90008000 ; errmsg='Error running bootscript!' ; lecho $errmsg ; echo $errmsg ;"
+#define CONFIG_BOOTCOMMAND	"fatload mmc 0 90008000 nitrogen_bootscript* && source 90008000 ; errmsg='Error running bootscript!' ; lecho $errmsg ; echo $errmsg ;"
 
 /*
  * Miscellaneous configurable options
