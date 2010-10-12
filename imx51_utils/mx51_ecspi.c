@@ -6,7 +6,9 @@
 #include "mx51_common.h"
 #include "mx51_ecspi.h"
 
-#define ST_MICRO
+#define ENABLE_ATMEL
+#define ENABLE_ST_MICRO
+#define ENABLE_SST
 
 #define MAKE_CMD(cmd, page, shift) (((page << shift) & 0x00ffffff) | (cmd << 24))
 
@@ -15,6 +17,7 @@
 #define GPIO4_BASE 0x73f90000
 #define GPIO_DR 0
 #define GPIO_DIR 4
+#define GPIO_PSR 8
 
 
 #define ECSPI_RXDATA	0x00
@@ -118,6 +121,10 @@ void ecspi_config(int base, unsigned ctl)
 #define PAD_CSPI1_RDY	(HYS_ENABLE | PKE_ENABLE | KEEPER | DSE_LOW | SRE_FAST)
 #define PAD_CSPI1_SCLK	(HYS_ENABLE | PKE_ENABLE | KEEPER | R100K_PU | DSE_HIGH | SRE_FAST)
 
+#define GP4_MISO_BIT	23
+#define GP4_SS0_BIT	24
+#define GP4_SS1_BIT	25
+
 void ecspi_init(int base)
 {
 	uint mux_base = IOMUXC;
@@ -136,8 +143,10 @@ void ecspi_init(int base)
 	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_SS1, MUX_SS1);
 	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_SCLK, 0);
 
-	IO_MOD(gpio_base, GPIO_DR, (1 << 24), (1 << 25));	//make sure SS0 is low(pmic), SS1 is high
-	IO_MOD(gpio_base, GPIO_DIR, 0, (1 << 24) | (1 << 25));	//make sure SS0/SS1 are output
+// make sure SS0 is low(pmic), SS1 is high
+	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS0_BIT), (1 << GP4_SS1_BIT));
+// make sure MISO is input, SS0/SS1 are output
+	IO_MOD(gpio_base, GPIO_DIR, (1 << GP4_MISO_BIT), (1 << GP4_SS0_BIT) | (1 << GP4_SS1_BIT));
 //	IO_WRITE(base, ECSPI_CONTROL, CTL_DEFAULT(32, DEFAULT_CLOCK) & ~1);
 	ecspi_config(base, CTL_DEFAULT(32, DEFAULT_CLOCK) & ~1);
 }
@@ -154,7 +163,7 @@ unsigned ecspi_cmd(int base, unsigned cmd, unsigned ctl)
 	ecspi_config(base, ctl);
 	IO_WRITE(base, ECSPI_TXDATA, cmd);
 
-	IO_MOD(gpio_base, GPIO_DR, (1 << 25), 0);	//make SS1 low
+	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
 	IO_WRITE(base, ECSPI_CONTROL, ctl + CTL_SMC);
 	do {
 		status = IO_READ(base, ECSPI_STATUS);
@@ -165,7 +174,7 @@ unsigned ecspi_cmd(int base, unsigned cmd, unsigned ctl)
 		}
 	} while (!(status & (1<<7)));	//wait for transfer complete
 
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << 25));	//make SS1 high
+	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
 	IO_WRITE(base, ECSPI_STATUS, (1<<7));
 	return data;
 }
@@ -208,7 +217,7 @@ void ecspi_read(int base, unsigned* dst, unsigned length, unsigned cmd, unsigned
 	outstanding = max;
 //fifo is full, start device
 
-	IO_MOD(gpio_base, GPIO_DR, (1 << 25), 0);	//make SS1 low
+	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
 	IO_WRITE(base, ECSPI_CONTROL, ctrl | ctrl_start);
 	do {
 		status = IO_READ(base, ECSPI_STATUS);
@@ -302,7 +311,7 @@ single:
 			debug_pr("tx_cnt=%x outstanding=%x %2x\n", tx_cnt, outstanding, status);
 		}
 	} while (1);
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << 25));	//make SS1 high
+	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
 	IO_WRITE(base, ECSPI_STATUS, (1<<7));
 //	IO_WRITE(base, ECSPI_CONTROL, ctrl & ~1);
 	ecspi_config(base, ctrl & ~1);
@@ -344,7 +353,7 @@ void ecspi_write(int base, unsigned* src, unsigned length, unsigned cmd, unsigne
 	tx_cnt -= max;
 	outstanding = max;
 //fifo is full, start device
-	IO_MOD(gpio_base, GPIO_DR, (1 << 25), 0);	//make SS1 low
+	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
 	IO_WRITE(base, ECSPI_CONTROL, ctrl | ctrl_start);
 	do {
 		status = IO_READ(base, ECSPI_STATUS);
@@ -428,6 +437,161 @@ single:
 //	IO_WRITE(base, ECSPI_CONTROL, ctrl & ~1);
 }
 
+#define JEDEC_ID		0x9f	//1 opcode byte in, 0x20,0x20,0x15 out ST_MICRO
+#define JEDEC_CLOCK	(PRE_DIV(7) | POST_DIV_P2(0))
+
+unsigned jedec_read_id(int base)
+{
+#if 1
+	unsigned id = ecspi_cmd(base, JEDEC_ID << 24, CTL_DEFAULT(32, JEDEC_CLOCK));
+#else
+	unsigned id;
+	//	   base, dest, len, cmd,       cmd_bits,  rx_drop, unsigned clock
+	ecspi_read(base, &id, 4, JEDEC_ID << 24, 32,      0, JEDEC_CLOCK);
+#endif
+	id &= 0x00ffffff;
+	debug_pr("%s: id %08x\n", __func__, id);
+	return id;
+}
+static unsigned atmel_status(int base);
+
+static unsigned ident_chip_rtns(int base, unsigned *pblock_size, unsigned *ptype)
+{
+	unsigned offset_bits = 0;
+	unsigned block_size;
+	unsigned chip_status = jedec_read_id(base);
+	unsigned type;
+	switch (chip_status) {
+#ifdef ENABLE_ST_MICRO
+	case JEDEC_ID_ST_M25P16:
+		type = 0;
+		offset_bits = 8;
+		block_size = (1 << offset_bits);
+		break;
+#endif
+#ifdef ENABLE_SST
+	case JEDEC_ID_SST_25VF016B:
+		type = 1;
+		offset_bits = 8;
+		block_size = (1 << offset_bits);
+		break;
+#endif
+#ifdef ENABLE_ATMEL
+	case JEDEC_ID_ATMEL_45DB041D:
+		offset_bits = AT45DB041D_P2_OFFSET_BITS;
+		goto join_atmel;
+	case JEDEC_ID_ATMEL_45DB081D:
+		offset_bits = AT45DB081D_P2_OFFSET_BITS;
+		goto join_atmel;
+	case JEDEC_ID_ATMEL_45DB161D:
+		offset_bits = AT45DB161D_P2_OFFSET_BITS;
+		goto join_atmel;
+	case JEDEC_ID_ATMEL_45DB642D:
+		offset_bits = AT45DB642D_P2_OFFSET_BITS;
+join_atmel:
+		chip_status = atmel_status(base);
+		if (chip_status & 1) {
+			block_size = (1 << offset_bits);
+		} else {
+			block_size = ((1 << offset_bits) + (1 << (offset_bits - 5)));
+			offset_bits++;
+		}
+		type = 2;
+		break;
+#endif
+	default:
+		my_printf("!!!error id=%x\n", chip_status);
+		return 0;
+	}
+	if (pblock_size)
+		*pblock_size = block_size;
+	if (ptype)
+		*ptype = type;
+	return offset_bits;
+}
+
+static void st_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size);
+static int st_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size);
+static void st_erase_sector(int base, unsigned page, unsigned offset_bits);
+
+static void sst_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size);
+static int sst_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size);
+static void sst_erase_sector(int base, unsigned page, unsigned offset_bits);
+
+static void atmel_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size);
+static int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size);
+static void atmel_erase_sector(int base, unsigned page, unsigned offset_bits);
+
+#ifdef ENABLE_ST_MICRO
+#define ST_READ_BLOCK st_read_block
+#define ST_WRITE_BLOCKS st_write_blocks
+#define ST_ERASE_SECTOR st_erase_sector
+#else
+#define ST_READ_BLOCK NULL
+#define ST_WRITE_BLOCKS NULL
+#define ST_ERASE_SECTOR NULL
+#endif
+
+#ifdef ENABLE_SST
+#define SST_READ_BLOCK sst_read_block
+#define SST_WRITE_BLOCKS sst_write_blocks
+#define SST_ERASE_SECTOR sst_erase_sector
+#else
+#define SST_READ_BLOCK NULL
+#define SST_WRITE_BLOCKS NULL
+#define SST_ERASE_SECTOR NULL
+#endif
+
+#ifdef ENABLE_ATMEL
+#define ATMEL_READ_BLOCK atmel_read_block
+#define ATMEL_WRITE_BLOCKS atmel_write_blocks
+#define ATMEL_ERASE_SECTOR atmel_erase_sector
+#else
+#define ATMEL_READ_BLOCK NULL
+#define ATMEL_WRITE_BLOCKS NULL
+#define ATMEL_ERASE_SECTOR NULL
+#endif
+
+static const read_block_rtn read_rtns[] = {ST_READ_BLOCK, SST_READ_BLOCK, ATMEL_READ_BLOCK};
+static const write_blocks_rtn write_rtns[] = {ST_WRITE_BLOCKS, SST_WRITE_BLOCKS, ATMEL_WRITE_BLOCKS};
+static const erase_sector_rtn erase_rtns[] = {ST_ERASE_SECTOR, SST_ERASE_SECTOR, ATMEL_ERASE_SECTOR};
+
+unsigned identify_chip_read_rtn(int base, unsigned *pblock_size, read_block_rtn *pread_rtn)
+{
+	unsigned type;
+	unsigned offset_bits = ident_chip_rtns(base, pblock_size, &type);
+	if (offset_bits) {
+		if (pread_rtn)
+			*pread_rtn = read_rtns[type];
+	}
+	return offset_bits;
+}
+
+unsigned identify_chip_erase_rtn(int base, unsigned *pblock_size, erase_sector_rtn *perase_rtn)
+{
+	unsigned type;
+	unsigned offset_bits = ident_chip_rtns(base, pblock_size, &type);
+	if (offset_bits) {
+		if (perase_rtn)
+			*perase_rtn = erase_rtns[type];
+	}
+	return offset_bits;
+}
+
+unsigned identify_chip_rtns(int base, unsigned *pblock_size, read_block_rtn *pread_rtn, write_blocks_rtn *pwrite_rtn)
+{
+	unsigned type;
+	unsigned offset_bits = ident_chip_rtns(base, pblock_size, &type);
+	if (offset_bits) {
+		if (pread_rtn)
+			*pread_rtn = read_rtns[type];
+		if (pwrite_rtn)
+			*pwrite_rtn = write_rtns[type];
+	}
+	return offset_bits;
+}
+
+#ifdef ENABLE_ATMEL
 /*
  * These are ATMEL specific defines
  */
@@ -447,7 +611,6 @@ single:
 #define SF_BUFFER2_WRITE	0x87
 #define SF_BUFFER1_PROGRAM	0x88
 #define SF_BUFFER2_PROGRAM	0x89
-#define SF_MANUFACTURER_DEVICE_ID_READ	0x9f
 #define SF_CHIP_ERASE		0xc794809a
 #define SF_CONFIG_P2		0x3d2a80a6
 
@@ -461,7 +624,7 @@ single:
 #define ATMEL_STATUS_CLOCK	(PRE_DIV(7) | POST_DIV_P2(0))
 #define ATMEL_CLOCK		(PRE_DIV(1) | POST_DIV_P2(0))
 
-unsigned atmel_status(int base)
+static unsigned atmel_status(int base)
 {
 	unsigned chip_status; 
 //	debug_pr("%s\n", __func__);
@@ -470,29 +633,7 @@ unsigned atmel_status(int base)
 	return chip_status;
 }
 
-unsigned atmel_get_offset_bits(unsigned chip_status, unsigned * pblock_size)
-{
-	unsigned offset_bits = 0;
-	unsigned block_size;
-	if ((chip_status & ATMEL_STATUS_MASK) == AT45DB161D_STATUS_ID)
-		offset_bits = AT45DB161D_P2_OFFSET_BITS;
-	else if ((chip_status & ATMEL_STATUS_MASK) == AT45DB081D_STATUS_ID)
-		offset_bits = AT45DB081D_P2_OFFSET_BITS;
-	else if ((chip_status & ATMEL_STATUS_MASK) == AT45DB041D_STATUS_ID)
-		offset_bits = AT45DB041D_P2_OFFSET_BITS;
-	else
-		return 0;
-	if (chip_status & 1) {
-		block_size = (1 << offset_bits);
-	} else {
-		block_size = ((1 << offset_bits) + (1 << (offset_bits - 5)));
-		offset_bits++;
-	}
-	*pblock_size = block_size;
-	return offset_bits;
-}
-
-void atmel_wait_for_ready(int base)
+static void atmel_wait_for_ready(int base)
 {
 	unsigned status;
 	debug_pr("%s\n", __func__);
@@ -502,20 +643,11 @@ void atmel_wait_for_ready(int base)
 	} while (!(status & 0x80));
 }
 
-void atmel_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size)
+static void atmel_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size)
 {
 	unsigned cmd = MAKE_CMD(SF_READ, page, offset_bits);	//continuous array read, throw away 1st 8 bytes from read fifo
 	ecspi_read(base, dst, block_size, cmd, 32, 2, ATMEL_CLOCK);
 	debug_pr("%s: block_size=0x%x page=%x, *dst(%x)=%x\n", __func__, block_size, page, dst, *dst);
-}
-
-unsigned atmel_id(int base)
-{
-	unsigned buf[3];
-	unsigned cmd = SF_MANUFACTURER_DEVICE_ID_READ << 24;
-	ecspi_read(base, buf, 4, cmd, 32, 0, ATMEL_STATUS_CLOCK);
-	debug_pr("%s: id %08x\n", __func__, buf[0]);
-	return buf[0] & 0x00ffffff;
 }
 
 unsigned atmel_config_p2(int base)
@@ -538,7 +670,7 @@ unsigned atmel_config_p2(int base)
  * Sector 15 = 256 pages, start 0x3c0000
  * Sector 31 = 256 pages, start 0x7c0000
  */
-void atmel_erase_sector(int base, unsigned page, unsigned offset_bits)
+static void atmel_erase_sector(int base, unsigned page, unsigned offset_bits)
 {
 	unsigned cmd = MAKE_CMD(SF_SECTOR_ERASE, page, offset_bits);
 	debug_pr("%s page=0x%x, cmd=%x\n", __func__, page, cmd);
@@ -547,7 +679,7 @@ void atmel_erase_sector(int base, unsigned page, unsigned offset_bits)
 	atmel_wait_for_ready(base);
 }
 
-void atmel_erase_block(int base, unsigned page, unsigned offset_bits)
+static void atmel_erase_block(int base, unsigned page, unsigned offset_bits)
 {
 	unsigned cmd = MAKE_CMD(SF_BLOCK_ERASE, page, offset_bits);
 	debug_pr("%s page=0x%x, cmd=%x\n", __func__, page, cmd);
@@ -567,19 +699,19 @@ unsigned atmel_chip_erase(int base)
 	return chip_erase;
 }
 
-void atmel_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
+static void atmel_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
 {
 	unsigned cmd = MAKE_CMD(SF_BUFFER1_PROGRAM, page, offset_bits); //program buffer
 	uint gpio_base = GPIO4_BASE;
 	debug_pr("%s: block_size=0x%x page=%x, *src(%x)=%x\n", __func__, block_size, page, src, *src);
 	ecspi_write(base, src, block_size, (SF_BUFFER1_WRITE << 24), 32, ATMEL_CLOCK);
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << 25));	//make SS1 high
+	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
 	ecspi_cmd(base, cmd, CTL_DEFAULT(32, ATMEL_CLOCK));
 //	delayMicro(6000);	//6 ms max
 	atmel_wait_for_ready(base);
 }
 
-void atmel_erase_sector_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
+static void atmel_erase_sector_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
 {
 	debug_pr("%s: epage=0x%x endpage=0x%x\n", __func__, epage, endpage);
 
@@ -596,7 +728,7 @@ void atmel_erase_sector_range(int base, unsigned epage, unsigned endpage, unsign
 	}
 }
 
-void atmel_erase_block_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
+static void atmel_erase_block_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
 {
 	debug_pr("%s: epage=0x%x endpage=0x%x\n", __func__, epage, endpage);
 
@@ -606,7 +738,7 @@ void atmel_erase_block_range(int base, unsigned epage, unsigned endpage, unsigne
 	}
 }
 
-int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size)
+static int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size)
 {
 	unsigned page_cnt;
 	if (!length)
@@ -632,8 +764,13 @@ int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned length, 
 #endif
 	return 0;
 }
+#endif //ENABLE_ATMEL
 
-#ifdef ST_MICRO
+/*
+ ***************************************************************************
+ */
+
+#ifdef ENABLE_ST_MICRO
 /*
  * These are ST micro specific defines
  * Latch data on rising edge of clock, drive data starts on falling edge of clock
@@ -658,13 +795,8 @@ int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned length, 
 /*
  *
  */
-unsigned st_read_id(int base)
-{
-	unsigned id = ecspi_cmd(base, ST_READ_ID << 24, CTL_DEFAULT(32, ST_SLOW_CLOCK));
-	return id & 0x00ffffff;
-}
 
-void st_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size)
+static void st_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size)
 {
 #if 1
 	//5 - 1 opcode, 3 address, 1 dummy bytes in, infinite out
@@ -679,7 +811,7 @@ void st_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits,
 	debug_pr("%s: block_size=0x%x page=%x, *dst(%x)=%x\n", __func__, block_size, page, dst, *dst);
 }
 
-unsigned st_status(int base)
+static unsigned st_status(int base)
 {
 	unsigned chip_status; 
 	debug_pr("%s\n", __func__);
@@ -688,7 +820,7 @@ unsigned st_status(int base)
 	return chip_status;
 }
 
-void st_wait_for_ready(int base)
+static void st_wait_for_ready(int base)
 {
 	unsigned status;
 	debug_pr("%s\n", __func__);
@@ -698,7 +830,7 @@ void st_wait_for_ready(int base)
 	} while (status & 1);
 }
 
-void st_erase_sector(int base, unsigned page, unsigned offset_bits)
+static void st_erase_sector(int base, unsigned page, unsigned offset_bits)
 {
 	unsigned cmd = MAKE_CMD(ST_SECTOR_ERASE, page, offset_bits);
 	debug_pr("%s page=0x%x, cmd=%x\n", __func__, page, cmd);
@@ -707,7 +839,7 @@ void st_erase_sector(int base, unsigned page, unsigned offset_bits)
 	st_wait_for_ready(base);
 }
 
-void st_erase_sector_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
+static void st_erase_sector_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
 {
 	debug_pr("%s: epage=0x%x endpage=0x%x\n", __func__, epage, endpage);
 
@@ -719,18 +851,18 @@ void st_erase_sector_range(int base, unsigned epage, unsigned endpage, unsigned 
 	}
 }
 
-void st_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
+static void st_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
 {
 	unsigned cmd = MAKE_CMD(ST_PAGE_PROGRAM, page, offset_bits); //program buffer
 	uint gpio_base = GPIO4_BASE;
 	debug_pr("%s: block_size=0x%x page=%x, *src(%x)=%x\n", __func__, block_size, page, src, *src);
 	ecspi_cmd(base, ST_WRITE_ENABLE, CTL_DEFAULT(8, ST_CLOCK));
 	ecspi_write(base, src, block_size, cmd, 32, ST_CLOCK);
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << 25));	//make SS1 high
+	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
 	st_wait_for_ready(base);
 }
 
-int st_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size)
+static int st_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size)
 {
 	unsigned page_cnt;
 	if (!length)
@@ -749,6 +881,194 @@ int st_write_blocks(int base, unsigned page, unsigned* src, unsigned length, uns
 	}
 	my_printf("\r\n");
 #endif
+	return 0;
+}
+
+#endif	//ENABLE_ST_MICRO
+
+/*
+ ***************************************************************************
+ */
+
+#ifdef ENABLE_SST
+#define SST_SLOW_READ		0x03	//3 address, 0 dummy, [data]
+#define SST_FAST_READ		0x0b	//3 address, 1 dummy, [data]
+#define SST_ERASE_4K		0x20	//3 address
+#define SST_ERASE_32K		0x52	//3 address
+#define SST_ERASE_64K		0xd8	//3 address
+#define SST_ERASE_ALL		0x60	//just command
+#define SST_BYTE_PROGRAM	0x02	//3 address, 1 byte
+#define SST_AAI_W_PROGRAM	0xad	//3 address, data, data, [[status], 0xad,data,data]
+#define SST_READ_SR		0x05	//[status]
+#define SST_ENABLE_WRITE_SR	0x50	//just command
+#define SST_WRITE_SR		0x01	//data
+#define SST_WRITE_ENABLE	0x06	//just command
+#define SST_WRITE_DISABLE	0x04	//just command
+#define SST_READ_ID		0x90	//3 address(a0=0 ManId, a0=1 DevId) data
+#define SST_ENABLE_BUSY_SO	0x70	//just command
+#define SST_DISABLE_BUSY_SO	0x80	//just command
+
+#define SST_SLOW_CLOCK		(PRE_DIV(2) | POST_DIV_P2(0))
+#define SST_CLOCK		(PRE_DIV(1) | POST_DIV_P2(0))
+/*
+ *
+ */
+
+static void sst_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size)
+{
+#if 1
+	//5 - 1 opcode, 3 address, 1 dummy bytes in, infinite out
+	unsigned cmd2 = (page << (offset_bits + 8)); 		// +8 for dummy byte
+	debug_pr("%s: cmd2=%x page=%x\n", __func__, cmd2, page);
+	ecspi_write(base, &cmd2, 4, SST_FAST_READ, 8, SST_CLOCK);
+	ecspi_read(base, dst, block_size, 0, 0, 0, SST_CLOCK);
+#else
+	unsigned cmd = MAKE_CMD(SST_SLOW_READ, page, offset_bits);
+	ecspi_read(base, dst, block_size, cmd, 32, 1, SST_SLOW_CLOCK);
+#endif
+	debug_pr("%s: block_size=0x%x page=%x, *dst(%x)=%x\n", __func__, block_size, page, dst, *dst);
+}
+
+static unsigned sst_status(int base)
+{
+	unsigned chip_status; 
+	debug_pr("%s\n", __func__);
+	chip_status = ecspi_cmd(base, SST_READ_SR << 8, CTL_DEFAULT(16, SST_SLOW_CLOCK));
+	debug_pr("chip_status = %x\n", chip_status);
+	return chip_status;
+}
+
+static void sst_wait_for_ready(int base)
+{
+	unsigned status;
+	do {
+		delayMicro(10);
+		status = sst_status(base);
+	} while (status & 1);
+	debug_pr("%s status=%x\n", __func__, status);
+}
+
+static void sst_erase_sector_cmd(int base, unsigned page, unsigned offset_bits, unsigned cmd)
+{
+	cmd = MAKE_CMD(cmd, page, offset_bits);
+	debug_pr("%s page=0x%x, cmd=%x\n", __func__, page, cmd);
+	ecspi_cmd(base, SST_WRITE_ENABLE, CTL_DEFAULT(8, SST_CLOCK));
+	ecspi_cmd(base, cmd, CTL_DEFAULT(32, SST_CLOCK));
+	sst_wait_for_ready(base);
+}
+
+static void sst_erase_sector(int base, unsigned page, unsigned offset_bits)
+{
+	sst_erase_sector_cmd(base, page, offset_bits, SST_ERASE_4K);
+}
+
+static void sst_erase_sector_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
+{
+	debug_pr("%s: epage=0x%x endpage=0x%x\n", __func__, epage, endpage);
+	epage &= ~0x0f;
+	endpage = ((endpage - 1) | 0x0f) + 1;
+	while (epage < endpage) {
+		//a sector
+		// is 4K bytes = 16 pages * 256 bytes /page
+		// or 32K bytes = 128 pages * 256 bytes /page
+		// or 64K bytes = 256 pages * 256 bytes /page
+		my_printf("erasing sector containing page %x\n", epage);
+		if ( (!(epage & 0xff)) && ((endpage - epage) >= 256)) {
+			sst_erase_sector_cmd(base, epage, offset_bits, SST_ERASE_64K);
+			epage = (epage | (256 - 1)) + 1;
+		} else if ( (!(epage & 0x7f)) && ((endpage - epage) >= 128)) {
+			sst_erase_sector_cmd(base, epage, offset_bits, SST_ERASE_32K);
+			epage = (epage | (128 - 1)) + 1;
+		} else {
+			sst_erase_sector_cmd(base, epage, offset_bits, SST_ERASE_4K);
+			epage = (epage | (16 - 1)) + 1;
+		}
+	}
+}
+
+static void wait_for_miso_high(int base)
+{
+	uint mux_base = IOMUXC;
+	uint gpio_base = GPIO4_BASE;
+	unsigned dr;
+	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_MISO, ALT3);
+	delayMicro(1);
+
+	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
+	delayMicro(1);
+	for (;;) {
+		dr = IO_READ(gpio_base, GPIO_PSR);
+		if (dr & (1 << GP4_MISO_BIT))
+			break;
+	}
+	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
+	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_MISO, 0);
+	delayMicro(1);
+}
+
+static void sst_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
+{
+	unsigned char *p = (unsigned char *)src; 
+	unsigned cmd_rem = ((page << offset_bits) << 16) | (p[3] << 8) | p[2];
+	unsigned i = 0;
+	uint gpio_base = GPIO4_BASE;
+	debug_pr("%s: block_size=0x%x page=%x, *src(%x)=%x\n", __func__, block_size, page, src, *src);
+#ifdef DEBUG
+	sst_status(base);
+#endif
+	ecspi_cmd(base, SST_WRITE_ENABLE, CTL_DEFAULT(8, SST_CLOCK));
+#ifdef DEBUG
+	sst_status(base);
+#endif
+	ecspi_write(base, &cmd_rem, 4, (SST_AAI_W_PROGRAM << 8) | (page << offset_bits) >> 16, 16, SST_CLOCK);
+	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
+	for (;;) {
+		wait_for_miso_high(base);
+		if (block_size <= 2)
+			break;
+		block_size -= 2;
+		ecspi_cmd(base, (SST_AAI_W_PROGRAM << 16) | (p[i + 1] << 8) | p[i], CTL_DEFAULT(24, SST_CLOCK));
+		i ^= 2;
+		if (i)
+			p += 4;
+	}
+	ecspi_cmd(base, SST_WRITE_DISABLE, CTL_DEFAULT(8, SST_CLOCK));
+	sst_wait_for_ready(base);
+}
+
+static int sst_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size)
+{
+	unsigned page_cnt;
+	if (!length)
+		return 0;
+#ifdef DEBUG
+	sst_status(base);
+#endif
+	ecspi_cmd(base, SST_ENABLE_WRITE_SR, CTL_DEFAULT(8, SST_CLOCK));
+	ecspi_cmd(base, (SST_WRITE_SR << 8) | 0, CTL_DEFAULT(16, SST_CLOCK));
+#ifdef DEBUG
+	sst_status(base);
+#endif
+	ecspi_cmd(base, SST_ENABLE_BUSY_SO, CTL_DEFAULT(8, SST_CLOCK));
+#ifdef DEBUG
+	sst_status(base);
+#endif
+
+	page_cnt = ((length + block_size -1) / block_size);
+	sst_erase_sector_range(base, page, page + page_cnt, offset_bits);
+#if 1
+	for (;;) {
+		sst_write_block(base, page, src, offset_bits, block_size);
+		src += (block_size / 4);
+		page++;
+		if (length <= block_size)
+			break;
+		length -= block_size;
+		my_printf(".");
+	}
+	my_printf("\r\n");
+#endif
+	ecspi_cmd(base, SST_DISABLE_BUSY_SO, CTL_DEFAULT(8, SST_CLOCK));
 	return 0;
 }
 

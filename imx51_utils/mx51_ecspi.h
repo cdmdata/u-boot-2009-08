@@ -32,17 +32,22 @@
 //chip status value - A4 means 264 byte/page, protection disabled,
 // 1010 1100
 //bit 0 - 0 264 byte page size, 1 - 256 byte page size
-
+typedef void (*read_block_rtn)(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size);
+typedef int (*write_blocks_rtn)(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size);
+typedef void (*erase_sector_rtn)(int base, unsigned page, unsigned offset_bits);
 void ecspi_init(int base);
 
-unsigned atmel_id(int base);
-unsigned atmel_chip_erase(int base);
-unsigned atmel_status(int base);
-unsigned atmel_get_offset_bits(unsigned chip_status, unsigned * pblock_size);
-unsigned atmel_config_p2(int base);
-void atmel_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size);
-int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size);
+unsigned jedec_read_id(int base);
+#define JEDEC_ID_ST_M25P16	0x202015	//16 Mbit
+#define JEDEC_ID_SST_25VF016B	0xbf2541	//16 Mbit
+#define JEDEC_ID_ATMEL_45DB041D	0x1f2400	// 4 Mbit
+#define JEDEC_ID_ATMEL_45DB081D	0x1f2500	// 8 Mbit
+#define JEDEC_ID_ATMEL_45DB161D	0x1f2600	//16 Mbit
+#define JEDEC_ID_ATMEL_45DB642D	0x1f2800	//64 Mbit
 
-unsigned st_read_id(int base);
-void st_read_block(int base, unsigned page, unsigned* dst, unsigned offset_bits, unsigned block_size);
-int st_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size);
+unsigned identify_chip_read_rtn(int base, unsigned *pblock_size, read_block_rtn *pread_rtn);
+unsigned identify_chip_erase_rtn(int base, unsigned *pblock_size, erase_sector_rtn *perase_rtn);
+unsigned identify_chip_rtns(int base, unsigned *pblock_size, read_block_rtn *pread_rtn, write_blocks_rtn *pwrite_rtn);
+
+unsigned atmel_chip_erase(int base);
+unsigned atmel_config_p2(int base);

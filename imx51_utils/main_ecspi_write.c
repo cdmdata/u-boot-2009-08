@@ -5,21 +5,20 @@
 
 void check_page_size(int base)
 {
-	unsigned chip_status;
 	unsigned offset_bits; 
 	unsigned block_size;
+	read_block_rtn read_rtn;
+	write_blocks_rtn write_rtn;
+
 	ecspi_init(base);
-	chip_status = atmel_status(base);
-	if (!(chip_status & 1)) {
-		offset_bits = atmel_get_offset_bits(chip_status, &block_size);
-		if (offset_bits) {
-			//atmel and not a power of 2
-			my_printf("Unsupported page size of 0x%x bytes.\n", block_size);
-			atmel_config_p2(base);
-			my_printf("Reprogrammed the page size to 0x%x bytes.\n", (1 << (offset_bits - 1)));
-			my_printf("Please power cycle the board for the change to take effect.\n");
-			for (;;) {}
-		}
+	offset_bits = identify_chip_rtns(base, &block_size, &read_rtn, &write_rtn);
+	if (offset_bits && (block_size != (1 << offset_bits))) {
+		//atmel and not a power of 2
+		my_printf("Unsupported page size of 0x%x bytes.\n", block_size);
+		atmel_config_p2(base);
+		my_printf("Reprogrammed the page size to 0x%x bytes.\n", (1 << (offset_bits - 1)));
+		my_printf("Please power cycle the board for the change to take effect.\n");
+		for (;;) {}
 	}
 }
 
@@ -27,12 +26,12 @@ void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 {
 	unsigned ret;
 	unsigned partial = length & 0x3ff; 
-	unsigned chip_status;
 	unsigned offset_bits; 
 	unsigned block_size;
 	unsigned page;
 	unsigned diff;
-	unsigned st_micro = 0;
+	read_block_rtn read_rtn;
+	write_blocks_rtn write_rtn;
 
 	if (partial) {
 		partial = 0x400 - partial;
@@ -41,53 +40,19 @@ void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 	}
 	
 	ecspi_init(base);
-	chip_status = atmel_status(base);
-	if ((chip_status & 0xff) == 0xff) {
-		//st micro part ?
-		chip_status = st_read_id(base);
-		if (chip_status != 0x202015) {
-			my_printf("!!!error id=%x\n", chip_status);
-			return;
-		}
-		offset_bits = 8;
-		block_size = (1 << offset_bits);
-		page = offset >> offset_bits;
-		st_micro = 1;
-	} else {
-		//atmel
-		unsigned chip_id = atmel_id(base);
-		my_printf("chip_id=%x\n", chip_id);
-		offset_bits = atmel_get_offset_bits(chip_status, &block_size);
-		if (!offset_bits) {
-			my_printf("!!!error chip_status=%x\n", chip_status);
-			return;
-		}
-		page = offset / block_size;
-#if 0
-		{
-			chip_id = atmel_chip_erase(base);
-			my_printf("chip_erase=%x\n", chip_id);
-			return;
-		}
-#endif
-	}
+	offset_bits = identify_chip_rtns(base, &block_size, &read_rtn, &write_rtn);
+	page = offset / block_size;
 	my_printf("block_size = 0x%x\n", block_size);
 	diff = offset - (page * block_size);
 	if (diff) {
 		unsigned char buf[1056];
-		if (st_micro)
-			st_read_block(base, page, (unsigned *)buf, offset_bits, block_size);
-		else
-			atmel_read_block(base, page, (unsigned *)buf, offset_bits, block_size);
+		read_rtn(base, page, (unsigned *)buf, offset_bits, block_size);
 		ubl -= diff;
 		length += diff;
 		my_memcpy(ubl, buf, diff);
 	}
 //	debug_dump(ubl, (int)offset, 12); /* byte order reversed already */
-	if (st_micro)
-		ret = st_write_blocks(base, page, (unsigned *)ubl, length, offset_bits, block_size);
-	else
-		ret = atmel_write_blocks(base, page, (unsigned *)ubl, length, offset_bits, block_size);
+	ret = write_rtn(base, page, (unsigned *)ubl, length, offset_bits, block_size);
 	if (!ret)
 		my_printf("write complete, offset 0x%x, length 0x%x\n", offset, length);
 	else
