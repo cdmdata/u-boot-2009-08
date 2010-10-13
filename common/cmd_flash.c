@@ -104,45 +104,43 @@ abbrev_spec (char *str, flash_info_t ** pinfo, int *psf, int *psl)
 	return 1;
 }
 
+int flash_sect_bounds(ulong *pstart, ulong *pend)
+{
+	flash_info_t *info;
+	ulong bank, sector_end_addr;
+	int i;
+
+	for (bank = 0; bank < CONFIG_SYS_MAX_FLASH_BANKS; ++bank) {
+		info = &flash_info[bank];
+		for (i = 0; i < info->sector_count && !found; ++i) {
+			/* get the end address of the sector */
+			sector_end_addr = (i == info->sector_count - 1) ?
+					(info->start[0] + info->size - 1) :
+					(info->start[i+1] - 1);
+
+			if (*pstart <= sector_end_addr &&
+					*pstart > info->start[i]) {
+				*pstart = info->start[i];
+			}
+			if (*pend <= sector_end_addr &&
+					*pend >= info->start[i]) {
+				*pend = sector_end_addr;
+				return 0;
+			} /* sector */
+		} /* bank */
+	}
+	/* error, end address not in flash */
+	printf("Error: end address (0x%08lx) not in flash!\n", *addr);
+	return 1;
+}
+
 /*
  * Take *addr in Flash and adjust it to fall on the end of its sector
  */
 int flash_sect_roundb (ulong *addr)
 {
-	flash_info_t *info;
-	ulong bank, sector_end_addr;
-	char found;
-	int i;
-
-	/* find the end addr of the sector where the *addr is */
-	found = 0;
-	for (bank = 0; bank < CONFIG_SYS_MAX_FLASH_BANKS && !found; ++bank) {
-		info = &flash_info[bank];
-		for (i = 0; i < info->sector_count && !found; ++i) {
-			/* get the end address of the sector */
-			if (i == info->sector_count - 1) {
-				sector_end_addr = info->start[0] +
-								info->size - 1;
-			} else {
-				sector_end_addr = info->start[i+1] - 1;
-			}
-
-			if (*addr <= sector_end_addr &&
-						*addr >= info->start[i]) {
-				found = 1;
-				/* adjust *addr if necessary */
-				if (*addr < sector_end_addr)
-					*addr = sector_end_addr;
-			} /* sector */
-		} /* bank */
-	}
-	if (!found) {
-		/* error, addres not in flash */
-		printf("Error: end address (0x%08lx) not in flash!\n", *addr);
-		return 1;
-	}
-
-	return 0;
+	ulong start = *addr;
+	return flash_sect_bounds(&start, addr)
 }
 
 /*

@@ -32,6 +32,18 @@
 #include <linux/stddef.h>
 #include <malloc.h>
 
+#define TEMPLATE_NAME "flash"
+int flash_sect_bounds(ulong *pstart, ulong *pend);
+int flash_read(void *dest, ulong offset, unsigned len);
+
+#define TEMPLATE_sect_protect(protect, start, end)	flash_sect_protect(protect, start, end)
+#define TEMPLATE_perror(rc)			flash_perror(rc)
+#define TEMPLATE_sect_bounds(pstart, pend)	flash_sect_bounds(pstart, pend)
+#define TEMPLATE_read(dest, offset, len)	flash_read(dest, offset, len)
+#define TEMPLATE_write(src, offset, len)	flash_write(src, offset, len)
+#define TEMPLATE_sect_erase(start, end)		flash_sect_erase(start, end)
+#include "template_saveenv.h"
+
 DECLARE_GLOBAL_DATA_PTR;
 
 #if defined(CONFIG_CMD_SAVEENV) && defined(CONFIG_CMD_FLASH)
@@ -73,10 +85,6 @@ static env_t *flash_addr = (env_t *)CONFIG_ENV_ADDR;
 
 #ifdef CONFIG_ENV_ADDR_REDUND
 static env_t *flash_addr_new = (env_t *)CONFIG_ENV_ADDR_REDUND;
-
-/* CONFIG_ENV_ADDR is supposed to be on sector boundary */
-static ulong end_addr = CONFIG_ENV_ADDR + CONFIG_ENV_SECT_SIZE - 1;
-static ulong end_addr_new = CONFIG_ENV_ADDR_REDUND + CONFIG_ENV_SECT_SIZE - 1;
 
 #define ACTIVE_FLAG   1
 #define OBSOLETE_FLAG 0
@@ -134,113 +142,6 @@ int  env_init(void)
 
 	return (0);
 }
-
-#ifdef CMD_SAVEENV
-int saveenv(void)
-{
-	char *saved_data = NULL;
-	int rc = 1;
-	char flag = OBSOLETE_FLAG, new_flag = ACTIVE_FLAG;
-#if CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE
-	ulong up_data = 0;
-#endif
-
-	debug ("Protect off %08lX ... %08lX\n",
-		(ulong)flash_addr, end_addr);
-
-	if (flash_sect_protect (0, (ulong)flash_addr, end_addr)) {
-		goto Done;
-	}
-
-	debug ("Protect off %08lX ... %08lX\n",
-		(ulong)flash_addr_new, end_addr_new);
-
-	if (flash_sect_protect (0, (ulong)flash_addr_new, end_addr_new)) {
-		goto Done;
-	}
-
-#if CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE
-	up_data = (end_addr_new + 1 - ((long)flash_addr_new + CONFIG_ENV_SIZE));
-	debug ("Data to save 0x%x\n", up_data);
-	if (up_data) {
-		if ((saved_data = malloc(up_data)) == NULL) {
-			printf("Unable to save the rest of sector (%ld)\n",
-				up_data);
-			goto Done;
-		}
-		memcpy(saved_data,
-			(void *)((long)flash_addr_new + CONFIG_ENV_SIZE), up_data);
-		debug ("Data (start 0x%x, len 0x%x) saved at 0x%x\n",
-			   (long)flash_addr_new + CONFIG_ENV_SIZE,
-				up_data, saved_data);
-	}
-#endif
-	puts ("Erasing Flash...");
-	debug (" %08lX ... %08lX ...",
-		(ulong)flash_addr_new, end_addr_new);
-
-	if (flash_sect_erase ((ulong)flash_addr_new, end_addr_new)) {
-		goto Done;
-	}
-
-	puts ("Writing to Flash... ");
-	debug (" %08lX ... %08lX ...",
-		(ulong)&(flash_addr_new->data),
-		sizeof(env_ptr->data)+(ulong)&(flash_addr_new->data));
-	if ((rc = flash_write((char *)env_ptr->data,
-			(ulong)&(flash_addr_new->data),
-			sizeof(env_ptr->data))) ||
-	    (rc = flash_write((char *)&(env_ptr->crc),
-			(ulong)&(flash_addr_new->crc),
-			sizeof(env_ptr->crc))) ||
-	    (rc = flash_write(&flag,
-			(ulong)&(flash_addr->flags),
-			sizeof(flash_addr->flags))) ||
-	    (rc = flash_write(&new_flag,
-			(ulong)&(flash_addr_new->flags),
-			sizeof(flash_addr_new->flags))))
-	{
-		flash_perror (rc);
-		goto Done;
-	}
-	puts ("done\n");
-
-#if CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE
-	if (up_data) { /* restore the rest of sector */
-		debug ("Restoring the rest of data to 0x%x len 0x%x\n",
-			   (long)flash_addr_new + CONFIG_ENV_SIZE, up_data);
-		if (flash_write(saved_data,
-				(long)flash_addr_new + CONFIG_ENV_SIZE,
-				up_data)) {
-			flash_perror(rc);
-			goto Done;
-		}
-	}
-#endif
-	{
-		env_t * etmp = flash_addr;
-		ulong ltmp = end_addr;
-
-		flash_addr = flash_addr_new;
-		flash_addr_new = etmp;
-
-		end_addr = end_addr_new;
-		end_addr_new = ltmp;
-	}
-
-	rc = 0;
-Done:
-
-	if (saved_data)
-		free (saved_data);
-	/* try to re-protect */
-	(void) flash_sect_protect (1, (ulong)flash_addr, end_addr);
-	(void) flash_sect_protect (1, (ulong)flash_addr_new, end_addr_new);
-
-	return rc;
-}
-#endif /* CMD_SAVEENV */
-
 #else /* ! CONFIG_ENV_ADDR_REDUND */
 
 int  env_init(void)
@@ -255,80 +156,8 @@ int  env_init(void)
 	gd->env_valid = 0;
 	return (0);
 }
-
-#ifdef CMD_SAVEENV
-
-int saveenv(void)
-{
-	int	len, rc;
-	ulong	end_addr;
-	ulong	flash_sect_addr;
-#if defined(CONFIG_ENV_SECT_SIZE) && (CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE)
-	ulong	flash_offset;
-	uchar	env_buffer[CONFIG_ENV_SECT_SIZE];
-#else
-	uchar *env_buffer = (uchar *)env_ptr;
-#endif	/* CONFIG_ENV_SECT_SIZE */
-	int rcode = 0;
-
-#if defined(CONFIG_ENV_SECT_SIZE) && (CONFIG_ENV_SECT_SIZE > CONFIG_ENV_SIZE)
-
-	flash_offset    = ((ulong)flash_addr) & (CONFIG_ENV_SECT_SIZE-1);
-	flash_sect_addr = ((ulong)flash_addr) & ~(CONFIG_ENV_SECT_SIZE-1);
-
-	debug ( "copy old content: "
-		"sect_addr: %08lX  env_addr: %08lX  offset: %08lX\n",
-		flash_sect_addr, (ulong)flash_addr, flash_offset);
-
-	/* copy old contents to temporary buffer */
-	memcpy (env_buffer, (void *)flash_sect_addr, CONFIG_ENV_SECT_SIZE);
-
-	/* copy current environment to temporary buffer */
-	memcpy ((uchar *)((unsigned long)env_buffer + flash_offset),
-		env_ptr,
-		CONFIG_ENV_SIZE);
-
-	len	 = CONFIG_ENV_SECT_SIZE;
-#else
-	flash_sect_addr = (ulong)flash_addr;
-	len	 = CONFIG_ENV_SIZE;
-#endif	/* CONFIG_ENV_SECT_SIZE */
-
-#ifndef CONFIG_INFERNO
-	end_addr = flash_sect_addr + len - 1;
-#else
-	/* this is the last sector, and the size is hardcoded here */
-	/* otherwise we will get stack problems on loading 128 KB environment */
-	end_addr = flash_sect_addr + 0x20000 - 1;
-#endif
-
-	debug ("Protect off %08lX ... %08lX\n",
-		(ulong)flash_sect_addr, end_addr);
-
-	if (flash_sect_protect (0, flash_sect_addr, end_addr))
-		return 1;
-
-	puts ("Erasing Flash...");
-	if (flash_sect_erase (flash_sect_addr, end_addr))
-		return 1;
-
-	puts ("Writing to Flash... ");
-	rc = flash_write((char *)env_buffer, flash_sect_addr, len);
-	if (rc != 0) {
-		flash_perror (rc);
-		rcode = 1;
-	} else {
-		puts ("done\n");
-	}
-
-	/* try to re-protect */
-	(void) flash_sect_protect (1, flash_sect_addr, end_addr);
-	return rcode;
-}
-
-#endif /* CMD_SAVEENV */
-
 #endif /* CONFIG_ENV_ADDR_REDUND */
+
 
 void env_relocate_spec (void)
 {
@@ -379,3 +208,20 @@ void env_relocate_spec (void)
 #endif
 #endif /* ! ENV_IS_EMBEDDED || CONFIG_ENV_ADDR_REDUND */
 }
+
+#ifdef CMD_SAVEENV
+int flash_read(void *dest, ulong offset, unsigned len)
+{
+	memcpy(dest, (void *)offset, len);
+	return 0;
+}
+
+int saveenv(void)
+{
+#ifdef CONFIG_ENV_ADDR_REDUND
+	return template_saveenv(CONFIG_ENV_SIZE, (ulong)flash_addr, (ulong)flash_addr_new, env_ptr);
+#else
+	return template_saveenv(CONFIG_ENV_SIZE, (ulong)flash_addr, 0, env_ptr);
+#endif
+}
+#endif
