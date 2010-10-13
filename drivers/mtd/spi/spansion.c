@@ -304,6 +304,23 @@ int spansion_erase(struct spi_flash *flash, u32 offset, size_t len)
 	return ret;
 }
 
+int spansion_sect_bounds(struct spi_flash *flash, u32* pstart, u32* pend)
+{
+	u32 n;
+	struct spansion_spi_flash *spsn = to_spansion_spi_flash(flash);
+	u32 sector_size = spsn->params->page_size * spsn->params->pages_per_sector;
+
+	if (*pstart > *pend)
+		return 1;
+	n = (*pstart / sector_size) * sector_size;
+	*pstart = n;
+	n = ((*pend / sector_size) * sector_size) + sector_size - 1;
+	*pend = n;
+	if (n >= flash->size)
+		return 2;
+	return 0;
+}
+
 struct spi_flash *spi_flash_probe_spansion(struct spi_slave *spi, u8 *idcode)
 {
 	const struct spansion_spi_flash_params *params;
@@ -340,6 +357,7 @@ struct spi_flash *spi_flash_probe_spansion(struct spi_slave *spi, u8 *idcode)
 	spsn->flash.write = spansion_write;
 	spsn->flash.erase = spansion_erase;
 	spsn->flash.read = spansion_read_fast;
+	spsn->flash.sect_bounds = spansion_sect_bounds;
 	spsn->flash.size = params->page_size * params->pages_per_sector
 	    * params->nr_sectors;
 

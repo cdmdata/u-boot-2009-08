@@ -309,6 +309,19 @@ int stmicro_erase(struct spi_flash *flash, u32 offset, size_t len)
 	return ret;
 }
 
+int stmicro_sect_bounds(struct spi_flash *flash, u32* pstart, u32* pend)
+{
+	struct stmicro_spi_flash *stm = to_stmicro_spi_flash(flash);
+	u32 sector_size = stm->params->page_size * stm->params->pages_per_sector;
+	if (*pstart > *pend)
+		return 1;
+	*pstart &= ~(sector_size - 1);
+	*pend |= (sector_size - 1);
+	if (*pend >= flash->size)
+		return 2;
+	return 0;
+}
+
 struct spi_flash *spi_flash_probe_stmicro(struct spi_slave *spi, u8 * idcode)
 {
 	const struct stmicro_spi_flash_params *params;
@@ -340,6 +353,7 @@ struct spi_flash *spi_flash_probe_stmicro(struct spi_slave *spi, u8 * idcode)
 	stm->flash.write = stmicro_write;
 	stm->flash.erase = stmicro_erase;
 	stm->flash.read = stmicro_read_fast;
+	stm->flash.sect_bounds = stmicro_sect_bounds;
 	stm->flash.size = params->page_size * params->pages_per_sector
 	    * params->nr_sectors;
 

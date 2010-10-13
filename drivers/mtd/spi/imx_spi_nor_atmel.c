@@ -436,6 +436,22 @@ static int spi_nor_flash_erase(struct spi_flash *flash, u32 offset,
 	return 0;
 }
 
+int spi_nor_flash_sect_bounds(struct spi_flash *flash, u32* pstart, u32* pend)
+{
+	u32 n;
+	u32 page_size = 512;
+	if (*pstart > *pend)
+		return 1;
+	n = (*pstart / page_size) * page_size;
+	*pstart = n;
+	n = ((*pend / page_size) * page_size) + page_size - 1;
+	*pend = n;
+	if (n >= flash->size)
+		return 2;
+	return 0;
+}
+
+
 struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs, unsigned int max_hz, unsigned int spi_mode)
 {
 	struct spi_slave *spi = NULL;
@@ -499,6 +515,7 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs, unsigned in
 	imx_sf->flash.read  = spi_nor_flash_read;
 	imx_sf->flash.write = spi_nor_flash_write;
 	imx_sf->flash.erase = spi_nor_flash_erase;
+	imx_sf->flash.sect_bounds = spi_nor_flash_sect_bounds;
 
 	debug("SF: Detected %s with block size %lu, "
 			"block count %lu, total %u bytes\n",

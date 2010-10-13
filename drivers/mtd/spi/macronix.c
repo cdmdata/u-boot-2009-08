@@ -296,6 +296,24 @@ int macronix_erase(struct spi_flash *flash, u32 offset, size_t len)
 	return ret;
 }
 
+int macronix_sect_bounds(struct spi_flash *flash, u32* pstart, u32* pend)
+{
+	u32 n;
+	struct macronix_spi_flash *mcx = to_macronix_spi_flash(flash);
+	u32 sector_size = mcx->params->page_size *
+		mcx->params->pages_per_sector * mcx->params->sectors_per_block;
+
+	if (*pstart > *pend)
+		return 1;
+	n = (*pstart / sector_size) * sector_size;
+	*pstart = n;
+	n = ((*pend / sector_size) * sector_size) + sector_size - 1;
+	*pend = n;
+	if (n >= flash->size)
+		return 2;
+	return 0;
+}
+
 struct spi_flash *spi_flash_probe_macronix(struct spi_slave *spi, u8 *idcode)
 {
 	const struct macronix_spi_flash_params *params;
@@ -327,6 +345,7 @@ struct spi_flash *spi_flash_probe_macronix(struct spi_slave *spi, u8 *idcode)
 	mcx->flash.write = macronix_write;
 	mcx->flash.erase = macronix_erase;
 	mcx->flash.read = macronix_read_fast;
+	mcx->flash.sect_bounds = macronix_sect_bounds;
 	mcx->flash.size = params->page_size * params->pages_per_sector
 	    * params->sectors_per_block * params->nr_blocks;
 

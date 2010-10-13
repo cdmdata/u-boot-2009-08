@@ -43,6 +43,7 @@ struct atmel_spi_flash_params {
 struct atmel_spi_flash {
 	struct spi_flash flash;
 	const struct atmel_spi_flash_params *params;
+	u32 page_size;
 };
 
 static inline struct atmel_spi_flash *
@@ -471,6 +472,22 @@ out:
 	return ret;
 }
 
+int dataflash_sect_bounds(struct spi_flash *flash, u32* pstart, u32* pend)
+{
+	u32 n;
+	struct atmel_spi_flash *asf = to_atmel_spi_flash(flash);
+	u32 page_size = asf->page_size;
+	if (*pstart > *pend)
+		return 1;
+	n = (*pstart / page_size) * page_size;
+	*pstart = n;
+	n = ((*pend / page_size) * page_size) + page_size - 1;
+	*pend = n;
+	if (n >= flash->size)
+		return 2;
+	return 0;
+}
+
 struct spi_flash *spi_flash_probe_atmel(struct spi_slave *spi, u8 *idcode)
 {
 	const struct atmel_spi_flash_params *params;
@@ -543,6 +560,8 @@ struct spi_flash *spi_flash_probe_atmel(struct spi_slave *spi, u8 *idcode)
 		goto err;
 	}
 
+	asf->flash.sect_bounds = dataflash_sect_bounds;
+	asf->page_size = page_size;
 	asf->flash.size = page_size * params->pages_per_block
 				* params->blocks_per_sector
 				* params->nr_sectors;
