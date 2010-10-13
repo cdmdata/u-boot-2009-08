@@ -29,6 +29,18 @@
 #include <environment.h>
 #include <malloc.h>
 #include <spi_flash.h>
+#define TEMPLATE_NAME "spi_flash"
+int Xspi_flash_sect_protect(int protect, ulong start, ulong end);
+void Xspi_flash_perror(int rc);
+static struct spi_flash *env_flash;
+
+#define TEMPLATE_sect_protect(protect, start, end)	Xspi_flash_sect_protect(protect, start, end)
+#define TEMPLATE_perror(rc)			Xspi_flash_perror(rc)
+#define TEMPLATE_sect_bounds(pstart, pend)	spi_flash_sect_bounds(env_flash, (u32 *)pstart, (u32 *)pend)
+#define TEMPLATE_read(dest, offset, len)	spi_flash_read(env_flash, offset, len, dest)
+#define TEMPLATE_write(src, offset, len)	spi_flash_write(env_flash, offset, len, src)
+#define TEMPLATE_sect_erase(start, end)		spi_flash_erase(env_flash, start, (end) + 1 - (start))
+#include "template_saveenv.h"
 
 #ifndef CONFIG_ENV_SPI_BUS
 # define CONFIG_ENV_SPI_BUS	0
@@ -56,7 +68,6 @@ extern env_t *env_ptr;
 env_t *env_ptr;
 #endif
 
-static struct spi_flash *env_flash;
 
 #ifndef CONFIG_FSL_ENV_IN_SF_FIRST
 uchar env_get_char_spec(int index)
@@ -65,6 +76,14 @@ uchar env_get_char_spec(int index)
 }
 #endif
 
+int Xspi_flash_sect_protect(int protect, ulong start, ulong end)
+{
+	return 0;
+}
+void Xspi_flash_perror(int rc)
+{
+	printf ("%s: rc=%d\n", __func__, rc);	
+}
 
 #ifdef CONFIG_FSL_ENV_IN_SF_FIRST
 int saveenv_sf(void)
@@ -72,11 +91,6 @@ int saveenv_sf(void)
 int saveenv(void)
 #endif
 {
-	u32 saved_size, saved_offset;
-	char *saved_buffer = NULL;
-	u32 sector = 1;
-	int ret;
-
 	if (!env_flash) {
 #ifndef CONFIG_FSL_ENV_IN_SF_FIRST
 		puts("Environment SPI flash not initialized\n");
@@ -84,50 +98,11 @@ int saveenv(void)
 		return 1;
 	}
 	printf ("Saving Environment to %s...\n", env_name_spec);
-
-	/* Is the sector larger than the env (i.e. embedded) */
-	if (CONFIG_ENV_SF_SECT_SIZE > CONFIG_ENV_SF_SIZE) {
-		saved_size = CONFIG_ENV_SF_SECT_SIZE - CONFIG_ENV_SF_SIZE;
-		saved_offset = CONFIG_ENV_SF_OFFSET + CONFIG_ENV_SF_SIZE;
-		saved_buffer = malloc(saved_size);
-		if (!saved_buffer) {
-			ret = 1;
-			goto done;
-		}
-		ret = spi_flash_read(env_flash, saved_offset, saved_size, saved_buffer);
-		if (ret)
-			goto done;
-	}
-
-	if (CONFIG_ENV_SF_SIZE > CONFIG_ENV_SF_SECT_SIZE) {
-		sector = CONFIG_ENV_SF_SIZE / CONFIG_ENV_SF_SECT_SIZE;
-		if (CONFIG_ENV_SF_SIZE % CONFIG_ENV_SF_SECT_SIZE)
-			sector++;
-	}
-
-	puts("Erasing SPI flash...");
-	ret = spi_flash_erase(env_flash, CONFIG_ENV_SF_OFFSET, sector * CONFIG_ENV_SF_SECT_SIZE);
-	if (ret)
-		goto done;
-
-	puts("Writing to SPI flash...");
-	ret = spi_flash_write(env_flash, CONFIG_ENV_SF_OFFSET, CONFIG_ENV_SF_SIZE, env_ptr);
-	if (ret)
-		goto done;
-
-	if (CONFIG_ENV_SF_SECT_SIZE > CONFIG_ENV_SF_SIZE) {
-		ret = spi_flash_write(env_flash, saved_offset, saved_size, saved_buffer);
-		if (ret)
-			goto done;
-	}
-
-	ret = 0;
-	puts("done\n");
-
- done:
-	if (saved_buffer)
-		free(saved_buffer);
-	return ret;
+#ifdef CONFIG_ENV_SF_OFFSET2
+	return template_saveenv(CONFIG_ENV_SF_SIZE, CONFIG_ENV_SF_OFFSET, CONFIG_ENV_SF_OFFSET2, env_ptr);
+#else
+	return template_saveenv(CONFIG_ENV_SF_SIZE, CONFIG_ENV_SF_OFFSET, 0, env_ptr);
+#endif
 }
 extern unsigned env_size;
 
