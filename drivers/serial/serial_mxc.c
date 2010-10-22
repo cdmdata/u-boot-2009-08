@@ -21,12 +21,13 @@
 #include <watchdog.h>
 #define __REG(x)     (*((volatile u32 *)(x)))
 
-#define UART_PHYS CONFIG_UART_BASE_ADDR
 
 #ifdef CONFIG_SERIAL_MULTI
 #warning "MXC driver does not support MULTI serials."
 #endif
 
+#ifdef CONFIG_UART_BASE_ADDR
+#define UART_PHYS CONFIG_UART_BASE_ADDR
 /* Register definitions */
 #define URXD  0x0  /* Receiver Register */
 #define UTXD  0x40 /* Transmitter Register */
@@ -217,3 +218,18 @@ int serial_init (void)
 
 	return 0;
 }
+#else
+void serial_setbrg(void){}
+int serial_getc(void)
+{
+	/* better not get here... */
+	while (1) { WATCHDOG_RESET(); }
+	return 0;
+}
+
+void serial_putc(const char c){}
+int serial_tstc(void){ return 0 ; }
+void serial_puts(const char *s){}
+int serial_init(void){}
+
+#endif
