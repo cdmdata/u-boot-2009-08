@@ -28,6 +28,7 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)lib$(SOC).a
 
 COBJS	= interrupts.o generic.o iomux.o timer.o cache.o
+COBJS-$(CONFIG_HW_WATCHDOG) += watchdog.o
 COBJS += $(COBJS-y)
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
