@@ -32,12 +32,8 @@
         mcr 15, 0, r0, c1, c0, 1
 
         /* reconfigure L2 cache aux control reg */
-        mov r0, #0xC0                   /* tag RAM */
-        add r0, r0, #0x4                /* data RAM */
-        orr r0, r0, #(1 << 24)          /* disable write allocate delay */
-        orr r0, r0, #(1 << 23)          /* disable write allocate combine */
-        orr r0, r0, #(1 << 22)          /* disable write allocate */
-
+        mov r0, #0xC0 | 0x4		/* tag RAM, data RAM */
+        orr r0, r0, #(1 << 24) | (1 << 23) | (1 << 22)	/* disable write allocate (delay, combine, allocate) */
 	mcr 15, 1, r0, c9, c0, 2
 .endm /* init_l2cc */
 
@@ -96,7 +92,7 @@
 
         /* Switch peripheral to PLL3 */
         ldr r0, CCM_BASE_ADDR_W
-        ldr r1, CCM_VAL_0x00015154
+        ldr r1, CCM_VAL_0x0001515c
         str r1, [r0, #CLKCTL_CBCMR]
         ldr r1, CCM_VAL_0x02888945
         orr r1, r1, #(1 << 16)
@@ -106,7 +102,8 @@
         cmp r1, #0x0
         bne 1b
 
-        setup_pll PLL2_BASE_ADDR, CONFIG_SYS_PLL2_FREQ
+#if 0
+	setup_pll PLL2_BASE_ADDR, CONFIG_SYS_PLL2_FREQ
 
 	/* Switch peripheral to PLL2 */
 	ldr r0, CCM_BASE_ADDR_W
@@ -115,8 +112,18 @@
 	orr r1, r1, #(CONFIG_SYS_AXIA_PODF << 16)
 	orr r1, r1, #(CONFIG_SYS_AXIB_PODF << 19)
 	str r1, [r0, #CLKCTL_CBCDR]
-
-	ldr r1, CCM_VAL_0x00016154
+#else
+	ldr r1, CCM_VAL_0x00808145
+	orr r1, r1, #(CONFIG_SYS_AHB_PODF << 10)
+	orr r1, r1, #(CONFIG_SYS_AXIB_PODF << 19)
+//	orr r1, r1, #(CONFIG_SYS_AXIA_PODF << 16)	//keep same AXI_A_PODF
+	ldr r0, CCM_BASE_ADDR_W
+	ldr r2, [r0, #CLKCTL_CBCDR]
+	and r2, r2, #(7 << 16)				//keep same AXI_A_PODF
+	orr r1, r1, r2
+	str r1, [r0, #CLKCTL_CBCDR]
+#endif
+	ldr r1, CCM_VAL_0x0001615c
 	str r1, [r0, #CLKCTL_CBCMR]
 
 	/* make sure change is effective */
@@ -199,9 +206,9 @@ lowlevel_init:
 
 /* Board level setting value */
 CCM_BASE_ADDR_W:        .word CCM_BASE_ADDR
-CCM_VAL_0x00016154:     .word 0x00016154
+CCM_VAL_0x0001615c:     .word 0x00016154
 CCM_VAL_0x00808145:     .word 0x00808145
-CCM_VAL_0x00015154:     .word 0x00015154
+CCM_VAL_0x0001515c:     .word 0x0001515c
 CCM_VAL_0x02888945:     .word 0x02888945
 W_DP_OP_800:           	.word DP_OP_800
 W_DP_MFD_800:           .word DP_MFD_800

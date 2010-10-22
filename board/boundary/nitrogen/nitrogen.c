@@ -731,6 +731,73 @@ static void setup_pmic(void)
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_SCLK,pad);
 }
 
+void init_display_pins(void)
+{
+	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
+	mxc_request_iomux(MX51_PIN_DISP1_DAT0,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT0,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT1,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT1,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT2,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT2,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT3,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT3,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT4,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT4,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT5,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT5,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT6,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT6,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT7,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT7,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT8,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT8,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT9,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT9,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT10,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT10,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT11,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT11,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT12,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT12,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT13,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT13,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT14,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT14,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT15,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT15,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT16,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT16,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT17,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT17,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT18,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT18,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT19,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT19,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT20,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT20,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT21,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT21,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT22,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT22,pad);
+	mxc_request_iomux(MX51_PIN_DISP1_DAT23,IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX51_PIN_DISP1_DAT23,pad);
+
+	mxc_request_iomux(MX51_PIN_DI1_PIN2,IOMUX_CONFIG_ALT0);	//Hsync
+	mxc_iomux_set_pad(MX51_PIN_DI1_PIN2,pad);
+	mxc_request_iomux(MX51_PIN_DI1_PIN3,IOMUX_CONFIG_ALT0);	//Vsync
+	mxc_iomux_set_pad(MX51_PIN_DI1_PIN3,pad);
+	mxc_iomux_set_pad(MX51_PIN_DI1_DISP_CLK,pad);		//PCLK
+	mxc_iomux_set_pad(MX51_PIN_DI1_PIN15,pad);		//DRDY - (DE) or (OE) 
+
+	mxc_request_iomux(MX51_PIN_DI1_PIN11,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_PIN12,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_PIN13,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_D0_CS,IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX51_PIN_DI1_D1_CS,IOMUX_CONFIG_ALT4);
+	mxc_request_iomux(MX51_PIN_DI_GP4,IOMUX_CONFIG_ALT4);
+}
+
 #ifdef CONFIG_NET_MULTI
 
 int board_eth_init(bd_t *bis)
