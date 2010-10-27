@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
-
+	.global relocate
 #include <config.h>
 #include <asm/arch/mx53.h>
 
@@ -40,6 +40,7 @@ dcd_node_##i:                        \
         .word CPU_2_BE_32(val)  ;     \
 
 .section ".text.flasheader", "x"
+_image_base:
 	b	_start
 	.org	CONFIG_FLASH_HEADER_OFFSET
 ivt_header:       .word MAKE_TAG(0xD1, 0x20, 0x40) /* 0x402000D1, Tag=0xD1, Len=0x0020, Ver=0x40 */
@@ -142,4 +143,25 @@ MXC_DCD_ITEM(64, ESDCTL_BASE_ADDR + 0x01c, 0x00000000)	/* ESDSCR: AXI address re
 cmd_end1:
 
 hdr_end:
+
+
+relocate:				@ relocate U-Boot to RAM
+	ldr	r1, boot_data		@ where we want to be
+	adr	r0, _image_base + CONFIG_FLASH_HEADER_OFFSET	@ r0 <- current position of code
+	sub	r0, r0, #CONFIG_FLASH_HEADER_OFFSET
+	cmp	r0, r1
+	beq	2f
+	sub	lr, lr, r0
+	add	lr, lr, r1
+
+	ldr	r2,image_len
+	add	r2, r0, r2		@ r2 <- source end address
+
+1:					@ copy 32 bytes at a time
+	ldmia	r0!, {r3 - r10}		@ copy from source address [r0]
+	stmia	r1!, {r3 - r10}		@ copy to   target address [r1]
+	cmp	r0, r2			@ until source end addreee [r2]
+	blo	1b
+2:
+	mov	pc, lr
 #endif

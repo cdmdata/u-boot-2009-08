@@ -138,22 +138,7 @@ next:
 #endif
 
 #ifndef CONFIG_SKIP_RELOCATE_UBOOT
-relocate:				@ relocate U-Boot to RAM
-	adr	r0, _start		@ r0 <- current position of code
-	ldr	r1, _TEXT_BASE		@ test if we run from flash or RAM
-	cmp	r0, r1			@ don't reloc during debug
-	beq	stack_setup
-
-	ldr	r2, _armboot_start
-	ldr	r3, _bss_start
-	sub	r2, r3, r2		@ r2 <- size of armboot
-	add	r2, r0, r2		@ r2 <- source end address
-
-copy_loop:				@ copy 32 bytes at a time
-	ldmia	r0!, {r3 - r10}		@ copy from source address [r0]
-	stmia	r1!, {r3 - r10}		@ copy to   target address [r1]
-	cmp	r0, r2			@ until source end addreee [r2]
-	ble	copy_loop
+	bl	relocate
 #endif	/* CONFIG_SKIP_RELOCATE_UBOOT */
 
 	/* Set up the stack */
@@ -179,12 +164,9 @@ clbss_l:
 	bne	clbss_l			@ keep clearing till at end
 
 #ifdef CONFIG_ARCH_MMU
-	bl board_mmu_init
+	bl	board_mmu_init
 #endif
-	ldr	pc, _start_armboot	@ jump to C code
-
-_start_armboot: .word start_armboot
-
+	b	start_armboot
 
 /*************************************************************************
  *
