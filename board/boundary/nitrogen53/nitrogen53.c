@@ -571,76 +571,79 @@ static void setup_fec(void)
 {
 	volatile unsigned int reg;
 
-	/* FEC COL */
+	/* FEC TX_CLK, input */
+	mxc_request_iomux(MX53_PIN_FEC_REF_CLK, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_REF_CLK, 0x180);
+
+	/* FEC TX_EN, output */
+	mxc_request_iomux(MX53_PIN_FEC_TX_EN, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_TX_EN, 0x004);
+
+	/* FEC TXD0, output */
+	mxc_request_iomux(MX53_PIN_FEC_TXD0, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_TXD0, 0x004);
+
+	 /* FEC TXD1, output */
+	mxc_request_iomux(MX53_PIN_FEC_TXD1, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_TXD1, 0x004);
+
+	 /* FEC TXD2, output */
+	mxc_request_iomux(MX53_PIN_KEY_ROW2, IOMUX_CONFIG_ALT6);
+	mxc_iomux_set_pad(MX53_PIN_KEY_ROW2, 0x004);
+	
+	 /* FEC TXD3, output */
+	mxc_request_iomux(MX53_PIN_GPIO_19, IOMUX_CONFIG_ALT6);
+	mxc_iomux_set_pad(MX53_PIN_GPIO_19, 0x004);
+	
+	/* FEC TX_ER - unused output from mx53 */
+
+	/* FEC COL, input */
 	mxc_request_iomux(MX53_PIN_KEY_ROW1, IOMUX_CONFIG_ALT6);
 	mxc_iomux_set_pad(MX53_PIN_KEY_ROW1, 0x180);
 	mxc_iomux_set_input(MUX_IN_FEC_FEC_COL_SELECT_INPUT, 0);
 
-	/* FEC CRS */
+	/* FEC CRS, input */
 	mxc_request_iomux(MX53_PIN_KEY_COL3, IOMUX_CONFIG_ALT6);
 	mxc_iomux_set_pad(MX53_PIN_KEY_COL3, 0x180);
 
-	/*FEC_MDC*/
-	mxc_request_iomux(MX53_PIN_FEC_MDC, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_MDC, 0x004);
-
-	/*FEC_MDIO*/
-	mxc_request_iomux(MX53_PIN_FEC_MDIO, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_MDIO, 0x1FC);
-	mxc_iomux_set_input(MUX_IN_FEC_FEC_MDI_SELECT_INPUT, 0x1);
-
-	/* FEC RXD0 */
-	mxc_request_iomux(MX53_PIN_FEC_RXD0, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_RXD0, 0x180);
-
-	/* FEC RXD1 */
-	mxc_request_iomux(MX53_PIN_FEC_RXD1, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_RXD1, 0x180);
-
-	/* FEC RXD2 */
-	mxc_request_iomux(MX53_PIN_KEY_COL2, IOMUX_CONFIG_ALT6);
-	mxc_iomux_set_pad(MX53_PIN_KEY_COL2, 0x180);
-
-	/* FEC RXD3 */
-	mxc_request_iomux(MX53_PIN_KEY_COL0, IOMUX_CONFIG_ALT6);
-	mxc_iomux_set_pad(MX53_PIN_KEY_COL0, 0x180);
-
-	/* FEC RXDV (CRS_DV) */
-	mxc_request_iomux(MX53_PIN_FEC_CRS_DV, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_CRS_DV, 0x180);
-
-	/* FEC RX_CLK */
+	/* FEC RX_CLK, input */
 	mxc_request_iomux(MX53_PIN_KEY_COL1, IOMUX_CONFIG_ALT6);
 	mxc_iomux_set_pad(MX53_PIN_KEY_COL1, 0x180);
 	mxc_iomux_set_input(MUX_IN_FEC_FEC_RX_CLK_SELECT_INPUT, 0);
 
-	/* FEC RX_ER */
+	/* FEC RXDV (CRS_DV), input */
+	mxc_request_iomux(MX53_PIN_FEC_CRS_DV, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_CRS_DV, 0x180);
+
+	/* FEC RXD0, input */
+	mxc_request_iomux(MX53_PIN_FEC_RXD0, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_RXD0, 0x180);
+
+	/* FEC RXD1, input */
+	mxc_request_iomux(MX53_PIN_FEC_RXD1, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_RXD1, 0x180);
+
+	/* FEC RXD2, input */
+	mxc_request_iomux(MX53_PIN_KEY_COL2, IOMUX_CONFIG_ALT6);
+	mxc_iomux_set_pad(MX53_PIN_KEY_COL2, 0x180);
+
+	/* FEC RXD3, input */
+	mxc_request_iomux(MX53_PIN_KEY_COL0, IOMUX_CONFIG_ALT6);
+	mxc_iomux_set_pad(MX53_PIN_KEY_COL0, 0x180);
+
+	/* FEC RX_ER, input */
 	mxc_request_iomux(MX53_PIN_FEC_RX_ER, IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX53_PIN_FEC_RX_ER, 0x180);
 
-	/* FEC TXD0 */
-	mxc_request_iomux(MX53_PIN_FEC_TXD0, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_TXD0, 0x004);
+	/*FEC_MDC, output */
+	mxc_request_iomux(MX53_PIN_FEC_MDC, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_MDC, 0x004);
 
-	 /* FEC TXD1 */
-	mxc_request_iomux(MX53_PIN_FEC_TXD1, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_TXD1, 0x004);
+	/*FEC_MDIO, i/o */
+	mxc_request_iomux(MX53_PIN_FEC_MDIO, IOMUX_CONFIG_ALT0);
+	mxc_iomux_set_pad(MX53_PIN_FEC_MDIO, 0x1FC);
+	mxc_iomux_set_input(MUX_IN_FEC_FEC_MDI_SELECT_INPUT, 0x1);
 
-	 /* FEC TXD2 */
-	mxc_request_iomux(MX53_PIN_KEY_ROW2, IOMUX_CONFIG_ALT6);
-	mxc_iomux_set_pad(MX53_PIN_KEY_ROW2, 0x004);
-	
-	 /* FEC TXD3 */
-	mxc_request_iomux(MX53_PIN_GPIO_19, IOMUX_CONFIG_ALT6);
-	mxc_iomux_set_pad(MX53_PIN_GPIO_19, 0x004);
-	
-	/* FEC TX_CLK */
-	mxc_request_iomux(MX53_PIN_FEC_REF_CLK, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_REF_CLK, 0x180);
-
-	/* FEC TX_EN */
-	mxc_request_iomux(MX53_PIN_FEC_TX_EN, IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_FEC_TX_EN, 0x004);
 
 #if 0
 	/* phy reset: gpio7-6 */
