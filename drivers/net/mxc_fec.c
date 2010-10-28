@@ -121,8 +121,11 @@ static inline void fec_localhw_setup(volatile fec_t *fecp)
 		udelay(1);
 
 	/* configure the gasket for RMII, 50 MHz, no loopback, no echo */
+#ifndef CONFIG_MII_GASKET_MODE_MII
 	fecp->fec_miigsk_cfgr = FEC_MIIGSK_CFGR_IF_MODE_RMII;
-
+#else
+	fecp->fec_miigsk_cfgr = 0;
+#endif
 	/* re-enable the gasket */
 	fecp->fec_miigsk_enr = FEC_MIIGSK_ENR_EN;
 
