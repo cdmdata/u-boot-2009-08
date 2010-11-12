@@ -3778,6 +3778,9 @@ clean:
 	@rm -f $(obj)onenand_ipl/onenand-{ipl,ipl.bin,ipl-2k.bin,ipl-4k.bin,ipl.map}
 	@rm -f $(obj)onenand_ipl/u-boot.lds
 	@rm -f $(TIMESTAMP_FILE) $(VERSION_FILE)
+	@find $(obj)imx5x_utils -type f \
+		\( -name '*.bin' -o -name '*.map' -o -name '*.o4' -o -name '*.o3' -o -name '*.o1' \) -print \
+		| xargs rm -f
 	@find $(OBJTREE) -type f \
 		\( -name 'core' -o -name '*.bak' -o -name '*~' \
 		-o -name '*.o'	-o -name '*.a' -o -name '*.exe'	\) -print \
