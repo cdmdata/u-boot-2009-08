@@ -1,6 +1,6 @@
 #include <stdarg.h>
-#include "mx51_common.h"
-#include "mx51_sdmmc.h"
+#include "mx5x_common.h"
+#include "mx5x_sdmmc.h"
 
 void write_ubl(unsigned char* ubl, unsigned length, unsigned start_block)
 {

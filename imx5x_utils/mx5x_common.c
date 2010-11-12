@@ -1,6 +1,6 @@
 #include <stdarg.h>
 //#define DEBUG
-#include "mx51_common.h"
+#include "mx5x_common.h"
 
 #define UART1_BASE 0x73fbc000
 #define UTXD 0x0040

@@ -1,7 +1,7 @@
 //#define DEBUG
 #include <stdarg.h>
-#include "mx51_common.h"
-#include "mx51_sdmmc.h"
+#include "mx5x_common.h"
+#include "mx5x_sdmmc.h"
 extern const int prog_start;
 extern const int free_space;
 

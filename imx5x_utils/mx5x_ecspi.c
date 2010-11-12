@@ -3,8 +3,8 @@
  */
 #include <stdarg.h>
 //#define DEBUG
-#include "mx51_common.h"
-#include "mx51_ecspi.h"
+#include "mx5x_common.h"
+#include "mx5x_ecspi.h"
 
 #define ENABLE_ATMEL
 #define ENABLE_ST_MICRO

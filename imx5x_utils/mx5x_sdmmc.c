@@ -11,8 +11,8 @@
 //#include <delay.h>
 //#include <mem_map.h>
 #include <stdarg.h>
-#include "mx51_common.h"
-#include "mx51_sdmmc.h"
+#include "mx5x_common.h"
+#include "mx5x_sdmmc.h"
 
 #define MMC_BLOCK_SHIFT		9
 #define MMC_BLOCK_SIZE		(1<<MMC_BLOCK_SHIFT)
