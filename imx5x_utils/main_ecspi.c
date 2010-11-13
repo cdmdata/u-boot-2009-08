@@ -8,8 +8,7 @@ extern const int payload_offset;
 int main(void)
 {
 	struct common_info ci;
-	struct app_header *hdr = NULL;
-	int base = ECSPI1_BASE;
+	int base = get_ecspi_base();
 #ifdef DEBUG
 	unsigned offset = ((unsigned)0x1400);	/* 1k aligned */
 #else
@@ -17,14 +16,14 @@ int main(void)
 #endif
 	unsigned diff;
 	unsigned page;
-	unsigned end;
 	unsigned offset_bits; 
 	unsigned block_size;
 	read_block_rtn read_rtn;
 
 	ci.search = ci.buf = ci.initial_buf = (unsigned *)0x93f00000;
 	ci.hdr = NULL;
-	end = ((unsigned)ci.buf) + 0x10000;
+	ci.cur_end = (void*)(((unsigned)ci.buf) + 0x10000);
+	ci.end = NULL;
 	ecspi_init(base);
 
 	offset_bits = identify_chip_read_rtn(base, &block_size, &read_rtn);
@@ -39,34 +38,10 @@ int main(void)
 		common_load_block_of_file(&ci, block_size - diff);
 		page++;
 		diff = 0;
-		if (!hdr) {
-			if (ci.hdr) {
-				unsigned *p = (unsigned *)&ci.hdr->dcd_ptr;
-				unsigned len = 0x10000;
-				end = ((unsigned)ci.hdr) + 0x10000;
-				if (p < (unsigned *)ci.buf) {
-					p = (unsigned *)*p;
-					if (p < (unsigned *)ci.buf) {
-						if (*p == DCD_BARKER) {
-							p = (unsigned *)(((unsigned char *)p) + p[1] + 8);
-							if (p < (unsigned *)ci.buf) {
-								len = *p;
-								p = (unsigned *)&ci.hdr->app_dest_ptr;
-								if (p < (unsigned *)ci.buf) {
-									p = (unsigned *)*p;
-									hdr = ci.hdr;
-									debug_pr("len = %x", len);
-									end = ((unsigned)p) + len;
-									if ((unsigned)(end - ((unsigned)ci.buf)) > (4 << 20))
-										end = ((unsigned)ci.buf) + (4 << 20);
-								}
-							}
-						}
-					}
-				}
-			}
+		if (!ci.end) {
+			header_update_end(&ci);
 		}
-	} while (((unsigned)ci.buf) < end);
+	} while (ci.buf < ci.cur_end);
 
 	exec_program(&ci, 0);
 	dump_mem(ci.initial_buf, offset, 14);

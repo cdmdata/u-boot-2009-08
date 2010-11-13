@@ -27,6 +27,7 @@ int main(void)
 	do {
 		my_memset((unsigned char *)&info, 0, sizeof(struct info));
 //		debug_dump(pmbr, 0, 1);	//dump 1st 512 bytes of memory
+		info.dev.base = get_mmc_base();
 		if (mmc_init(&info.dev)) {
 			delayMicro(1000000);
 			continue;
@@ -77,7 +78,7 @@ int main(void)
 	info.partition_end = info.partition_start + info.partition_size;
 	debug_pr("partition_start=%x, partition_size=%x\n", info.partition_start, info.partition_size);
 	if (!info.partition_start)
-		repeat_error("no partitions\n");
+		repeat_error(&info.dev, "no partitions\n");
 
 	sd_read_blocks(&info.dev, info.partition_start, 1, pboot);
 	debug_dump(pboot, info.partition_start, 1);
@@ -108,13 +109,13 @@ skip_partition:
 		ret = scan_chain(info.file_cluster, 1, &info, load_block_of_file);
 		if (ret != STATUS_END_OF_CHAIN) {
 			print_hex(ret, 8);
-			repeat_error(" file load failed\n");
+			repeat_error(&info.dev, " file load failed\n");
 			return 0;
 		}
-		stop_clock();
+		stop_clock(&info.dev);
 		exec_program(&info.c, info.file_cluster);
 	} else {
-		repeat_error("U-BOOT.BIN not found\n");
+		repeat_error(&info.dev, "U-BOOT.BIN not found\n");
 	}
 	return 0;
 }

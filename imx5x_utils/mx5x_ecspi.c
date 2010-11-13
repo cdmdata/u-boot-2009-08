@@ -13,11 +13,6 @@
 #define MAKE_CMD(cmd, page, shift) (((page << shift) & 0x00ffffff) | (cmd << 24))
 
 
-//#define GPIO1_BASE 0x73f84000
-#define GPIO4_BASE 0x73f90000
-#define GPIO_DR 0
-#define GPIO_DIR 4
-#define GPIO_PSR 8
 
 
 #define ECSPI_RXDATA	0x00
@@ -72,81 +67,10 @@ void ecspi_config(int base, unsigned ctl)
 	IO_WRITE(base, ECSPI_TEST, 0 << TEST_CL_BIT);
 }
 
-#define IOMUXC	0x73fa8000
-
-#define SW_MUX_CTL_PAD_CSPI1_MOSI	0x210	//gpio4[22], alt 3
-#define SW_MUX_CTL_PAD_CSPI1_MISO	0x214	//gpio4[23], alt 3
-#define SW_MUX_CTL_PAD_CSPI1_SS0	0x218	//gpio4[24], alt 3
-#define SW_MUX_CTL_PAD_CSPI1_SS1	0x21c	//gpio4[25], alt 3
-#define SW_MUX_CTL_PAD_CSPI1_RDY	0x220	//gpio4[26], alt 3
-#define SW_MUX_CTL_PAD_CSPI1_SCLK	0x224	//gpio4[27], alt 3
-
-
-#define ALT0	0x0
-#define ALT1	0x1
-#define ALT3	0x3
-#define SION	0x10	//0x10 means force input path of BGA contact
-
-#define MUX_SS0			ALT3
-#define MUX_SS1			ALT3
-
-#define SW_PAD_CTL_CSPI1_MOSI		0x600
-#define SW_PAD_CTL_CSPI1_MISO		0x604
-#define SW_PAD_CTL_CSPI1_SS0		0x608
-#define SW_PAD_CTL_CSPI1_SS1		0x60c
-#define SW_PAD_CTL_CSPI1_RDY		0x610
-#define SW_PAD_CTL_CSPI1_SCLK		0x614
-
-#define SRE_FAST	(0x1 << 0)
-#define DSE_LOW		(0x0 << 1)
-#define DSE_MEDIUM	(0x1 << 1)
-#define DSE_HIGH	(0x2 << 1)
-#define DSE_MAX		(0x3 << 1)
-#define OPENDRAIN_ENABLE (0x1 << 3)
-#define R100K_PD	(0x0 << 4)
-#define R47K_PU		(0x1 << 4)
-#define R100K_PU	(0x2 << 4)
-#define R22K_PU		(0x3 << 4)
-#define KEEPER		(0x0 << 6)
-#define PULL		(0x1 << 6)
-#define PKE_ENABLE	(0x1 << 7)
-#define HYS_ENABLE	(0x1 << 8)
-#define VOT_LOW		(0x0 << 13)
-#define VOT_HIGH	(0x1 << 13)
-
-#define PAD_CSPI1_MOSI	(HYS_ENABLE | PKE_ENABLE | KEEPER | R100K_PU | DSE_HIGH | SRE_FAST)
-#define PAD_CSPI1_MISO	(HYS_ENABLE | PKE_ENABLE | KEEPER | DSE_HIGH | SRE_FAST)
-#define PAD_CSPI1_SS0	(HYS_ENABLE | PKE_ENABLE | KEEPER | DSE_HIGH | SRE_FAST)
-#define PAD_CSPI1_SS1	(HYS_ENABLE | PKE_ENABLE | KEEPER | DSE_HIGH | SRE_FAST)
-#define PAD_CSPI1_RDY	(HYS_ENABLE | PKE_ENABLE | KEEPER | DSE_LOW | SRE_FAST)
-#define PAD_CSPI1_SCLK	(HYS_ENABLE | PKE_ENABLE | KEEPER | R100K_PU | DSE_HIGH | SRE_FAST)
-
-#define GP4_MISO_BIT	23
-#define GP4_SS0_BIT	24
-#define GP4_SS1_BIT	25
-
 void ecspi_init(int base)
 {
-	uint mux_base = IOMUXC;
-	uint gpio_base = GPIO4_BASE;
-
 	debug_pr("%s\n", __func__);
-	IO_WRITE(mux_base, SW_PAD_CTL_CSPI1_MOSI, PAD_CSPI1_MOSI);
-	IO_WRITE(mux_base, SW_PAD_CTL_CSPI1_MISO, PAD_CSPI1_MISO);
-	IO_WRITE(mux_base, SW_PAD_CTL_CSPI1_SS0, PAD_CSPI1_SS0);
-	IO_WRITE(mux_base, SW_PAD_CTL_CSPI1_SS1, PAD_CSPI1_SS1);
-	IO_WRITE(mux_base, SW_PAD_CTL_CSPI1_SCLK, PAD_CSPI1_SCLK);
-
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_MOSI, 0);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_MISO, 0);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_SS0, MUX_SS0);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_SS1, MUX_SS1);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_SCLK, 0);
-
-// make sure SS0 is low(pmic), SS1 is high
-	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS0_BIT), (1 << GP4_SS1_BIT));
-// make sure MISO is input, SS0/SS1 are output
-	IO_MOD(gpio_base, GPIO_DIR, (1 << GP4_MISO_BIT), (1 << GP4_SS0_BIT) | (1 << GP4_SS1_BIT));
+	iomuxc_setup_ecspi();
 //	IO_WRITE(base, ECSPI_CONTROL, CTL_DEFAULT(32, DEFAULT_CLOCK) & ~1);
 	ecspi_config(base, CTL_DEFAULT(32, DEFAULT_CLOCK) & ~1);
 }
@@ -155,7 +79,6 @@ unsigned ecspi_cmd(int base, unsigned cmd, unsigned ctl)
 {
 	unsigned status;
 	unsigned data = 0xffffffff;
-	uint gpio_base = GPIO4_BASE;
 
 //	debug_pr("%s\n", __func__);
 //	debug_pr("cmd=%x ctl=%x\n", cmd, ctl);
@@ -163,7 +86,7 @@ unsigned ecspi_cmd(int base, unsigned cmd, unsigned ctl)
 	ecspi_config(base, ctl);
 	IO_WRITE(base, ECSPI_TXDATA, cmd);
 
-	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
+	ecspi_ss_active();
 	IO_WRITE(base, ECSPI_CONTROL, ctl + CTL_SMC);
 	do {
 		status = IO_READ(base, ECSPI_STATUS);
@@ -174,8 +97,9 @@ unsigned ecspi_cmd(int base, unsigned cmd, unsigned ctl)
 		}
 	} while (!(status & (1<<7)));	//wait for transfer complete
 
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
+	ecspi_ss_inactive();
 	IO_WRITE(base, ECSPI_STATUS, (1<<7));
+	delayMicro(1);
 	return data;
 }
 
@@ -187,7 +111,6 @@ void ecspi_read(int base, unsigned* dst, unsigned length, unsigned cmd, unsigned
 	unsigned status;
 	unsigned loop_count = 0;
 	unsigned bits;
-	uint gpio_base = GPIO4_BASE;
 
 //	debug_pr("%s length=%x\n", __func__, length);
 	length >>= 2;
@@ -217,7 +140,7 @@ void ecspi_read(int base, unsigned* dst, unsigned length, unsigned cmd, unsigned
 	outstanding = max;
 //fifo is full, start device
 
-	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
+	ecspi_ss_active();
 	IO_WRITE(base, ECSPI_CONTROL, ctrl | ctrl_start);
 	do {
 		status = IO_READ(base, ECSPI_STATUS);
@@ -311,10 +234,11 @@ single:
 			debug_pr("tx_cnt=%x outstanding=%x %2x\n", tx_cnt, outstanding, status);
 		}
 	} while (1);
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
+	ecspi_ss_inactive();
 	IO_WRITE(base, ECSPI_STATUS, (1<<7));
 //	IO_WRITE(base, ECSPI_CONTROL, ctrl & ~1);
 	ecspi_config(base, ctrl & ~1);
+	delayMicro(1);
 }
 
 void ecspi_write(int base, unsigned* src, unsigned length, unsigned cmd, unsigned cmd_bits, unsigned clock)
@@ -325,7 +249,6 @@ void ecspi_write(int base, unsigned* src, unsigned length, unsigned cmd, unsigne
 	unsigned status;
 	unsigned loop_count = 0;
 	unsigned bits;
-	uint gpio_base = GPIO4_BASE;
 
 //	debug_pr("%s length=%x\n", __func__, length);
 	length >>= 2;
@@ -353,7 +276,7 @@ void ecspi_write(int base, unsigned* src, unsigned length, unsigned cmd, unsigne
 	tx_cnt -= max;
 	outstanding = max;
 //fifo is full, start device
-	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
+	ecspi_ss_active();
 	IO_WRITE(base, ECSPI_CONTROL, ctrl | ctrl_start);
 	do {
 		status = IO_READ(base, ECSPI_STATUS);
@@ -438,7 +361,11 @@ single:
 }
 
 #define JEDEC_ID		0x9f	//1 opcode byte in, 0x20,0x20,0x15 out ST_MICRO
+#if 1
+#define JEDEC_CLOCK	(PRE_DIV(13) | POST_DIV_P2(2))
+#else
 #define JEDEC_CLOCK	(PRE_DIV(7) | POST_DIV_P2(0))
+#endif
 
 unsigned jedec_read_id(int base)
 {
@@ -679,6 +606,7 @@ static void atmel_erase_sector(int base, unsigned page, unsigned offset_bits)
 	atmel_wait_for_ready(base);
 }
 
+#ifdef BLOCK_ERASE
 static void atmel_erase_block(int base, unsigned page, unsigned offset_bits)
 {
 	unsigned cmd = MAKE_CMD(SF_BLOCK_ERASE, page, offset_bits);
@@ -687,7 +615,7 @@ static void atmel_erase_block(int base, unsigned page, unsigned offset_bits)
 //	delayMicro(100000);	//0.10 seconds max
 	atmel_wait_for_ready(base);
 }
-
+#endif
 
 unsigned atmel_chip_erase(int base)
 {
@@ -702,10 +630,10 @@ unsigned atmel_chip_erase(int base)
 static void atmel_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
 {
 	unsigned cmd = MAKE_CMD(SF_BUFFER1_PROGRAM, page, offset_bits); //program buffer
-	uint gpio_base = GPIO4_BASE;
 	debug_pr("%s: block_size=0x%x page=%x, *src(%x)=%x\n", __func__, block_size, page, src, *src);
 	ecspi_write(base, src, block_size, (SF_BUFFER1_WRITE << 24), 32, ATMEL_CLOCK);
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
+	ecspi_ss_inactive();
+	delayMicro(1);
 	ecspi_cmd(base, cmd, CTL_DEFAULT(32, ATMEL_CLOCK));
 //	delayMicro(6000);	//6 ms max
 	atmel_wait_for_ready(base);
@@ -728,6 +656,7 @@ static void atmel_erase_sector_range(int base, unsigned epage, unsigned endpage,
 	}
 }
 
+#ifdef BLOCK_ERASE
 static void atmel_erase_block_range(int base, unsigned epage, unsigned endpage, unsigned offset_bits)
 {
 	debug_pr("%s: epage=0x%x endpage=0x%x\n", __func__, epage, endpage);
@@ -737,6 +666,7 @@ static void atmel_erase_block_range(int base, unsigned epage, unsigned endpage, 
 		epage = (epage | 7) + 1;
 	}
 }
+#endif
 
 static int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned length, unsigned offset_bits, unsigned block_size)
 {
@@ -854,11 +784,11 @@ static void st_erase_sector_range(int base, unsigned epage, unsigned endpage, un
 static void st_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
 {
 	unsigned cmd = MAKE_CMD(ST_PAGE_PROGRAM, page, offset_bits); //program buffer
-	uint gpio_base = GPIO4_BASE;
 	debug_pr("%s: block_size=0x%x page=%x, *src(%x)=%x\n", __func__, block_size, page, src, *src);
 	ecspi_cmd(base, ST_WRITE_ENABLE, CTL_DEFAULT(8, ST_CLOCK));
 	ecspi_write(base, src, block_size, cmd, 32, ST_CLOCK);
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
+	ecspi_ss_inactive();
+	delayMicro(1);
 	st_wait_for_ready(base);
 }
 
@@ -908,8 +838,13 @@ static int st_write_blocks(int base, unsigned page, unsigned* src, unsigned leng
 #define SST_ENABLE_BUSY_SO	0x70	//just command
 #define SST_DISABLE_BUSY_SO	0x80	//just command
 
+#if 0
+#define SST_SLOW_CLOCK		(PRE_DIV(13) | POST_DIV_P2(2))
+#define SST_CLOCK		(PRE_DIV(7) | POST_DIV_P2(0))
+#else
 #define SST_SLOW_CLOCK		(PRE_DIV(2) | POST_DIV_P2(0))
 #define SST_CLOCK		(PRE_DIV(1) | POST_DIV_P2(0))
+#endif
 /*
  *
  */
@@ -988,21 +923,20 @@ static void sst_erase_sector_range(int base, unsigned epage, unsigned endpage, u
 
 static void wait_for_miso_high(int base)
 {
-	uint mux_base = IOMUXC;
-	uint gpio_base = GPIO4_BASE;
 	unsigned dr;
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_MISO, ALT3);
+	iomuxc_miso_gp();
+
 	delayMicro(1);
 
-	IO_MOD(gpio_base, GPIO_DR, (1 << GP4_SS1_BIT), 0);	//make SS1 low
+	ecspi_ss_active();
 	delayMicro(1);
 	for (;;) {
-		dr = IO_READ(gpio_base, GPIO_PSR);
-		if (dr & (1 << GP4_MISO_BIT))
+		dr = ecspi_read_miso();
+		if (dr)
 			break;
 	}
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CSPI1_MISO, 0);
+	ecspi_ss_inactive();
+	iomuxc_miso_ecspi();
 	delayMicro(1);
 }
 
@@ -1011,7 +945,6 @@ static void sst_write_block(int base, unsigned page, unsigned* src, unsigned off
 	unsigned char *p = (unsigned char *)src; 
 	unsigned cmd_rem = ((page << offset_bits) << 16) | (p[3] << 8) | p[2];
 	unsigned i = 0;
-	uint gpio_base = GPIO4_BASE;
 	debug_pr("%s: block_size=0x%x page=%x, *src(%x)=%x\n", __func__, block_size, page, src, *src);
 #ifdef DEBUG
 	sst_status(base);
@@ -1020,8 +953,8 @@ static void sst_write_block(int base, unsigned page, unsigned* src, unsigned off
 #ifdef DEBUG
 	sst_status(base);
 #endif
-	ecspi_write(base, &cmd_rem, 4, (SST_AAI_W_PROGRAM << 8) | (page << offset_bits) >> 16, 16, SST_CLOCK);
-	IO_MOD(gpio_base, GPIO_DR, 0, (1 << GP4_SS1_BIT));	//make SS1 high
+	ecspi_write(base, &cmd_rem, 4, (SST_AAI_W_PROGRAM << 8) | ((page << offset_bits) >> 16), 16, SST_CLOCK);
+	ecspi_ss_inactive();
 	for (;;) {
 		wait_for_miso_high(base);
 		if (block_size <= 2)
@@ -1049,13 +982,14 @@ static int sst_write_blocks(int base, unsigned page, unsigned* src, unsigned len
 #ifdef DEBUG
 	sst_status(base);
 #endif
+
+	page_cnt = ((length + block_size -1) / block_size);
+	sst_erase_sector_range(base, page, page + page_cnt, offset_bits);
+
 	ecspi_cmd(base, SST_ENABLE_BUSY_SO, CTL_DEFAULT(8, SST_CLOCK));
 #ifdef DEBUG
 	sst_status(base);
 #endif
-
-	page_cnt = ((length + block_size -1) / block_size);
-	sst_erase_sector_range(base, page, page + page_cnt, offset_bits);
 #if 1
 	for (;;) {
 		sst_write_block(base, page, src, offset_bits, block_size);

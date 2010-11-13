@@ -40,7 +40,7 @@ int main(void)
 		my_printf("Xmodem error\n");
 		return -1;
 	}
-	write_ubl(dest, len, (((struct app_header *)dest)->app_barker == APP_BARKER) ?
+	write_ubl(dest, len, header_present((struct common_info *)dest) ?
 			(0x400/0x200) :		/* UBL starts at block #2 */
 			(0x20000/0x200));	/* eboot starts at block #256 */
 	exec_dl(dest, len);

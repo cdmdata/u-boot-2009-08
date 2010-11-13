@@ -3,6 +3,7 @@ struct sdmmc_dev {
 	char f4BitMode;
 	char bHighCapacity;
 	char spare;
+	unsigned base;
 //	int startBlock = 0;
 	unsigned char resp[20];
 };
@@ -13,8 +14,8 @@ struct sdmmc_dev {
 int mmc_init(struct sdmmc_dev *pdev);
 int sd_read_blocks(struct sdmmc_dev *pdev, uint block_num, uint block_cnt, void* buf);
 int sd_write_blocks(struct sdmmc_dev *pdev, uint block_num, uint block_cnt, void* buf);
-void stop_clock(void);
-void repeat_error(char* s);
+void stop_clock(struct sdmmc_dev *pdev);
+void repeat_error(struct sdmmc_dev *pdev, char* s);
 
 struct info {
 	uint32_t partition_start;

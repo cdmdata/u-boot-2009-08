@@ -1,30 +1,24 @@
 	.global assem_start
-//256 meg is fine if we're just writing sdmmc to the SDCard 
-#define USE_CSD1	//512MB board uses CS0 and CS1, we will disable CS1 if ram doesn't appear to work
-
-//HAB API Jump Table Addresses
-#define HAB_CSF_CHECK		0x40	//Verify signature of memory ranges
-//hab_result hab_csf_check(UINT8 csf_count, UINT32 *csf_list);
-#define HAB_ASSERT_VERIFICATION	0x44	//Check that memory range is secured
-//hab_result hab_asser_verification(UINT8 *block_start, UINT32 block_length);
-#define PU_IROM_BOOT_DECISION	0x50	//Serial bootloader
-//void pu_irom_boot_decision(void);
-
-	.equiv	UART1_BASE, 0x73fbc000
-	.equiv	UART2_BASE, 0x73fc0000
-	.equiv	UART3_BASE, 0x7000c000
-	.equiv	UART_BASE, UART1_BASE
-	.equiv	UCR1,	0x0080
-
-	.equiv	CCM_BASE,	0x73fd4000
-	.equiv	ESD_BASE,	0x83fd9000
-	.equiv	ESD_CTL0, 0x000
-	.equiv	ESD_CFG0, 0x004
-	.equiv	ESD_CTL1, 0x008
-	.equiv	ESD_CFG1, 0x00c
-	.equiv	ESD_MISC, 0x010
-	.equiv	ESD_SCR,  0x014
-
+	.global get_uart_base
+	.global get_ecspi_base
+	.global get_mmc_base
+	.global iomuxc_setup_ecspi
+	.global iomuxc_miso_gp
+	.global iomuxc_miso_ecspi
+	.global iomuxc_setup_mmc
+	.global ecspi_ss_active
+	.global ecspi_ss_inactive
+	.global ecspi_read_miso
+	.global mmc_read_cd
+	.global get_ram_base
+	.global TransmitX
+	.global ReceiveX
+	.global hw_watchdog_reset
+	.global header_search	
+	.global exec_program	
+	.global exec_dl
+	.global header_update_end
+	.global header_present
 #define rFNAME r8
 #define rFOFF r9
 #define rUART r10
@@ -32,7 +26,13 @@
 
 #include <asm/BigMacro.h>
 #include <asm/char.inc>
-
+#define ASM
+#include "mx5x.h"
+#ifdef mx51
+#include "mx51.h"
+#else
+#include "mx53.h"
+#endif
 //
 // ARM constants
 //
@@ -62,17 +62,6 @@
 // Configure coprocessor access control
 	.equiv	ARM_CACR_CONFIG,	(ARM_VFP_SP_ACCESS | ARM_VFP_DP_ACCESS)
 
-// AIPS Constants
-	.equiv	CSP_BASE_REG_PA_AIPS1,	0x73F00000
-	.equiv	CSP_BASE_REG_PA_AIPS2,	0x83F00000
-
-	.equiv	AIPSREG_MPR0_OFFSET,	0x0000
-	.equiv	AIPSREG_MPR1_OFFSET,	0x0004
-	.equiv	AIPSREG_OPACR0_OFFSET,	0x0040
-	.equiv	AIPSREG_OPACR1_OFFSET,	0x0044
-	.equiv	AIPSREG_OPACR2_OFFSET,	0x0048
-	.equiv	AIPSREG_OPACR3_OFFSET,	0x004C
-	.equiv	AIPSREG_OPACR4_OFFSET,	0x0050
 
 	.macro hw_init
 	BigMov	r0, ARM_CPSR_MODE_SVC|ARM_CPSR_IRQDISABLE|ARM_CPSR_FIQDISABLE|ARM_CPSR_PRECISE
@@ -123,69 +112,17 @@
 	.endm
 
 	.section .header_mem,"x"
-
-//offset 0x400 for SD/MMC
-header:
-		.word	assem_start	//0x00 app_start_addr
-		.word	0xb1		//0x04 app_barker
-		.word	0x00		//0x08 csf_ptr
-		.word	dcd_ptr		//0x0c dcd_ptr_ptr
-		.word	0		//0x10 srk_ptr
-dcd_ptr:	.word	dcd		//0x14 dcd_ptr
-		.word	image_base	//0x18 app_dest_ptr
-
-
-	.section .dcd_mem,"x"
-dcd:		.word	0xb17219e9	//0x1c
-		.word	2f-1f		//0x20
-1:
-2:
-	.word	program_length	//0x24 length
-
-	.equiv	CCM_CSCMR1, 0x1c
-	.equiv	CCM_CSCDR1, 0x24
-	.equiv	CCM_CCGR1, 0x6c
-
-	.equiv	IOMUXC_BASE, 0x73fa8000
-	.equiv	SW_MUX_CTL_PAD_UART1_RXD, 0x228
-	.equiv	SW_MUX_CTL_PAD_UART1_TXD, 0x22c
-	.equiv	SW_PAD_CTL_UART1_RXD, 0x618
-	.equiv	SW_PAD_CTL_UART1_TXD, 0x61c
+	header_macro assem_start
 
 	.section .text
 assem_start:
-	BigMov	sp,0x1fffffb8
+	BigMov	sp,STACK_HIGH
 	hw_init
 	bl	Basic_Init_IOMux
 //1:	b	1b
 	BigMov	rUART,UART_BASE	//0x28
 
-	BigMov	r6,IOMUXC_BASE
-	mov	r0,#0
-	str	r0,[r6, #SW_MUX_CTL_PAD_UART1_RXD]
-	str	r0,[r6, #SW_MUX_CTL_PAD_UART1_TXD]
-	BigMov	r0, 0x1c5
-	str	r0,[r6, #SW_PAD_CTL_UART1_RXD]
-	str	r0,[r6, #SW_PAD_CTL_UART1_RXD]
-
-	BigMov	r6,CCM_BASE
-	ldr	r0,[r6, #CCM_CCGR1]		//index 3 & 4 is UART1
-	bic	r0,r0,#0xf<<(3*2)
-	str	r0,[r6, #CCM_CCGR1]
-	
-	ldr	r0,[r6, #CCM_CSCMR1]
-	bic	r0,r0,#3<<24
-	orr	r0,r0,#2<<24			//pll3
-	str	r0,[r6, #CCM_CSCMR1]
-
-	ldr	r0,[r6, #CCM_CSCDR1]
-	bic	r0,r0,#0x3f
-	orr	r0,r0,#0x21			// podf /2, pred /5
-	str	r0,[r6, #CCM_CSCDR1]
-
-	ldr	r0,[r6, #CCM_CCGR1]		//index 3 & 4 is UART1
-	orr	r0,r0,#0xf<<(3*2)
-	str	r0,[r6, #CCM_CCGR1]
+	config_uart_clocks
 ////////	
 	adr	r6,init_tab
 	adr	r7,init_tab_end
@@ -220,14 +157,16 @@ init_tab_end:
 uart_init_done:
 	mov	r0,#0xc0000	//0x40000 gives garbage, 0x6000 garbage somtimes
 1:	subs	r0,r0,#1	//delay for UART to power up, avoiding garbage characters transmitting
-	bne	1b	
+	bne	1b
+//	mov	r0, #'A'
+//	bl	TransmitX
 	bl	Basic_Init_ESD
 	mov	r0,#0x10000
 2:	subs	r0,r0,#1
-	bne	2b	
-#ifdef USE_CSD1
-//	mov	r0, #'A'
+	bne	2b
+//	mov	r0, #'X'
 //	bl	TransmitX
+#ifdef USE_CSD1
 
 //See if DDR CS1 is available
 	mov	r5, #0xa0000000
@@ -254,6 +193,9 @@ uart_init_done:
 	bne	7f
 	subs	r6, r6, #1
 	bne	4b
+#if 0	//change to if 1 to force 256M of memory
+	b	7f
+#endif
 	b	8f
 //CS1 does NOT have SDRAM connected, only 256 M on board
 //We need to turn off CS1
@@ -261,59 +203,17 @@ uart_init_done:
 	mov	r0, #'F'
 	bl	TransmitX
 ///
-	BigMov	r3, ESD_BASE
-	BigMov	r1, 0x00008000		//CON_REQ
-	str	r1, [r3, #ESD_SCR]
-11:	ldr	r1, [r3, #ESD_SCR]
-	tst	r1, #1<<14
-	beq	11b
-#if 1
-	BigMov	r1, 0x000ad0d2		//ESDMISC, ddr2, 3 bank bits (13+10+3+2) = 28 bits = 256M
-	str	r1, [r3, #ESD_MISC]	// soft reset
-	bic	r1, r1, #2
-	mov	r0,#0x1
-11:	subs	r0,r0,#1
-	bne	11b
-	str	r1, [r3, #ESD_MISC]	// release reset
-#endif
-	BigMov	r1, 0x04008008	 	//PRECHARGE ALL
-	str	r1, [r3, #ESD_SCR]
-///
-	ldr	r1, [r3, #ESD_CTL1]
-	tst	r1, #1<<31
-	bic	r1, r1, #(1<<31)
-	strne	r1, [r3, #ESD_CTL1]	// disable CS1
-
-#if 0
-	add	r4, r3, #ESD_CTL1
-	add	r5, r3, #ESD_CFG1
-	add	r6, r3, #ESD_SCR
-	adr	r7, ESD_TABLE
-10:	ldr	r0, [r7], #4
-	cmp	r0,#0
-	beq	8f
-	ldr	r1, [r7], #4
-	cmp	r0, r4		//ESD_CTL1
-	cmpne	r0, r5		//ESD_CFG1
-	beq	10b
-	cmp	r0, r6		//ESD_SCR??
-	bne	12f
-	tst	r1,#4
-	bne	10b
-12:
-	mov	r2,#0x100000
-11:	subs	r2,r2,#1
-	bne	11b
-	str	r1, [r0]
-	b	10b
-#else
-	mov	r1, #0	 	//normal operations again
-	str	r1, [r3, #ESD_SCR]
-#endif
+	Turn_off_CS1
 8:
-//	mov	r0, #'G'
+#else
+//	mov	r0, #'F'
+//	bl	TransmitX
+//	Turn_off_CS1
+//	mov	r0, #'-'
 //	bl	TransmitX
 #endif
+//	mov	r0, #'G'
+//	bl	TransmitX
 
 	bl	main
 	bl	main
@@ -321,113 +221,198 @@ uart_init_done:
 3:	b	3b
 
 Basic_Init_ESD:
-	adr	r7, ESD_TABLE
-	mov	r6,#1000
+	test_memory_active
+	movne	pc, lr
+//	test_watchdog_reset
+//	movne	pc, lr
+	esd_con_req
+	adr	r3, ESD_TABLE
+	mov	r2,#1000
 	b	Basic_Init
 Basic_Init_IOMux:
-	adr	r7, IOMUX_TABLE
-	mov	r6,#0x1
+	adr	r3, IOMUX_TABLE
+Basic_Init1:
+	mov	r2,#0x1
 Basic_Init:
-10:	ldr	r0, [r7], #4
+10:	ldr	r0, [r3], #4
 	cmp	r0,#0
 	moveq	pc, lr
-	ldr	r1, [r7], #4
-12:
-	mov	r2, r6
-11:	subs	r2, r2, #1
+
+	mov	r1, r2
+11:	subs	r1, r1, #1
 	bne	11b
+
+	ldr	r1, [r3], #4
 	str	r1, [r0]
+#if 0
+	mov	r0, #'.'
+	cmp	r2,#1000
+	str	lr,[sp, #-4]!
+	bleq	TransmitX
+	ldr	lr,[sp], #4
+#endif
 	b	10b
 
 
 IOMUX_TABLE:
-#if 1
-//babbage tape out 2, 56 DCD entries
-	.word	0x73fa88a0, 0x00000200	//IOMUXC_SW_PAD_CTL_GRP_INMODE1, ddr2 input type
-	.word	0x73fa850c, 0x000020c5	//IOMUXC_SW_PAD_CTL_PAD_EIM_SDODT1, 100K Pull Down, high drive strength
-	.word	0x73fa8510, 0x000020c5	//IOMUXC_SW_PAD_CTL_PAD_EIM_SDODT0, 100K Pull Down, high drive strength
-	.word	0x73fa883c, 0x00000002	//IOMUXC_SW_PAD_CTL_GRP_DDR_A0, Medium drive strength
-	.word	0x73fa8848, 0x00000002	//IOMUXC_SW_PAD_CTL_GRP_DDR_A1, Medium drive strength
-	.word	0x73fa84b8, 0x000000e7	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDCLK1, Max drive strength
-	.word	0x73fa84bc, 0x00000045	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
-	.word	0x73fa84c0, 0x00000045	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
-	.word	0x73fa84c4, 0x00000045	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDQS2, Disable pull down
-	.word	0x73fa84c8, 0x00000045	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDQS3, Disable pull down
-	.word	0x73fa8820, 0x00000000	//IOMUXC_SW_PAD_CTL_GRP_DDRPKS, select keeper
-	.word	0x73fa84a4, 0x00000003	//IOMUXC_SW_PAD_CTL_PAD_DRAM_RAS, Medium Drive Strength
-	.word	0x73fa84a8, 0x00000003	//IOMUXC_SW_PAD_CTL_PAD_DRAM_CAS, Medium Drive Strength
-	.word	0x73fa84ac, 0x000000e3	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDWE, Medium Drive Strength
-	.word	0x73fa84b0, 0x000000e3	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDCKE0, Medium Drive Strength
-	.word	0x73fa84b4, 0x000000e3	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDCKE1, Medium Drive Strength
-	.word	0x73fa84cc, 0x000000e3	//IOMUXC_SW_PAD_CTL_PAD_DRAM_SDCKE1, Medium Drive Strength
-	.word	0x73fa84d0, 0x000000e2	//IOMUXC_SW_PAD_CTL_PAD_DRAM_CS0, Medium Drive Strength, slow slew rate
-//serial downloader doesn't have the next 4
-	.word	0x73fa882c, 0x00000006	//IOMUXC_SW_PAD_CTL_GRP_DRAM_B4 (D24-D31), max drive strength
-	.word	0x73fa88a4, 0x00000006	//IOMUXC_SW_PAD_CTL_GRP_DRAM_B0 (D0-D7), max drive strength
-	.word	0x73fa88ac, 0x00000006	//IOMUXC_SW_PAD_CTL_GRP_DRAM_B1 (D8-D15, max drive strength
-	.word	0x73fa88b8, 0x00000006	//IOMUXC_SW_PAD_CTL_GRP_DRAM_B2 (D16-D23), max drive strength
-	.word	0
-#endif
+	iomux_dcd_data
 
 ESD_TABLE:
-#if 1
-	.word	0x83fd9000, 0x82a20000	//ESDCTL0, 13 row, 10 col, 32 bit width
-#ifdef USE_CSD1
-	.word	0x83fd9008, 0x82a20000	//ESDCTL1
-#endif
-	.word	0x83fd9010, 0x000ad0d0	//ESDMISC, ddr2, 3 bank bits (13+10+3+2) = 28 bits = 256M
-	.word	0x83fd9004, 0x333574aa	//ESDCFG0 vs 333584ab
-//bit 3-0 ACTIVE to ACTIVE, same bank, command delay : us 1010 - 11 clocks,   them 1011 - 12 clocks
-//bit 15-12 Active to precharge Command : us 0111 8 clocks, them 1000 9 clocks
+	esd_dcd_data
 
-#ifdef USE_CSD1
-	.word	0x83fd900c, 0x333574aa	//ESDCFG1
-#endif
-//CSD0 always used
-	.word	0x83fd9014, 0x04008008	//ESDSCR, CSD0
-	.word	0x83fd9014, 0x0000801a	//emrs(2)
-	.word	0x83fd9014, 0x0000801b	//emrs(3)
-	.word	0x83fd9014, 0x00448019	//emrs(1) - 50 ohms ODT
-	.word	0x83fd9014, 0x07328018	//MRS
-	.word	0x83fd9014, 0x04008008	//PRECHARGE ALL
-	.word	0x83fd9014, 0x00008010	//auto-refresh
-	.word	0x83fd9014, 0x00008010	//auto-refresh
-	.word	0x83fd9014, 0x06328018	//MRS
-	.word	0x83fd9014, 0x03c48019	//emrs(1) - calibrate vs 0x03808019
-//
-	.word	0x83fd9014, 0x00448019	//emrs(1) - buffers enabled, RDQS disable, DQS enable,
-						//OCD calibration mode exit, 50 ohm termination
-						//0 latency, Normal drive strength, DLL enable
-						// vs 0x00408019
-//
-	.word	0x83fd9014, 0x00008000	//nop
-#ifdef USE_CSD1
-	.word	0x83fd9014, 0x0400800c	//ESDSCR, CSD1 !!!!
-	.word	0x83fd9014, 0x0000801e	//emrs(2)
-	.word	0x83fd9014, 0x0000801f	//emrs(3)
-	.word	0x83fd9014, 0x0044801d	//emrs(1) - 50 ohms ODT vs 0x0000801d
-//
-	.word	0x83fd9014, 0x0732801c	//MRS
-	.word	0x83fd9014, 0x0400800c	//PRECHARGE ALL
-	.word	0x83fd9014, 0x00008014	//auto-refresh
-	.word	0x83fd9014, 0x00008014	//auto-refresh
-	.word	0x83fd9014, 0x0632801c	//MRS
-	.word	0x83fd9014, 0x03c4801d	//emrs(1) - calibrate vs 0x0380801d
-//
-	.word	0x83fd9014, 0x0044801d	//emrs(1) - buffers enabled, RDQS disable, DQS enable,
-						//OCD calibration mode exit, 50 ohm termination
-						//0 latency, Normal drive strength, DLL enable
-						//vs 0x0040801d
-//
-	.word	0x83fd9014, 0x00008004	//nop
-#endif
-	.word	0x83fd9000, 0xb2a20000	//ESDCTL0, refresh 4 rows each refresh clock
-#ifdef USE_CSD1
-	.word	0x83fd9008, 0xb2a20000	//ESDCTL1, ...
-#endif
-	.word	0x83fd9010, 0x000ad6d0	//ESDMISC
-	.word	0x83fd9034, 0x90000000	//ESDGPR DQS delays
-	.word	0x83fd9014, 0x00000000	//ESDSCR, AXI address readies normal operation
-	.word	0
-//CSD0 DDR - 0x90000000 (256M), CSD1 DDR - 0xa0000000 (256M)
-#endif
+	.section .text.get_ram_base,"x"
+get_ram_base:
+	BigMov	r0,RAM_BASE
+	mov	pc, lr
+
+	.section .text.get_uart_base,"x"
+get_uart_base:
+	BigMov	r0,UART_BASE
+	mov	pc, lr
+
+	.section .text.get_ecspi_base,"x"
+get_ecspi_base:
+	BigMov	r0,ECSPI1_BASE
+	mov	pc, lr
+
+	.section .text.get_mmc_base,"x"
+get_mmc_base:
+	BigMov	r0,MM_SDMMC_BASE
+	mov	pc, lr
+
+	.section .text.iomuxc_setup_ecspi,"x"
+iomuxc_setup_ecspi:
+	ecspi_gp_setup
+	ecspi_clk_setup CCM_BASE
+	adr	r3, ECSPI1_IOMUX_TABLE
+	b	Basic_Init1
+ECSPI1_IOMUX_TABLE:
+	ecspi1_iomux_dcd_data
+
+	.section .text.iomuxc_miso_gp,"x"
+iomuxc_miso_gp:
+	adr	r3, MISO_GP_TABLE
+	b	Basic_Init1
+MISO_GP_TABLE:
+	miso_gp_iomux_dcd_data
+
+	.section .text.iomuxc_miso_ecspi,"x"
+iomuxc_miso_ecspi:
+	adr	r3, MISO_ECSPI_TABLE
+	b	Basic_Init1
+MISO_ECSPI_TABLE:
+	miso_ecspi_iomux_dcd_data
+
+	.section .text.ecspi_ss_active,"x"
+ecspi_ss_active:
+	ecspi_ss_make_active
+	mov	pc, lr
+
+	.section .text.ecspi_ss_inactive,"x"
+ecspi_ss_inactive:
+	ecspi_ss_make_inactive
+	mov	pc, lr
+
+	.section .text.ecspi_read_miso,"x"
+ecspi_read_miso:
+	ecspi_ss_get_miso
+	mov	pc, lr
+
+	.section .text.iomuxc_setup_mmc,"x"
+iomuxc_setup_mmc:
+	adr	r3, MMC_IOMUX_TABLE
+	b	Basic_Init1
+MMC_IOMUX_TABLE:
+	mmc_iomux_dcd_data
+
+	.section .text.mmc_read_cd,"x"
+mmc_read_cd:
+	mmc_get_cd
+	mov	pc, lr
+
+	.section .text.TransmitX,"x"
+
+//IN: r0 - character(s) to transmit
+TransmitX:
+1:
+	BigMov	r1,UART_BASE
+	ldr	r1, [r1, #USR2]
+	tst	r1, #(1<<3)
+	beq	1b
+
+	BigMov	r1,UART_BASE
+	str	r0, [r1, #UTXD]
+	movs	r0,r0,LSR #8
+	bne	1b
+	mov	pc, lr
+
+	.section .text.print_hex,"x"
+print_hex:
+	mov	r3, lr
+	mov	r2, r0, LSL #4
+	orr	r2, r2, #1
+	mov	r0, r0, LSR #28
+1:	cmp	r0,#10
+	addcc	r0,r0,#'0'
+	addcs	r0,r0,#'a'-10
+	bl	TransmitX
+	mov	r0, r2, LSR #28
+	movs	r2, r2, LSL #4
+	bne	1b
+	mov	pc, r3
+	
+	.section .text.hw_watchdog_reset,"x"
+hw_watchdog_reset:
+	BigMov	r1, WDOG_BASE
+	BigMov	r0, 0x5555
+	strh	r0,[r1, #WDOG_WSR]
+	mov	r0, r0, LSL #1
+	strh	r0,[r1, #WDOG_WSR]
+	mov	pc,lr			//return
+
+	.section .text.ReceiveX,"x"
+//OUT:
+//z-0 good data in r0
+//z-1 timeout, r0 is 0
+//r1 - loop cnt time remaining
+ReceiveX:
+	BigMov	r1, WDOG_BASE
+	BigMov	r0, 0x5555
+	strh	r0,[r1, #WDOG_WSR]
+	mov	r0, r0, LSL #1
+	strh	r0,[r1, #WDOG_WSR]
+	mov	r1,#0x80000
+1:
+	BigMov	r0,UART_BASE
+	ldr	r0,[r0,#USR2]
+	tst	r0,#1
+	BigMovNe r0,UART_BASE
+	ldrne	r0,[r0,#URXD]
+	andne	r0,r0,#0xff
+	movne	pc,lr			//return
+	subs	r1,r1,#1
+	bne	1b
+	mov	r0,#0
+	mov	pc,lr			//return
+
+	.section .text.header_search,"x"
+header_search:
+	b HEADER_SEARCH	
+
+	.section .text.exec_program,"x"
+exec_program:
+	b EXEC_PROGRAM	
+
+	.section .text.exec_dl,"x"
+exec_dl:
+	b EXEC_DL
+
+	.section .text.header_update_end,"x"
+header_update_end:
+	b HEADER_UPDATE_END
+
+	.section .text.header_present,"x"
+header_present:
+	test_for_header
+	mov	pc,lr			//return
+

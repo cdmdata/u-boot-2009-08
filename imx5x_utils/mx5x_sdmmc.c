@@ -61,8 +61,6 @@
 
 
 
-#define MM_SDMMC	0x70004000
-
 #define SD_DSADDR	0x00	//4 bytes, DMA system address
 #define SD_BLKATTR	0x04	//4 bytes, block attributes
 #define SD_CMDARG	0x08	//4 bytes, command argument
@@ -101,40 +99,37 @@
 
 
 
-void stop_clock(void)
+void stop_clock(struct sdmmc_dev *pdev)
 {
-	uint base = MM_SDMMC;
-	IO_MOD(base, SD_SYSCTL, SYSCTL_CLKEN, 0);	/* stop clock to SDCard*/
+	IO_MOD(pdev->base, SD_SYSCTL, SYSCTL_CLKEN, 0);	/* stop clock to SDCard*/
 	delayMicro(10);
 }
-static void clock_off(void)
+static void clock_off(struct sdmmc_dev *pdev)
 {
-	uint base = MM_SDMMC;
-	IO_MOD(base, SD_SYSCTL, 0xf, 0);	/* disable internal clock too */
+	IO_MOD(pdev->base, SD_SYSCTL, 0xf, 0);	/* disable internal clock too */
 	delayMicro(10);
 }
 
-static void start_clock( void )
+static void start_clock(struct sdmmc_dev *pdev)
 {
-	uint base = MM_SDMMC;
 	uint clkctl;
 	do {
-		clkctl = IO_READ(base, SD_PRSSTATE);
+		clkctl = IO_READ(pdev->base, SD_PRSSTATE);
 	} while (!(clkctl & PRSSTATE_SDSTB));
-	IO_MOD(base, SD_SYSCTL, 0, SYSCTL_CLKEN);	/* enable clock */
+	IO_MOD(pdev->base, SD_SYSCTL, 0, SYSCTL_CLKEN);	/* enable clock */
 }
 
 static uint8_t *mmc_cmd(struct sdmmc_dev *pdev, uint cmd, uint arg)
 {
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	uint *prsp = (uint *)pdev->resp;
 	uint status;
 
-//	stop_clock();
+//	stop_clock(pdev);
 	IO_WRITE(base, SD_CMDARG, arg);
 	IO_WRITE(base, SD_IRQSTAT, 0xffffffff);
 	IO_WRITE(base, SD_IRQSTATEN, (cmd & MMC_CMD_DPS) ? 0xff0033 : 0xff0001);
-	start_clock();
+	start_clock(pdev);
 //	debug_pr("PRSSTATE=%x\n", IO_READ(base, SD_PRSSTATE));
 	IO_WRITE(base, SD_XFRTYPE, cmd);
 	status = 0;
@@ -194,10 +189,10 @@ static void mmc_setblklen(struct sdmmc_dev *pdev, uint blklen)
 	}
 }
 
-static int mmc_ReadFifo(uint * pDst, uint len)
+static int mmc_ReadFifo(struct sdmmc_dev *pdev, uint * pDst, uint len)
 {
 	uint status = 0;
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	do {
 		status = IO_READ(base, SD_IRQSTAT);
 		if (status & 0xff0022)
@@ -226,10 +221,10 @@ static int mmc_ReadFifo(uint * pDst, uint len)
 	return 0;
 }
 
-static int mmc_WriteFifo(uint * pDst, uint len)
+static int mmc_WriteFifo(struct sdmmc_dev *pdev, uint * pDst, uint len)
 {
 	uint status = 0;
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	do {
 		status = IO_READ(base, SD_IRQSTAT);
 		if (status & 0xff0012)
@@ -261,7 +256,7 @@ static int mmc_WriteFifo(uint * pDst, uint len)
 static int mmc_block_read(struct sdmmc_dev *pdev, unsigned char *dst, uint blockNum, uint len)
 {
 	int ret;
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	unsigned char *resp;
 	if (len == 0)
 		return 0;
@@ -270,24 +265,24 @@ static int mmc_block_read(struct sdmmc_dev *pdev, unsigned char *dst, uint block
 	mmc_setblklen(pdev, len);
 
 	/* send read command */
-//	stop_clock();
+//	stop_clock(pdev);
 	IO_MOD(base, SD_SYSCTL, (0x0f << 16), (0x0e << 16));
 	IO_WRITE(base, SD_BLKATTR, (1 << 16) | len);
 //	blockNum += startBlock;
 	if (!pdev->bHighCapacity) blockNum <<= MMC_BLOCK_SHIFT;
 	resp = mmc_cmd(pdev, MMC_CMD_READ_BLOCK, blockNum);
 	if (resp)
-		ret = mmc_ReadFifo((unsigned int*)dst,len);
+		ret = mmc_ReadFifo(pdev, (unsigned int*)dst,len);
 	else
 		ret = -1;
-//	stop_clock();
+//	stop_clock(pdev);
 	return ret;
 }
 
 static int mmc_block_write(struct sdmmc_dev *pdev, uint blockNum, unsigned char *src, int len)
 {
 	int ret;
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	unsigned char *resp;
 	if (len == 0)
 		return 0;
@@ -296,28 +291,28 @@ static int mmc_block_write(struct sdmmc_dev *pdev, uint blockNum, unsigned char 
 	mmc_setblklen(pdev, len);
 
 	/* send write command */
-//	stop_clock();
+//	stop_clock(pdev);
 	IO_MOD(base, SD_SYSCTL, SYSCTL_DATA_TIMEOUT_MASK, SYSCTL_DATA_TIMEOUT);
 	IO_WRITE(base, SD_BLKATTR, (1 << 16) | len);
 //	blockNum += startBlock;
 	if (!pdev->bHighCapacity) blockNum <<= MMC_BLOCK_SHIFT;
 	resp = mmc_cmd(pdev, MMC_CMD_WRITE_BLOCK, blockNum);
 	if (resp)
-		ret = mmc_WriteFifo((unsigned int*)src, len);
+		ret = mmc_WriteFifo(pdev, (unsigned int*)src, len);
 	else
 		ret = -1;
-//	stop_clock();
+//	stop_clock(pdev);
 	return ret;
 }
 
 static unsigned char* mmc_reset(struct sdmmc_dev *pdev)
 {
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	unsigned char *resp;
 	uint sysctl;
 	int i=0;
 	do {
-		clock_off();
+		clock_off(pdev);
 		IO_WRITE(base, SD_SYSCTL, SYSCTL_SLOW_CLOCK | SYSCTL_RSTA | SYSCTL_RSTC | SYSCTL_RSTD);	//reset cmd
 		do {
 			sysctl = IO_READ(base, SD_SYSCTL);
@@ -325,7 +320,7 @@ static unsigned char* mmc_reset(struct sdmmc_dev *pdev)
 		IO_WRITE(base, SD_SYSCTL, SYSCTL_INITA | SYSCTL_DATA_TIMEOUT | SYSCTL_SLOW_CLOCK);
 		IO_WRITE(base, SD_PROCTL, (2<<4));	//little endian, 1 bit mode
 		IO_WRITE(base, SD_WML, (16<<24)|(128<<16)|(16<<8)|(128<<0));	//128 word watermark
-		start_clock();
+		start_clock(pdev);
 		delayMicro(100);
 		resp = mmc_cmd(pdev, MMC_CMD_RESET, 0);	//reset
 		if (resp) break;
@@ -444,7 +439,7 @@ struct mmc_csd_v1_0 {
 
 static int mmc_init__(struct sdmmc_dev *pdev, int force_1wire)
 {
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	int retries;
 	int rc = -ENODEV;
 	unsigned short rca = MMC_DEFAULT_RCA;
@@ -459,7 +454,7 @@ static int mmc_init__(struct sdmmc_dev *pdev, int force_1wire)
 	pdev->f4BitMode = 0;	//default to 1bit mode
 	pdev->bHighCapacity = 0;
 
-	clock_off();
+	clock_off(pdev);
 	IO_WRITE(base, SD_SYSCTL, SYSCTL_SLOW_CLOCK);	/* slowest clock */
 	debug_pr("HOSTVER %x\n", IO_READ(base, SD_HOSTVER));
 	if( 0 == test_for_SDCard(pdev) ) {
@@ -523,8 +518,8 @@ static int mmc_init__(struct sdmmc_dev *pdev, int force_1wire)
 	rca = (isSD)? ((uint16_t*)resp)[1] : MMC_DEFAULT_RCA ;
 
 
-	stop_clock();
-	clock_off();
+	stop_clock(pdev);
+	clock_off(pdev);
 //	IO_MOD(base, SD_SYSCTL, SYSCTL_CLOCK_MASK, SYSCTL_CLOCK(1,1));	/* 54/2/2 = 13.5 Mhz clock */
 	IO_MOD(base, SD_SYSCTL, SYSCTL_CLOCK_MASK, SYSCTL_CLOCK(0x8,0));	/* 54/16/1 = 3.375 Mhz clock */
 
@@ -574,7 +569,7 @@ static int mmc_init__(struct sdmmc_dev *pdev, int force_1wire)
 		if (resp) {
 			/* send read command */
 			unsigned char buf[64];
-//			stop_clock();
+//			stop_clock(pdev);
 			IO_MOD(base, SD_SYSCTL, SYSCTL_DATA_TIMEOUT_MASK, SYSCTL_DATA_TIMEOUT);
 			IO_WRITE(base, SD_BLKATTR, (1 << 16) | 64);
 			resp = mmc_cmd(pdev, SD_STATUS, 0); 	//get SD Status
@@ -583,7 +578,7 @@ static int mmc_init__(struct sdmmc_dev *pdev, int force_1wire)
 			else {
 				int r;
 //				debug_pr("resp %x\n", resp);
-				r = mmc_ReadFifo((unsigned int*)buf,64);
+				r = mmc_ReadFifo(pdev, (unsigned int*)buf,64);
 //				debug_pr("buf[0]=%2x;  busWidthMode=%x\n", buf[0], busWidthMode);
 				if (r) {
 					debug_pr( "Error reading SD_STATUS data\n");
@@ -616,89 +611,13 @@ static int mmc_init__(struct sdmmc_dev *pdev, int force_1wire)
 	return rc;
 }
 
-#define IOMUXC	0x73fa8000
-#define GPIO1_BASE 0x73f84000
 
-#define SW_MUX_CTL_PAD_SD1_CMD		0x394
-#define SW_MUX_CTL_PAD_SD1_CLK		0x398
-#define SW_MUX_CTL_PAD_SD1_DATA0	0x39c
-#define SW_MUX_CTL_PAD_SD1_DATA1	0x3a0
-#define SW_MUX_CTL_PAD_SD1_DATA2	0x3a4
-#define SW_MUX_CTL_PAD_SD1_DATA3	0x3a8
-#define SW_MUX_CTL_PAD_CD		0x3ac	//GPIO1_0 is card detect
-#define SW_MUX_CTL_PAD_WP		0x3b0	//GPIO1_1 is write protect
-
-#define ALT0	0x0
-#define ALT1	0x1
-#define SION	0x10	//0x10 means force input path of BGA contact
-
-#define MUX_SD1_CMD		ALT0|SION	//0x0 is default
-#define MUX_SD1_DATA0		ALT0	//0x0 is default
-#define MUX_SD1_DATA1		ALT0	//0x0 is default
-#define MUX_SD1_DATA2		ALT0	//0x0 is default
-#define MUX_SD1_DATA3		ALT0	//0x0 is default
-#define MUX_SD1_CD		ALT1|SION	//0x0 is default, GPIO1_0
-#define MUX_SD1_WP		ALT1|SION	//0x0 is default, GPIO1_1
-
-#define SW_PAD_CTL_SD1_CMD	0x79c
-#define SW_PAD_CTL_SD1_CLK	0x7a0
-#define SW_PAD_CTL_SD1_DATA0	0x7a4
-#define SW_PAD_CTL_SD1_DATA1	0x7a8
-#define SW_PAD_CTL_SD1_DATA2	0x7ac
-#define SW_PAD_CTL_SD1_DATA3	0x7b0
-#define SW_PAD_CTL_SD1_CD	0x7b4
-#define SW_PAD_CTL_SD1_WP	0x7b8
-
-#define SRE_FAST	(0x1 << 0)
-#define DSE_LOW		(0x0 << 1)
-#define DSE_MEDIUM	(0x1 << 1)
-#define DSE_HIGH	(0x2 << 1)
-#define DSE_MAX		(0x3 << 1)
-#define OPENDRAIN_ENABLE (0x1 << 3)
-#define R100K_PD	(0x0 << 4)
-#define R47K_PU		(0x1 << 4)
-#define R100K_PU	(0x2 << 4)
-#define R22K_PU		(0x3 << 4)
-#define KEEPER		(0x0 << 6)
-#define PULL		(0x1 << 6)
-#define PKE_ENABLE	(0x1 << 7)
-#define HYS_ENABLE	(0x1 << 8)
-#define VOT_LOW		(0x0 << 13)
-#define VOT_HIGH	(0x1 << 13)
-
-
-#define PAD_SD1_CMD	(KEEPER | PKE_ENABLE | DSE_HIGH | R47K_PU | SRE_FAST)	//reset val: 0x20dc, 47K pull up
-#define PAD_SD1_CLK	(KEEPER | PKE_ENABLE | DSE_HIGH | R47K_PU | SRE_FAST)	//reset val: 0x20d4, 47K pull up
-#define PAD_SD1_DATA0	(KEEPER | PKE_ENABLE | DSE_HIGH | R47K_PU | SRE_FAST)	//reset val: 0x20d4, 47K pull up
-#define PAD_SD1_DATA1	(KEEPER | PKE_ENABLE | DSE_HIGH | R47K_PU | SRE_FAST)	//reset val: 0x20d4, 47K pull up
-#define PAD_SD1_DATA2	(KEEPER | PKE_ENABLE | DSE_HIGH | R47K_PU | SRE_FAST)	//reset val: 0x20d4, 47K pull up
-#define PAD_SD1_DATA3	(KEEPER | PKE_ENABLE | DSE_HIGH | R47K_PU | SRE_FAST)	//reset val: 0x20c4, 100K pull down
-#define PAD_SD1_CD	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
-#define PAD_SD1_WP	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
 
 int mmc_init(struct sdmmc_dev *pdev)
 {
-	uint mux_base = IOMUXC;
-	uint base = MM_SDMMC;
+	uint base = pdev->base;
 	int rc;
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_CMD, PAD_SD1_CMD);
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_CLK, PAD_SD1_CLK);
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_DATA0, PAD_SD1_DATA0);
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_DATA1, PAD_SD1_DATA1);
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_DATA2, PAD_SD1_DATA2);
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_DATA3, PAD_SD1_DATA3);
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_CD, PAD_SD1_CD);
-	IO_WRITE(mux_base, SW_PAD_CTL_SD1_WP, PAD_SD1_WP);
-
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_CD, MUX_SD1_CD);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_WP, MUX_SD1_CD);
-
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_SD1_CMD, MUX_SD1_CMD);
-//	IO_WRITE(mux_base, SW_MUX_CTL_PAD_SD1_CLK, MUX_SD1_CLK); //this is default setting
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_SD1_DATA0, MUX_SD1_DATA0);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_SD1_DATA1, MUX_SD1_DATA1);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_SD1_DATA2, MUX_SD1_DATA2);
-	IO_WRITE(mux_base, SW_MUX_CTL_PAD_SD1_DATA3, MUX_SD1_DATA3);
+	iomuxc_setup_mmc();
 
 	if (0) {
 		uint prsstate;
@@ -709,13 +628,8 @@ int mmc_init(struct sdmmc_dev *pdev)
 			return -1;
 		}
 	} else {
-#define GPIO_DR 0
-#define GPIO_DIR 4
-		uint d;
-		uint gpio_base = GPIO1_BASE;
-		IO_MOD(gpio_base, GPIO_DIR, 3, 0);	//make sure they are inputs
-		d = IO_READ(gpio_base, GPIO_DR);
-		if (d & 1) {
+		uint d = mmc_read_cd();
+		if (d) {
 			my_printf("%x, No sdcard\n", d);
 			return -1;
 		} else {
@@ -726,7 +640,7 @@ int mmc_init(struct sdmmc_dev *pdev)
 	if (rc) {
 //		rc = mmc_init__(pdev, 1);
 	}
-//	stop_clock();
+//	stop_clock(pdev);
 	return rc;
 }
 
@@ -773,9 +687,9 @@ int sd_write_blocks(struct sdmmc_dev *pdev, uint block_num, uint block_cnt, void
 	return MAKE_RET_CODE(code, transfer_cnt);
 }
 
-void repeat_error(char* s)
+void repeat_error(struct sdmmc_dev *pdev, char* s)
 {
-	stop_clock();
+	stop_clock(pdev);
 	while (1) {
 	        my_printf(s);
 		delayMicro(1000000);
@@ -826,7 +740,7 @@ static int check_cluster_range(unsigned cluster, struct info *pinfo)
 	unsigned max = (pinfo->fat32) ? CLUSTER_MAX32 : CLUSTER_MAX16;
 	if ((cluster < CLUSTER_MIN) || (cluster > max)) {
 		print_hex(cluster, 8);
-		repeat_error(" cluster not valid\r\n");
+		repeat_error(&pinfo->dev, " cluster not valid\r\n");
 		return STATUS_CLUSTER_NOT_VALID;
 	}
 	return 0;
@@ -901,7 +815,7 @@ int scan_chain(unsigned cluster, unsigned chain, struct info *pinfo, work_func w
 		do {
 			if ((x <= pinfo->partition_start) || (x >= pinfo->partition_end)) {
 				print_hex(x, 8);
-				repeat_error(" block not valid\r\n");
+				repeat_error(&pinfo->dev, " block not valid\r\n");
 				return STATUS_BLOCK_NOT_VALID;
 			}
 			sd_read_blocks(&pinfo->dev, x, 1, pinfo->c.buf);

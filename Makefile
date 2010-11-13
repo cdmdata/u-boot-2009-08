@@ -293,7 +293,7 @@ __LIBS := $(subst $(obj),,$(LIBS)) $(subst $(obj),,$(LIBBOARD))
 #########################################################################
 
 # Always append ALL so that arch config.mk's can add custom ones
-ALL += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)mx51_ubl_ecspi.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
+ALL += $(obj)u-boot.srec $(obj)u-boot.bin $(obj)$(SOC)_ubl_ecspi.bin $(obj)System.map $(U_BOOT_NAND) $(U_BOOT_ONENAND)
 
 all:		$(ALL)
 
@@ -337,10 +337,13 @@ $(obj)uboot_image.o : $(obj)%.o : $(obj)u-boot-no-padding.bin imx5x_utils/uboot_
 	$(LD) -nostdlib -T $(filter %.lds,$^) -o $@  $(obj)$*-temp.o; \
 	rm -f $(obj)$*-temp.o $(obj)u-boot-no-padding.bin
 
-$(obj)mx51_ubl_ecspi.o3 : imx5x_utils/$(obj)mx51_ecspi.o3 $(obj)uboot_image.o imx5x_utils/mx5x.lds
+$(obj)mx51_ubl_ecspi.omx51_2 : imx5x_utils/$(obj)mx51_ecspi.omx51_2 $(obj)uboot_image.o imx5x_utils/mx5x.lds
 	$(LD) --defsym=hdr_offset=0x400 --defsym=load_addr=0x1ffe2000 -static --no-warn-mismatch -nostdlib -T $(filter %.lds,$^) $(filter-out %.lds,$^) -o $@ -M >$(obj)$*.map
 
-$(obj)mx51_ubl_ecspi.bin : $(obj)mx51_ubl_ecspi.o3 
+$(obj)mx53_ubl_ecspi.omx53_2 : imx5x_utils/$(obj)mx53_ecspi.omx53_2 $(obj)uboot_image.o imx5x_utils/mx5x.lds
+	$(LD) --defsym=hdr_offset=0x400 --defsym=load_addr=0xf8006000 -static --no-warn-mismatch -nostdlib -T $(filter %.lds,$^) $(filter-out %.lds,$^) -o $@ -M >$(obj)$*.map
+
+$(obj)$(SOC)_ubl_ecspi.bin : $(obj)$(SOC)_ubl_ecspi.o$(SOC)_2 
 	$(OBJCOPY) ${OBJCFLAGS} -O binary $< $@
 
 GEN_UBOOT = \
@@ -3779,7 +3782,7 @@ clean:
 	@rm -f $(obj)onenand_ipl/u-boot.lds
 	@rm -f $(TIMESTAMP_FILE) $(VERSION_FILE)
 	@find $(obj)imx5x_utils -type f \
-		\( -name '*.bin' -o -name '*.map' -o -name '*.o4' -o -name '*.o3' -o -name '*.o1' \) -print \
+		\( -name '*.bin' -o -name '*.map' -o -name '*.omx5*' \) -print \
 		| xargs rm -f
 	@find $(OBJTREE) -type f \
 		\( -name 'core' -o -name '*.bak' -o -name '*~' \

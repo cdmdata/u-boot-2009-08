@@ -2,7 +2,6 @@
 //#define DEBUG
 #include "mx5x_common.h"
 
-#define UART1_BASE 0x73fbc000
 #define UTXD 0x0040
 #define USR2 0x0098
 #define UTS  0x00b4
@@ -10,7 +9,7 @@
 void flush_uart(void)
 {
 	unsigned usr2;
-	uint uart = UART1_BASE;
+	uint uart = get_uart_base();
 	do {
 		usr2 = IO_READ(uart, USR2);
 	} while (!(usr2 & (1<<3)));
@@ -20,7 +19,7 @@ void print_buf(char* str, int cnt)
 {
 	unsigned uts;
 	unsigned char ch;
-	uint uart = UART1_BASE;
+	uint uart = get_uart_base();
 	while (cnt) {
 		ch = *str++;
 		do {
@@ -29,6 +28,7 @@ void print_buf(char* str, int cnt)
 		IO_WRITE(uart, UTXD, ch);
 		cnt--;
 	}
+	hw_watchdog_reset();
 }
 
 void print_str(char * str)
@@ -148,7 +148,7 @@ void delayMicro(unsigned cnt)
 {
 	volatile unsigned cnt2;
 	while (cnt--) {
-		cnt2 = 1;
+		cnt2 = 100;
 		while (cnt2--);
 	}
 }
@@ -173,78 +173,7 @@ int common_load_block_of_file(struct common_info *pinfo, unsigned block_size)
 {
 	pinfo->buf += block_size;
 	if (!pinfo->hdr) {
-		for (;;) {
-			struct app_header *hdr = (struct app_header *)pinfo->search;
-			void *pdest = (void *)&hdr->app_dest_ptr;
-			debug_pr("hdr=%x pdest=%x buf=%x block_size=%x\n", hdr, pdest, pinfo->buf, block_size);
-			if (pdest >= pinfo->buf)
-				break;
-			if (hdr->app_barker == APP_BARKER) {
-				uint32_t dest = hdr->app_dest_ptr;
-				uint32_t offset = ((hdr->dcd_ptr_ptr - dest) > 0x400) ? 0x400 : 0;
-				uint32_t size = ((uint32_t)hdr) - ((uint32_t)pinfo->initial_buf);
-				dest -= size;
-				dest += offset;
-				if ( (hdr->app_start_addr - dest) > (1<<20) )
-					dest = (hdr->app_start_addr & ~0xfff);
-				pinfo->hdr = (struct app_header *)(dest + size);
-				size = pinfo->buf - pinfo->initial_buf;
-				if (dest != (uint32_t)pinfo->initial_buf)
-					my_memcpy((void*)dest, pinfo->initial_buf, size);
-				pinfo->buf = (void *)(dest + size);
-				break;
-			}
-			pinfo->search += 0x400;	//search 1k at a time
-		}
+		header_search(pinfo);
 	}
 	return 0;
-}
-
-typedef void (*exec_rtn)(void);
-
-void exec_program(struct common_info *pinfo, uint32_t start_block)
-{
-	exec_rtn rtn;
-	struct app_header *hdr = pinfo->hdr;
-	if (hdr) {
-		rtn = (exec_rtn)hdr->app_start_addr;
-		if (((unsigned)rtn) & 3)
-			return;
-		if (((unsigned)rtn) >= 0xb0000000)
-			return;
-		if (((unsigned)rtn) < 0x1ffe0000)
-			return;
-		if ((((unsigned)rtn) >= 0x20000000) && (((unsigned)rtn) < 0x90000000))
-			return;
-	} else {
-//		hdr = (struct app_header *)pinfo->initial_buf;
-//		rtn = (exec_rtn)pinfo->initial_buf;
-		return;
-	}
-	debug_dump((void *)hdr, start_block, 1);
-	my_printf("file loaded, app_start %x\r\n", rtn);
-	flush_uart();
-	rtn();
-}
-
-void exec_dl(unsigned char* base, unsigned length)
-{
-	struct app_header *hdr;
-	unsigned char* end = base + length;
-	do {
-		hdr = (struct app_header *)base;
-		if (hdr->app_barker == APP_BARKER) {
-			struct common_info ci;
-			uint32_t dest = hdr->app_dest_ptr;
-			uint32_t offset = ((hdr->dcd_ptr_ptr - dest) > 0x400) ? 0x400 : 0;
-			base -= offset;
-			my_memcpy((void*)dest, base, end - base);
-			ci.hdr = (void *)(dest + offset);
-			ci.initial_buf = (void *)(dest);
-			exec_program(&ci, 0);
-			my_printf("exec_program failed\r\n");
-			return;
-		}
-		base += 0x400;
-	} while (base < end);
 }

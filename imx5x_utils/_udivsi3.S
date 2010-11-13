@@ -10,7 +10,7 @@ curbit		.req	r3
 /* lr		.req	r14	*/
 /* pc		.req	r15	*/
 	.text
-	.globl	 __udivsi3
+	.globl	__udivsi3
 	.type	__udivsi3 ,function
 	.globl	__aeabi_uidiv
 	.type	__aeabi_uidiv ,function

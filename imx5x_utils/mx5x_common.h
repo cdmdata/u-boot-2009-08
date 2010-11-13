@@ -9,23 +9,14 @@ typedef unsigned int uint;
 #define IO_WRITE(r,o,d)   (*((volatile uint32_t*)((r)+(o))) = ((uint32_t)(d)))
 #define IO_MOD(r,o,m,d)   IO_WRITE((r),(o),(IO_READ((r),(o)) & (~(m))) | (d))
 
-struct app_header {
-	uint32_t app_start_addr;
-#define APP_BARKER	0xb1
-#define DCD_BARKER	0xb17219e9
-	uint32_t app_barker;
-	uint32_t csf_ptr;
-	uint32_t dcd_ptr_ptr;
-	uint32_t srk_ptr;
-	uint32_t dcd_ptr;
-	uint32_t app_dest_ptr;
-};
-
 struct common_info {
 	void *buf;
 	void *initial_buf;
-	struct app_header *hdr;
+	void *hdr;
 	void *search;
+	void *cur_end;
+	void *end;
+
 };
 
 void dump_mem(void *buf, uint block, uint block_cnt);
@@ -45,6 +36,7 @@ void dump_mem(void *buf, uint block, uint block_cnt);
 #endif
 
 void flush_uart(void);
+void print_str(char * str);
 void print_buf(char* str, int cnt);
 void print_hex(unsigned int val, unsigned int character_cnt);
 void my_printf(char *str, ...);
@@ -55,5 +47,24 @@ void reverse_word(unsigned *dst, int count);
 void reverse_word2(unsigned *dst, unsigned *src, int count);
 
 int common_load_block_of_file(struct common_info *pinfo, unsigned block_size);
+int get_ecspi_base(void);
+uint get_uart_base(void);
+uint get_mmc_base(void);
+void ecspi_ss_active(void);
+void ecspi_ss_inactive(void);
+unsigned ecspi_read_miso(void);
+
+void iomuxc_setup_mmc(void);
+unsigned mmc_read_cd(void);
+
+void iomuxc_setup_ecspi(void);
+void iomuxc_miso_gp(void);
+void iomuxc_miso_ecspi(void);
+unsigned get_ram_base(void);
+
+void header_search(struct common_info *pinfo);
+void header_update_end(struct common_info *pinfo);
+int header_present(struct common_info *pinfo);
 void exec_program(struct common_info *pinfo, uint32_t start_block);
 void exec_dl(unsigned char* ubl, unsigned length);
+void hw_watchdog_reset(void);

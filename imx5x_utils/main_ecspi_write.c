@@ -1,5 +1,5 @@
 #include <stdarg.h>
-//#define DEBUG
+#define DEBUG
 #include "mx5x_common.h"
 #include "mx5x_ecspi.h"
 
@@ -41,6 +41,10 @@ void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 	
 	ecspi_init(base);
 	offset_bits = identify_chip_rtns(base, &block_size, &read_rtn, &write_rtn);
+	if (!offset_bits) {
+		my_printf("unrecognized chip\n");
+		return;
+	}
 	page = offset / block_size;
 	my_printf("block_size = 0x%x\n", block_size);
 	diff = offset - (page * block_size);
@@ -63,15 +67,24 @@ int xmodem_load(unsigned char * dest);
 
 int main(void)
 {
-	int base = ECSPI1_BASE;
-	unsigned char *dest = (unsigned char *)0x90600000;
-	unsigned char *destX = (unsigned char *)0x93f00000;
+	int base = get_ecspi_base();
+	unsigned char *ram_base = (unsigned char *)get_ram_base();
+	unsigned char *dest  = ram_base + 0x00600000;
+	unsigned char *destX = ram_base + 0x03f00000;
 	unsigned len;
+	my_printf("ram_base=%x ecspi_base=%x\n", ram_base, base);
+#if 0
+	for (;;) {
+		*((unsigned *)(ram_base + 0x15555554)) = 0x55555555;
+		*((unsigned *)(ram_base + 0x0aaaaaa8)) = 0xaaaaaaaa;
+	}
+#endif
 	check_page_size(base);
 	len = xmodem_load(destX);
 	if (len)
 		my_printf("OK len=0x%x\n", len);
 	else {
+		dump_mem(destX, 0x400, 2);
 		my_printf("Xmodem error\n");
 		return -1;
 	}
