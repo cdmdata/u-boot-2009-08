@@ -67,5 +67,5 @@ cscope.*
 u-boot-no-padding.bin
 *.map
 *.bin
-*.o3
+*.omx5*
 custom.h
