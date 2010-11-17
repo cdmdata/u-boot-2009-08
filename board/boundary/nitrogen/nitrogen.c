@@ -276,10 +276,35 @@ static void get_best_ratio(unsigned *pnum, unsigned *pdenom, unsigned max)
 }
 
 #define UART1_BASE 0x73fbc000
-#define UFCR           0x0090
-#define UBIR           0x00a4
-#define UBMR           0x00a8
-static void setup_uart(void)
+#define UTXD		0x0040
+#define UFCR		0x0090
+#define USR2		0x0098
+#define UBIR		0x00a4
+#define UBMR		0x00a8
+void serial_flush(void)
+{
+	unsigned usr2;
+	u32 uart = UART1_BASE;
+	do {
+		usr2 = readl(uart + USR2);
+	} while (!(usr2 & (1<<3)));
+}
+
+void my_putc(char ch)
+{
+	u32 uart = UART1_BASE;
+	serial_flush();
+	writel(ch, uart + UTXD);
+	serial_flush();
+}
+
+#ifdef DEBUG
+#define debug_putc(ch) my_putc(ch)
+#else
+#define debug_putc(ch)
+#endif
+
+void setup_uart(void)
 {
 	u32 uart = UART1_BASE;
 	u32 clk_src = mxc_get_clock(MXC_UART_CLK);
@@ -308,7 +333,7 @@ static void setup_uart(void)
 	writel(0x00000004, 0x73fa83e8);
 	writel(0x00000004, 0x73fa83ec);
 
-	udelay(10);
+	debug_putc('x');
 //	printf("setup_uart clk_src=%i mult=%i div=%i\n", clk_src, mult, div);
 }
 
@@ -1039,25 +1064,35 @@ int board_init(void)
 	writel(val, OTG_BASE_ADDR + USBCMD);
 #endif
 	setup_uart();
+	debug("%s a", __func__);
 	setup_gpios();
+	debug_putc('b');
 	setup_boot_device();
+	debug_putc('c');
 	setup_soc_rev();
+	debug_putc('d');
 	set_board_rev();
 
 	gd->bd->bi_arch_number = MACH_TYPE_MX51_BABBAGE;	/* board id for linux */
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
+	debug_putc('e');
 	setup_nfc();
+	debug_putc('f');
 	setup_expio();
+	debug_putc('g');
 #ifdef CONFIG_MXC_FEC
 	setup_pins(fec_setup_pins);
 #endif
 #ifdef CONFIG_I2C_MXC
 	setup_i2c(I2C1_BASE_ADDR);
 #endif
+	debug_putc('h');
 
 	setup_pmic();
+	debug_putc('i');
+	debug_putc('\n');
 	return 0;
 }
 
