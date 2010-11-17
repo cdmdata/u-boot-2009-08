@@ -43,7 +43,9 @@ dcd_ptr:		.word	dcd_array_start
 app_dest_ptr:		.word	TEXT_BASE
 dcd_array_start:
 magic:			.word	0xB17219E9
-dcd_array_size:		.word	dcd_data_end - dcd_array_start - 8
+			.word	2f-1f
+1:
+#if 0
 /* DCD */
 /* DDR2 IOMUX configuration */
 MXC_DCD_ITEM(1, 4, IOMUXC_BASE_ADDR + 0x8a0, 0x200)
@@ -107,6 +109,7 @@ MXC_DCD_ITEM(53, 4, ESDCTL_BASE_ADDR + ESDCTL_ESDCTL1, 0xb2a20000)
 MXC_DCD_ITEM(54, 4, ESDCTL_BASE_ADDR + ESDCTL_ESDMISC, 0x000ad6d0)
 MXC_DCD_ITEM(55, 4, ESDCTL_BASE_ADDR + ESDCTL_ESDCDLYGD, 0x90000000)
 MXC_DCD_ITEM(56, 4, ESDCTL_BASE_ADDR + ESDCTL_ESDSCR, 0x00000000)
-dcd_data_end:
+#endif
+2:
 image_len:		.word	__u_boot_cmd_end - TEXT_BASE
 #endif
