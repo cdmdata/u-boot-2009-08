@@ -23,6 +23,12 @@
 #include <asm/arch/mx51.h>
 #include "board-nitrogen.h"
 
+.macro print_debug_ch ch
+#if 0
+	mov	r0,#\ch
+	bl	my_putc
+#endif
+.endm
 /*
  * return soc version
  * 	0x10:  TO1
@@ -39,17 +45,13 @@
 	/* explicitly disable L2 cache */
         mrc 15, 0, r0, c1, c0, 1
         bic r0, r0, #0x2
-        mcr 15, 0, r0, c1, c0, 1
+        mcr 15, 0, r0, c1, c0, 1	//Write Auxiliary Control Register
 
         /* reconfigure L2 cache aux control reg */
-        mov r0, #0xC0                   /* tag RAM */
-        add r0, r0, #0x4                /* data RAM */
-        orr r0, r0, #(1 << 24)          /* disable write allocate delay */
-        orr r0, r0, #(1 << 23)          /* disable write allocate combine */
-        orr r0, r0, #(1 << 22)          /* disable write allocate */
+        mov r0, #0xC4                   /* tag/data RAM */
+        orr r0, r0, #(1 << 22)|(1 << 23)|(1 << 24)          /* disable write allocate, combine, delay */
 
-	ldr r1, =0x00000000
-	mcr 15, 1, r0, c9, c0, 2
+	mcr 15, 1, r0, c9, c0, 2	//Write L2 Cache Auxiliary Control Register
 .endm /* init_l2cc */
 
 /* AIPS setup - Only setup MPROTx registers.
@@ -59,13 +61,13 @@
 	 * Set all MPROTx to be non-bufferable, trusted for R/W,
 	 * not forced to user-mode.
 	 */
-	ldr r0, =AIPS1_BASE_ADDR
-	ldr r1, =0x77777777
-	str r1, [r0, #0x0]
-	str r1, [r0, #0x4]
-	ldr r0, =AIPS2_BASE_ADDR
-	str r1, [r0, #0x0]
-	str r1, [r0, #0x4]
+	ldr r1, =AIPS1_BASE_ADDR
+	ldr r0, =0x77777777
+	str r0, [r1, #0x0]
+	str r0, [r1, #0x4]
+	ldr r1, =AIPS2_BASE_ADDR
+	str r0, [r1, #0x0]
+	str r0, [r1, #0x4]
 	/*
 	 * Clear the on and off peripheral modules Supervisor Protect bit
 	 * for SDMA to access them. Did not change the AIPS control registers
@@ -82,25 +84,25 @@
 	/* VPU and IPU given higher priority (0x4)
 	 * IPU accesses with ID=0x1 given highest priority (=0xA)
 	 */
-	ldr r0, =M4IF_BASE_ADDR
+	ldr r1, =M4IF_BASE_ADDR
 
-	ldr r1, =0x00000203
-	str r1, [r0, #0x40]
+	ldr r0, =0x00000203
+	str r0, [r1, #0x40]
 
-	ldr r1, =0x0
-	str r1, [r0, #0x44]
+	mov r0, #0x0
+	str r0, [r1, #0x44]
 
-	ldr r1, =0x00120125
-	str r1, [r0, #0x9C]
+	ldr r0, =0x00120125
+	str r0, [r1, #0x9C]
 
-	ldr r1, =0x001901A3
-	str r1, [r0, #0x48]
+	ldr r0, =0x001901A3
+	str r0, [r1, #0x48]
 
 /*
-	ldr r1, =0x00000a01
-	str r1, [r0, #0x48]
-	ldr r1, =0x00000404
-	str r1, [r0, #0x40]
+	ldr r0, =0x00000a01
+	str r0, [r1, #0x48]
+	ldr r0, =0x00000404
+	str r0, [r1, #0x40]
 */
 .endm /* init_m4if */
 
@@ -112,176 +114,226 @@
 .macro init_debug_board
 .endm /* init_debug_board */
 
-.macro setup_pll pll, freq
-	ldr r2, =\pll
-	ldr r1, =0x00001232
-	str r1, [r2, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit): BRMO=1 */
-	mov r1, #0x2
-	str r1, [r2, #PLL_DP_CONFIG] /* Enable auto-restart AREN bit */
+#define IPU_CM_REG_BASE		0x5E000000
+#define IPU_CONF		0x000
+#define IPU_DISP_GEN		0x0C4
+#define IPU_CH_DB_MODE_SEL0	0x150
+#define IPU_CH_DB_MODE_SEL1	0x154
+#define IPU_CH_TRB_MODE_SEL0	0x178
+#define IPU_CH_TRB_MODE_SEL1	0x17c
 
-	str r3, [r2, #PLL_DP_OP]
-	str r3, [r2, #PLL_DP_HFS_OP]
+#define IPU_IDMAC_BASE		0x5e008000
+#define IDMAC_CONF		0x000
+#define IDMAC_CH_EN_1		0x004
+#define IDMAC_CH_EN_2		0x008
+#define IDMAC_WM_EN_1		0x01C
+#define IDMAC_WM_EN_2		0x020
+.macro init_disable_ipu
+	mov	r1,#IPU_CM_REG_BASE
+	ldr	r0,[r1, #IPU_DISP_GEN]
+	bic	r0, r0, #(3 << 24)	//clear DI0/DI1 counter release
+	str	r0,[r1, #IPU_DISP_GEN]
 
-	str r4, [r2, #PLL_DP_MFD]
-	str r4, [r2, #PLL_DP_HFS_MFD]
+	mov	r0, #0
+	str	r0,[r1, #IPU_CONF]	//disable DI0/DI1
+	
+	add	r2, r1, #IPU_IDMAC_BASE - IPU_CM_REG_BASE
+	str	r0, [r2, #IDMAC_CH_EN_1]
+	str	r0, [r2, #IDMAC_CH_EN_2]
+	str	r0, [r2, #IDMAC_WM_EN_1]
+	str	r0, [r2, #IDMAC_WM_EN_2]
 
-	str r5, [r2, #PLL_DP_MFN]
-	str r5, [r2, #PLL_DP_HFS_MFN]
+	str	r0, [r1, #IPU_CH_DB_MODE_SEL0]
+	str	r0, [r1, #IPU_CH_DB_MODE_SEL1]
+	str	r0, [r1, #IPU_CH_TRB_MODE_SEL0]
+	str	r0, [r1, #IPU_CH_TRB_MODE_SEL1]
+.endm
 
-	ldr r1, =0x00001232
-	str r1, [r2, #PLL_DP_CTL]
-1:	ldr r1, [r2, #PLL_DP_CTL]
-	ands r1, r1, #0x1
+.macro pll_op_mfd_mfn r_pll, dp_op, dp_mfd, dp_mfn
+	mov r0, #\dp_op
+	str r0, [\r_pll, #PLL_DP_OP]
+	str r0, [\r_pll, #PLL_DP_HFS_OP]
+
+	mov r0, #\dp_mfd
+	str r0, [\r_pll, #PLL_DP_MFD]
+	str r0, [\r_pll, #PLL_DP_HFS_MFD]
+
+	mov r0, #\dp_mfn
+	str r0, [\r_pll, #PLL_DP_MFN]
+	str r0, [\r_pll, #PLL_DP_HFS_MFN]
+.endm
+
+.macro start_pll r_pll
+	ldr r0, =0x00001232
+	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit): BRMO=1 */
+
+1:	ldr r0, [\r_pll, #PLL_DP_CTL]
+	tst r0, #0x1
 	beq 1b
 .endm
 
+.macro disable_auto_restart r_pll
+	mov	r0, #0
+	str     r0, [\r_pll, #PLL_DP_CONFIG]
+.endm
+
+.macro divisor_change_wait r_clk
+	/* make sure divider effective */
+1:	ldr r0, [\r_clk, #CLKCTL_CDHIPR]
+	cmp r0, #0x0
+	bne 1b
+.endm
+
+#define rPLL1 r4
+#define rPLL2 r5
+#define rPLL3 r6
+#define rClk  r7
 .macro init_clock
-	ldr r0, =CCM_BASE_ADDR
+	ldr rClk, =CCM_BASE_ADDR
 
-	mov r1, #0x00060000
-	str r1, [r0, #CLKCTL_CCDR]
+        /* Disable IPU and HSC handshake */
+	mov r0, #0x00040000
+	str r0, [rClk, #CLKCTL_CCDR]
 
-	ldr r1, =0x3fff
-	str r1, [r0,#CLKCTL_CCR]	// Turn on oscillator
+	ldr r0, =0x1fff
+	str r0, [rClk,#CLKCTL_CCR]	// Turn on oscillator
 
 waitosc:
-	ldr r1, [r0, #CLKCTL_CSR]
-	tst r1, #0x20		// wait for Oscillator lock
-	beq waitosc
-	
+	ldr r0, [rClk, #CLKCTL_CSR]
+	and r0, r0, #0x22
+	cmp r0, #0x22		// wait for Oscillator and FPM ready
+	bne waitosc
+	print_debug_ch '1'
+
+	ldr	rPLL1, =PLL1_BASE_ADDR
+	ldr	rPLL2, =PLL2_BASE_ADDR
+	ldr	rPLL3, =PLL3_BASE_ADDR
+
+	disable_auto_restart rPLL1 
+	disable_auto_restart rPLL2
+	disable_auto_restart rPLL3
+	print_debug_ch '2'
+
 	/* Gate of clocks to the peripherals first */
-	ldr r1, =0x3FFFFFFF
-	str r1, [r0, #CLKCTL_CCGR0]
-	ldr r1, =0x0
-	str r1, [r0, #CLKCTL_CCGR1]
-	str r1, [r0, #CLKCTL_CCGR2]
-	str r1, [r0, #CLKCTL_CCGR3]
+	mvn r0, #~0x3FFFFFFF
+	str r0, [rClk, #CLKCTL_CCGR0]
+	mov r0, #0x0
+	str r0, [rClk, #CLKCTL_CCGR1]
+	str r0, [rClk, #CLKCTL_CCGR2]
+	str r0, [rClk, #CLKCTL_CCGR3]
 
-	ldr r1, =0x00030000
-	str r1, [r0, #CLKCTL_CCGR4]
-	ldr r1, =0x00FFF030
-	str r1, [r0, #CLKCTL_CCGR5]
-	ldr r1, =0x00000300
-	str r1, [r0, #CLKCTL_CCGR6]
-
-        /* Disable IPU and HSC dividers */
-        mov r1, #0x60000
-        str r1, [r0, #CLKCTL_CCDR]
+	mov r0, #0x00030000
+	str r0, [rClk, #CLKCTL_CCGR4]
+	ldr r0, =0x00FFF030
+	str r0, [rClk, #CLKCTL_CCGR5]
+	mov r0, #0x00000300
+	str r0, [rClk, #CLKCTL_CCGR6]
 
 	/* Make sure to switch the DDR away from PLL 1 */
-	ldr r1, =0x19239145
-	str r1, [r0, #CLKCTL_CBCDR]
-	/* make sure divider effective */
-1:	ldr r1, [r0, #CLKCTL_CDHIPR]
-	cmp r1, #0x0
-	bne 1b
+	ldr r3, =0x19239145
+	str r3, [rClk, #CLKCTL_CBCDR]
+	divisor_change_wait rClk
 
 	/* Switch ARM to step clock */
-	mov r1, #0x4
-	str r1, [r0, #CLKCTL_CCSR]
-	mov r3, #DP_OP_800
-	mov r4, #DP_MFD_800
-	mov r5, #DP_MFN_800
-	setup_pll PLL1_BASE_ADDR
-
-	mov r3, #DP_OP_665
-	mov r4, #DP_MFD_665
-	mov r5, #DP_MFN_665
-	setup_pll PLL3_BASE_ADDR
-
-	/* Switch peripheral to PLL 3 */
-	ldr r0, =CCM_BASE_ADDR
-        ldr r1, =0x000010C0
-	str r1, [r0, #CLKCTL_CBCMR]
-	ldr r1, =0x13239145
-	str r1, [r0, #CLKCTL_CBCDR]
-	mov r3, #DP_OP_665
-	mov r4, #DP_MFD_665
-	mov r5, #DP_MFN_665
-	setup_pll PLL2_BASE_ADDR
-
-	/* Switch peripheral to PLL2 */
-	ldr r0, =CCM_BASE_ADDR
-	ldr r1, =0x19239145
-	str r1, [r0, #CLKCTL_CBCDR]
-	ldr r1, =0x000020C0
-	str r1, [r0, #CLKCTL_CBCMR]
-
-	mov r3, #DP_OP_216
-	mov r4, #DP_MFD_216
-	mov r5, #DP_MFN_216
-	setup_pll PLL3_BASE_ADDR
-
-
-	/* Set the platform clock dividers */
-	ldr r0, =ARM_BASE_ADDR
-	ldr r1, =0x00000725
-	str r1, [r0, #0x14]
-
-	ldr r0, =CCM_BASE_ADDR
-	/* Run TO 3.0 at Full speed, for other TO's wait till we increase VDDGP */
-	mov r1, #0
-	str r1, [r0, #CLKCTL_CACRR]
+	mov r0, #0x4
+	str r0, [rClk, #CLKCTL_CCSR]
+	pll_op_mfd_mfn rPLL1,DP_OP_800,DP_MFD_800,DP_MFN_800
+	start_pll rPLL1
 
 	/* Switch ARM back to PLL 1 */
-	mov r1, #0
-	str r1, [r0, #CLKCTL_CCSR]
+	mov r0, #0
+	str r0, [rClk, #CLKCTL_CCSR]
+
+	pll_op_mfd_mfn rPLL3,DP_OP_665,DP_MFD_665,DP_MFN_665
+	start_pll rPLL3
+
+	/* Switch peripheral to PLL 3 */
+        ldr r0, =0x000010C0
+	str r0, [rClk, #CLKCTL_CBCMR]
+	orr r0, r3, #1<<25		//[25] 0 -> 1 (periph was pll2, now apm)
+	str r0, [rClk, #CLKCTL_CBCDR]
+	divisor_change_wait rClk
+
+	pll_op_mfd_mfn rPLL2,DP_OP_665,DP_MFD_665,DP_MFN_665
+	start_pll rPLL2
+
+	/* Switch peripheral to PLL2 */
+	str r3, [rClk, #CLKCTL_CBCDR]	//[25] 1 -> 0 (periph was apm, now pll2)
+
+	ldr r0, =0x000020C0
+	str r0, [rClk, #CLKCTL_CBCMR]
+
+	pll_op_mfd_mfn rPLL3,DP_OP_216,DP_MFD_216,DP_MFN_216
+	start_pll rPLL3
+
+	/* Set the platform clock dividers */
+	ldr r1, =ARM_BASE_ADDR
+	ldr r0, =0x00000725
+	str r0, [r1, #0x14]
+
+	/* Run TO 3.0 at Full speed, for other TO's wait till we increase VDDGP */
+	mov r0, #0
+	str r0, [rClk, #CLKCTL_CACRR]
 
 	/* setup the rest */
 	/* Use lp_apm (24MHz) source for perclk */
-	ldr r1, =0x000020C2
-	str r1, [r0, #CLKCTL_CBCMR]
+	ldr r0, =0x000020C2
+	str r0, [rClk, #CLKCTL_CBCMR]
 	/* ddr clock from PLL 1, all perclk dividers are 1 since using 24MHz */
-	ldr r1, =0x59E35100
-	str r1, [r0, #CLKCTL_CBCDR]
-
-	/* Restore the default values in the Gate registers */
-	ldr r1, =0xFFFFFFFF
-	str r1, [r0, #CLKCTL_CCGR0]
-	str r1, [r0, #CLKCTL_CCGR1]
-	str r1, [r0, #CLKCTL_CCGR2]
-	str r1, [r0, #CLKCTL_CCGR3]
-	str r1, [r0, #CLKCTL_CCGR4]
-	str r1, [r0, #CLKCTL_CCGR5]
-	str r1, [r0, #CLKCTL_CCGR6]
+	ldr r0, =0x59E35100
+	str r0, [rClk, #CLKCTL_CBCDR]
 
 	/* Use default for UART clock */
-	ldr r1, =0xA6A2A020
-	str r1, [r0, #CLKCTL_CSCMR1]
-	ldr r1, =0x00C30318
-	str r1, [r0, #CLKCTL_CSCDR1]
+	ldr r0, =0xA6A2A020
+	str r0, [rClk, #CLKCTL_CSCMR1]
+	ldr r0, =0x00C30318
+	str r0, [rClk, #CLKCTL_CSCDR1]
 
-	/* make sure divider effective */
-1:	ldr r1, [r0, #CLKCTL_CDHIPR]
-	cmp r1, #0x0
-	bne 1b
+	divisor_change_wait rClk
 
-	mov r1, #0x0
-	str r1, [r0, #CLKCTL_CCDR]
+	/* Restore the default values in the Gate registers */
+	mvn r0, #~0xFFFFFFFF
+	str r0, [rClk, #CLKCTL_CCGR0]
+	str r0, [rClk, #CLKCTL_CCGR1]
+	str r0, [rClk, #CLKCTL_CCGR2]
+	str r0, [rClk, #CLKCTL_CCGR3]
+	str r0, [rClk, #CLKCTL_CCGR4]
+	str r0, [rClk, #CLKCTL_CCGR5]
+	str r0, [rClk, #CLKCTL_CCGR6]
+
+	mov r0, #0x0
+	str r0, [rClk, #CLKCTL_CCDR]
 
 	/* for cko - for ARM div by 8 */
-	mov r1, #0x000A0000
-	add r1, r1, #0x00000F0
-	str r1, [r0, #CLKCTL_CCOSR]
+	mov r0, #0x000A0000
+	add r0, r0, #0x00000F0
+	str r0, [rClk, #CLKCTL_CCOSR]
 .endm
 
 .macro setup_wdog
-	ldr r0, =WDOG1_BASE_ADDR
-	mov r1, #0x30
-	strh r1, [r0]
+	ldr r1, =WDOG1_BASE_ADDR
+	mov r0, #0x30
+	strh r0, [r1]
 .endm
 
 .section ".text.init", "x"
 
+#define GPIO_DR 0
+#define GPIO_DIR 4
+
 .globl lowlevel_init
 lowlevel_init:
-	ldr r0, =GPIO1_BASE_ADDR
-	ldr r1, [r0, #0x0]
-	orr r1, r1, #(1 << 23)
-	str r1, [r0, #0x0]
-	ldr r1, [r0, #0x4]
-	orr r1, r1, #(1 << 23)
-	str r1, [r0, #0x4]
+	mov	r8, lr
+	
+	print_debug_ch 'a'
+/* make gp1[23] a high output */
+	ldr r1, =GPIO1_BASE_ADDR
+	ldr r0, [r1, #GPIO_DR]
+	orr r0, r0, #(1 << 23)
+	str r0, [r1, #GPIO_DR]
+	ldr r0, [r1, #GPIO_DIR]
+	orr r0, r0, #(1 << 23)
+	str r0, [r1, #GPIO_DIR]
 
 #ifdef ENABLE_IMPRECISE_ABORT
         mrs r1, spsr            /* save old spsr */
@@ -302,21 +354,34 @@ lowlevel_init:
 	orr r1, r1, #(1 << 5)    /* enable L1NEON bit */
 	mcr 15, 0, r1, c1, c0, 1
 
+	print_debug_ch 'b'
 	init_l2cc
 
+	print_debug_ch 'c'
 	init_aips
 
+	print_debug_ch 'd'
 	init_max
 
+	print_debug_ch 'e'
 	init_m4if
 
+	print_debug_ch 'f'
 	init_drive_strength
 
-	init_clock
+//	print_debug_ch 'g'
+//	init_disable_ipu
 
+	print_debug_ch 'h'
+	bl	serial_flush
+	init_clock
+	bl	setup_uart
+
+	print_debug_ch 'i'
 	init_debug_board
 
-	mov pc,lr
+	print_debug_ch '\n'
+	mov	pc,r8
 
 /* Board level setting value */
 DDR_PERCHARGE_CMD:	.word 0x04008008
