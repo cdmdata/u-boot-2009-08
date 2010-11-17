@@ -974,16 +974,28 @@ int cpu_eth_init(bd_t *bis)
 	return rc;
 }
 
+void my_putc(char ch);
+#ifdef DEBUG
+#define debug_putc(ch) my_putc(ch)
+#else
+#define debug_putc(ch)
+#endif
+
 #if defined(CONFIG_ARCH_CPU_INIT)
 int arch_cpu_init(void)
 {
+	debug("%s ", __func__);
+	debug_putc('a');
 	icache_enable();
+	debug_putc('b');
 	dcache_enable();
+	debug_putc('c');
 #ifdef CONFIG_L2_OFF
 	l2_cache_disable();
 #else
 	l2_cache_enable();
 #endif
+	debug_putc('\n');
 	return 0;
 }
 #endif
