@@ -335,7 +335,7 @@ $(obj)u-boot-no-padding.bin:	$(obj)u-boot.bin
 $(obj)uboot_image.o : $(obj)%.o : $(obj)u-boot-no-padding.bin imx5x_utils/uboot_image.lds
 	$(LD) -r -o $(obj)$*-temp.o -b binary $<; \
 	$(LD) -nostdlib -T $(filter %.lds,$^) -o $@  $(obj)$*-temp.o; \
-	rm -f $(obj)$*-temp.o $(obj)u-boot-no-padding.bin
+	rm -f $(obj)$*-temp.o
 
 $(obj)mx51_ubl_ecspi.omx51_2 : imx5x_utils/$(obj)mx51_ecspi.omx51_2 $(obj)uboot_image.o imx5x_utils/mx5x.lds
 	$(LD) --defsym=hdr_offset=0x400 --defsym=load_addr=0x1ffe2000 -static --no-warn-mismatch -nostdlib -T $(filter %.lds,$^) $(filter-out %.lds,$^) -o $@ -M >$(obj)$*.map
