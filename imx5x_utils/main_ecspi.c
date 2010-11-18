@@ -5,6 +5,15 @@
 #define NULL 0
 extern const int payload_offset;
 
+//#define USE_CRC32
+//#define USE_ADLER32
+#ifdef USE_CRC32
+unsigned crc32(unsigned crc, const unsigned char *buf, unsigned len);
+#endif
+#ifdef USE_ADLER32
+unsigned long adler32(unsigned long adler,const unsigned char *buf, unsigned int len);
+#endif
+
 int main(void)
 {
 	struct common_info ci;
@@ -43,6 +52,17 @@ int main(void)
 		}
 	} while (ci.buf < ci.cur_end);
 
+#if defined(USE_CRC32) || defined(USE_ADLER32)
+	{
+		unsigned char *p = ((unsigned char *)ci.hdr);
+		unsigned length = ((unsigned char *)ci.cur_end) - p;
+#ifdef USE_CRC32
+		my_printf("start=%x(%x), length=%x, crc=%x\n", p, *((unsigned *)p), length, crc32(0, p, length));
+#else
+		my_printf("start=%x(%x), length=%x, adler32=%x\n", p, *((unsigned *)p), length, adler32(0, p, length));
+#endif
+	}
+#endif
 	exec_program(&ci, 0);
 	dump_mem(ci.initial_buf, offset, 14);
 	my_printf("exec_program failed, hdr=%x\n", ci.hdr);
