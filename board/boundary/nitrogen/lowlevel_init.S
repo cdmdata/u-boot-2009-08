@@ -192,7 +192,7 @@
 	ldr rClk, =CCM_BASE_ADDR
 
         /* Disable IPU and HSC handshake */
-	mov r0, #0x00040000
+	mov r0, #0x00060000
 	str r0, [rClk, #CLKCTL_CCDR]
 
 	ldr r0, =0x1fff
@@ -234,8 +234,13 @@ waitosc:
 	str r3, [rClk, #CLKCTL_CBCDR]
 	divisor_change_wait rClk
 
-	/* Switch ARM to step clock */
-	mov r0, #0x4
+	/* Switch ARM to step clock (clock source 4) */
+	ldr r0, [rClk, #CLKCTL_CCSR]
+	bic r0,r0,#4			//deselect step clock for glitch free update
+	str r0, [rClk, #CLKCTL_CCSR]
+	mov r0, #0			//select clock source 4 as source for step clock
+	str r0, [rClk, #CLKCTL_CCSR]	
+	mov r0, #0x4			//switch arm to step clock
 	str r0, [rClk, #CLKCTL_CCSR]
 	pll_op_mfd_mfn rPLL1,DP_OP_800,DP_MFD_800,DP_MFN_800
 	start_pll rPLL1
