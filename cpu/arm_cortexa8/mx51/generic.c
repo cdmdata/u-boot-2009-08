@@ -99,16 +99,20 @@ struct pll_param {
 
 static u32 __decode_pll(enum pll_clocks pll, u32 infreq)
 {
-	u32 mfi, mfn, mfd, pd;
-
+	u32 mfi, mfn, mfd, pd, ctl;
+	u32 clk;
 	mfn = __REG(pll + MXC_PLL_DP_MFN);
 	mfd = __REG(pll + MXC_PLL_DP_MFD) + 1;
 	mfi = __REG(pll + MXC_PLL_DP_OP);
+	ctl = __REG(pll + MXC_PLL_DP_CTL);
 	pd = (mfi  & 0xF) + 1;
 	mfi = (mfi >> 4) & 0xF;
 	mfi = (mfi >= 5) ? mfi : 5;
 
-	return ((4 * (infreq / 1000) * (mfi * mfd + mfn)) / (mfd * pd)) * 1000;
+	clk = ((2 * (infreq / 1000) * (mfi * mfd + mfn)) / (mfd * pd)) * 1000;
+	if (ctl & (1 << 12))
+		clk <<= 1;
+	return clk;
 }
 
 static u32 __get_mcu_main_clk(void)

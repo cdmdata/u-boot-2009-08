@@ -163,18 +163,12 @@
 	str r0, [\r_pll, #PLL_DP_HFS_MFN]
 .endm
 
-.macro start_pll r_pll
-	ldr r0, =0x00001232
-	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit): BRMO=1 */
-
+.macro start_pll r_pll, dp_ctl
+	ldr r0, =\dp_ctl
+	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
 1:	ldr r0, [\r_pll, #PLL_DP_CTL]
 	tst r0, #0x1
 	beq 1b
-.endm
-
-.macro disable_auto_restart r_pll
-	mov	r0, #0
-	str     r0, [\r_pll, #PLL_DP_CONFIG]
 .endm
 
 .macro divisor_change_wait r_clk
@@ -209,9 +203,11 @@ waitosc:
 	ldr	rPLL2, =PLL2_BASE_ADDR
 	ldr	rPLL3, =PLL3_BASE_ADDR
 
-	disable_auto_restart rPLL1 
-	disable_auto_restart rPLL2
-	disable_auto_restart rPLL3
+//disable auto restart
+	mov	r0, #0
+	str     r0, [rPLL1, #PLL_DP_CONFIG]
+	str     r0, [rPLL2, #PLL_DP_CONFIG]
+	str     r0, [rPLL3, #PLL_DP_CONFIG]
 	print_debug_ch '2'
 
 	/* Gate of clocks to the peripherals first */
@@ -243,14 +239,14 @@ waitosc:
 	mov r0, #0x4			//switch arm to step clock
 	str r0, [rClk, #CLKCTL_CCSR]
 	pll_op_mfd_mfn rPLL1,DP_OP_800,DP_MFD_800,DP_MFN_800
-	start_pll rPLL1
+	start_pll rPLL1,DP_CTL_800
 
 	/* Switch ARM back to PLL 1 */
 	mov r0, #0
 	str r0, [rClk, #CLKCTL_CCSR]
 
 	pll_op_mfd_mfn rPLL3,DP_OP_665,DP_MFD_665,DP_MFN_665
-	start_pll rPLL3
+	start_pll rPLL3,DP_CTL_665
 
 	/* Switch peripheral to PLL 3 */
         ldr r0, =0x000010C0
@@ -260,7 +256,7 @@ waitosc:
 	divisor_change_wait rClk
 
 	pll_op_mfd_mfn rPLL2,DP_OP_665,DP_MFD_665,DP_MFN_665
-	start_pll rPLL2
+	start_pll rPLL2,DP_CTL_665
 
 	/* Switch peripheral to PLL2 */
 	str r3, [rClk, #CLKCTL_CBCDR]	//[25] 1 -> 0 (periph was apm, now pll2)
@@ -269,7 +265,7 @@ waitosc:
 	str r0, [rClk, #CLKCTL_CBCMR]
 
 	pll_op_mfd_mfn rPLL3,DP_OP_216,DP_MFD_216,DP_MFN_216
-	start_pll rPLL3
+	start_pll rPLL3,DP_CTL_216
 
 	/* Set the platform clock dividers */
 	ldr r1, =ARM_BASE_ADDR
