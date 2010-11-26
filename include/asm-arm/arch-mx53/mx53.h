@@ -514,7 +514,10 @@ extern int is_soc_rev(int rev);
 extern enum boot_device get_boot_device(void);
 extern void set_pixel_clock(int which, unsigned hz,int lvds);
 unsigned get_pixel_clock(unsigned which);
-
+extern void set_usboh3_clk(void);
+extern void set_usb_phy1_clk(void);
+extern void enable_usboh3_clk(unsigned char enable);
+extern void enable_usb_phy1_clk(unsigned char enable);
 #endif /* __ASSEMBLER__*/
 
 #endif				/*  __ASM_ARCH_MXC_MX53_H__ */
