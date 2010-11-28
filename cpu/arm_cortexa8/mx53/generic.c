@@ -146,6 +146,26 @@ static u32 __get_ipg_clk(void)
 	return __get_periph_clk() / ((ahb_podf + 1) * (ipg_podf + 1));
 }
 
+static u32 __get_ahb_clk(void);
+
+/* Documentation differs from mach-mx5/clock.c on what values
+ * of 2 and 3 mean in field ipu_hsp_clk_sel of register CBCMR
+ */
+#define CBCMR_IPU_AHB 	   	3
+#define CBCMR_IPU_EMI_SLOW 	2
+
+static u32 __get_ipu_clk(void)
+{
+	u32 clksel = (__REG(MXC_CCM_CBCMR) & MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_MASK) 
+		     >> MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_OFFSET ;
+	if (CBCMR_IPU_AHB == clksel) {
+		return __get_ahb_clk();
+	} else {
+		printf ("%s: unsupported clock %x for IPU\n", __func__, clksel);
+	}
+	return -1U ;
+}
+
 static u32 __get_ipg_per_clk(void)
 {
 	u32 pred1, pred2, podf;
@@ -161,6 +181,41 @@ static u32 __get_ipg_per_clk(void)
 		MXC_CCM_CBCDR_PERCLK_PODF_OFFSET;
 
 	return __get_periph_clk() / ((pred1 + 1) * (pred2 + 1) * (podf + 1));
+}
+
+#define DI0_BS_CLKGEN0            (IPU_DI0_BASE + 0x004)
+#define DI1_BS_CLKGEN0            (IPU_DI1_BASE + 0x004)
+
+unsigned get_pixel_clock(unsigned which) {
+	unsigned ipu_clock = __get_ipu_clk();
+	unsigned divisorReg = (0 != which) 
+				? __REG(DI1_BS_CLKGEN0) 
+				: __REG(DI0_BS_CLKGEN0);
+	unsigned divisor = divisorReg&0xffff ;
+	if (0 == divisor) {
+		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
+		divisor = 0x10 ;
+	}
+
+	return (ipu_clock*16)/divisor ;
+}
+
+void set_pixel_clock(int which, unsigned hz)
+{
+	unsigned ipu_clock = __get_ipu_clk();
+	unsigned divisorReg = (0 != which) 
+				? DI1_BS_CLKGEN0
+				: DI0_BS_CLKGEN0 ;
+	unsigned divisor = hz ? (ipu_clock*16)/hz : 0;
+	if (0 == divisor) {
+		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
+		divisor = 0x10 ;
+	}
+	__REG(divisorReg) = divisor ;
+	divisor >>= 4 ;
+	divisor <<= 16 ;
+	__REG(divisorReg+4) = divisor ;
+        udelay(5000);
 }
 
 /*!
@@ -477,6 +532,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return __get_esdhc4_clk();
 	case MXC_SATA_CLK:
 		return __get_ahb_clk();
+	case MXC_IPU_CLK:
+		return __get_ipu_clk();
 	case MXC_NFC_CLK:
 	  return __get_nfc_clk();
 	default:
