@@ -366,6 +366,9 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	return -1;
 }
 
+#define DI0_BS_CLKGEN0            (IPU_DI0_BASE + 0x004)
+#define DI1_BS_CLKGEN0            (IPU_DI1_BASE + 0x004)
+
 unsigned get_pixel_clock(unsigned which) {
 	unsigned ipu_clock = __get_ipu_clk();
 	unsigned divisorReg = (0 != which) 
