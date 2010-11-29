@@ -682,7 +682,8 @@ static int display_bitmap(struct lcd_t *panel, bmp_image_t *bmp, int startx, int
 	bmap = (uchar *)bmp + le32_to_cpu (bmp->header.data_offset);
 	switch (bpix) {
 		case 8: {
-                        bmp_color_table_entry_t *colors = bmp->color_table ;
+                        bmp_color_table_entry_t *colors = (bmp_color_table_entry_t *)
+							  ((unsigned)bmp + bmp->header.size + 14);
 			unsigned short rgb16 = 0xffff ;
 			int prevpalette = -1 ;
 			unsigned char *row = ((unsigned char *)panel->fbAddr + ((starty+height-1)*panel->stride));
