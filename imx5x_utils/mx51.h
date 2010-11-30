@@ -1,4 +1,4 @@
-//256 meg is fine if we're just writing sdmmc to the SDCard 
+//256 meg is fine if we're just writing sdmmc to the SDCard
 #define USE_CSD1	//512MB board uses CS0 and CS1, we will disable CS1 if ram doesn't appear to work
 
 //HAB API Jump Table Addresses
@@ -21,8 +21,8 @@
 #define GPIO1_BASE	0x73f84000
 #define GPIO4_BASE	0x73f90000
 #define WDOG_BASE	0x73f98000
-#define CCM_BASE 	0x73fd4000
-#define ESD_BASE 	0x83fd9000
+#define CCM_BASE	0x73fd4000
+#define ESD_BASE	0x83fd9000
 #define ESD_CTL0  0x000
 #define ESD_CFG0  0x004
 #define ESD_CTL1  0x008
@@ -31,8 +31,8 @@
 #define ESD_SCR   0x014
 
 // AIPS Constants
-#define CSP_BASE_REG_PA_AIPS1 	0x73F00000
-#define CSP_BASE_REG_PA_AIPS2 	0x83F00000
+#define CSP_BASE_REG_PA_AIPS1	0x73F00000
+#define CSP_BASE_REG_PA_AIPS2	0x83F00000
 
 
 #ifdef ASM
@@ -49,7 +49,7 @@
 	.equiv	I_SREV,		0x0024
 	.equiv	I_PREG_P,	0x0028
 	.equiv	PREV_EXPECTED,	0xf2
-	
+
 
 	.equiv	I_FB,		0x0800		//bank 0, fuse 0-7
 	.equiv	I_JTAG,		0x0804		//fuse 0x08-0x0f (8-15)
@@ -87,7 +87,7 @@
 	.equiv	SRC_SCR,	0x000
 	.equiv	SRC_SBMR,	0x004
 	.equiv	SRC_SRSR,	0x008
-	.equiv	SBMR_BT_MEM_CTL,	0	//len 2, 
+	.equiv	SBMR_BT_MEM_CTL,	0	//len 2,
 	.equiv	SBMR_BT_BUS_WIDTH,	2
 	.equiv	SBMR_BT_PAGE_SIZE,	3	//len 2
 	.equiv	SBMR_BT_SPARE,		6
@@ -156,12 +156,12 @@
 //FMASK(FUSE05_DIR_BT_DIS)
 #define F5_MASK (FMASK(FUSE05_BT_MEM_CTL) | FMASK(FUSE05_BT_MEM_CTL+1))
 #endif
-	fBurn	"FUSE 40-47:", (FUSE05_BT_MEM_CTL & ~0x7), F5_MASK  
+	fBurn	"FUSE 40-47:", (FUSE05_BT_MEM_CTL & ~0x7), F5_MASK
 	fBurn	"FUSE 32-39 (39 is virgin):", (FUSE04_VIRGIN & ~0x7), FMASK(FUSE04_VIRGIN)
 	.byte	0
 	.endm
 
-	
+
 	.macro header_macro start_rtn
 //offset 0x400 for SD/MMC
 header:
@@ -181,8 +181,10 @@ dcd:		.word	0xb17219e9	//0x1c
 2:
 	.word	program_length	//0x24 length
 	.endm
-	
+
 	.macro iomux_dcd_data
+	.word	0x73fa8418, 0x000000e0	//SW_PAD_CTL_PAD_EIM_D26, usb OTG power off
+	.word	0x73fa8084, 0x00000001	//SW_MUX_CTL_PAD_EIM_D26, ALT1 kpp column 7, GPIO on next board
 #if 1
 //babbage tape out 2, 56 DCD entries
 	.word	0x73fa88a0, 0x00000200	//SW_PAD_CTL_GRP_INMODE1, ddr2 input type
@@ -286,7 +288,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	ldr	r0,[r1, #CCM_CCGR1]		//index 3 & 4 is UART1
 	bic	r0,r0,#0xf<<(3*2)
 	str	r0,[r1, #CCM_CCGR1]
-	
+
 	ldr	r0,[r1, #CCM_CSCMR1]
 	bic	r0,r0,#3<<24
 	orr	r0,r0,#2<<24			//pll3
@@ -339,7 +341,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	bne	91b
 	str	r1, [r3, #ESD_MISC]	// release reset
 #endif
-	BigMov	r1, 0x04008008	 	//PRECHARGE ALL
+	BigMov	r1, 0x04008008		//PRECHARGE ALL
 	str	r1, [r3, #ESD_SCR]
 ///
 	ldr	r1, [r3, #ESD_CTL1]
@@ -370,7 +372,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	str	r1, [r0]
 	b	90b
 #else
-	mov	r1, #0	 	//normal operations again
+	mov	r1, #0		//normal operations again
 	str	r1, [r3, #ESD_SCR]
 #endif
 93:
@@ -412,22 +414,22 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x73fa860c, PAD_CSPI1_SS1	//SW_PAD_CTL_CSPI1_SS1
 	.word	0x73fa8614, PAD_CSPI1_SCLK	//SW_PAD_CTL_CSPI1_SCLK
 
-	.word	0x73fa8210, 0 		//SW_MUX_CTL_PAD_CSPI1_MOSI, gpio4[22], alt 3
+	.word	0x73fa8210, 0		//SW_MUX_CTL_PAD_CSPI1_MOSI, gpio4[22], alt 3
 	.word	0x73fa8214, 0		//SW_MUX_CTL_PAD_CSPI1_MISO, gpio4[23], alt 3
 	.word	0x73fa8218, ALT3	//SW_MUX_CTL_PAD_CSPI1_SS0, gpio4[24], alt 3
 	.word	0x73fa821c, ALT3	//SW_MUX_CTL_PAD_CSPI1_SS1, gpio4[25], alt 3
 	.word	0x73fa8224, 0		//SW_MUX_CTL_PAD_CSPI1_SCLK, gpio4[27], alt 3
-	.word	0	
+	.word	0
 	.endm
 
 	.macro miso_gp_iomux_dcd_data
 	.word	0x73fa8214, ALT3	//SW_MUX_CTL_PAD_CSPI1_MISO, gpio4[23], alt 3
-	.word	0	
+	.word	0
 	.endm
 
 	.macro miso_ecspi_iomux_dcd_data
 	.word	0x73fa8214, 0		//SW_MUX_CTL_PAD_CSPI1_MISO, gpio4[23], alt 3
-	.word	0	
+	.word	0
 	.endm
 
 #define GP4_MISO_BIT	23
@@ -497,7 +499,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x73fa87b4, PAD_SD1_CD		//SW_PAD_CTL_SD1_CD
 	.word	0x73fa87b8, PAD_SD1_WP		//SW_PAD_CTL_SD1_WP
 
-	
+
 	.word	0x73fa8394, MUX_SD1_CMD		//SW_MUX_CTL_PAD_SD1_CMD
 	.word	0x73fa8398, MUX_SD1_CLK		//SW_MUX_CTL_PAD_SD1_CLK, this is default setting
 	.word	0x73fa839c, MUX_SD1_DATA0	//SW_MUX_CTL_PAD_SD1_DATA0
@@ -508,7 +510,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x73fa83b0, MUX_SD1_WP		//SW_MUX_CTL_PAD_WP, GPIO1_1 is write protect
 	.endm
 
-	.macro mmc_get_cd		
+	.macro mmc_get_cd
 	BigMov	r1, GPIO4_BASE
 	ldr	r0, [r1, #GPIO_DIR]
 	bic	r0, r0, #3	//make sure CD & WP are inputs
