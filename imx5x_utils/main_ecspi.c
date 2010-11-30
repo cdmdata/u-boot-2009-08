@@ -25,7 +25,7 @@ int main(void)
 #endif
 	unsigned diff;
 	unsigned page;
-	unsigned offset_bits; 
+	unsigned offset_bits;
 	unsigned block_size;
 	read_block_rtn read_rtn;
 

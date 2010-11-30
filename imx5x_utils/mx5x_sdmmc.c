@@ -572,7 +572,7 @@ static int mmc_init__(struct sdmmc_dev *pdev, int force_1wire)
 //			stop_clock(pdev);
 			IO_MOD(base, SD_SYSCTL, SYSCTL_DATA_TIMEOUT_MASK, SYSCTL_DATA_TIMEOUT);
 			IO_WRITE(base, SD_BLKATTR, (1 << 16) | 64);
-			resp = mmc_cmd(pdev, SD_STATUS, 0); 	//get SD Status
+			resp = mmc_cmd(pdev, SD_STATUS, 0);	//get SD Status
 			if (!resp)
 				debug_pr( "Error sending SD_STATUS command\n");
 			else {
@@ -826,7 +826,7 @@ int scan_chain(unsigned cluster, unsigned chain, struct info *pinfo, work_func w
 			remaining_in_cluster--;
 			x++;
 		} while (remaining_in_cluster);
-		
+
 		if (!chain)
 			break;
 		cluster = get_link(cluster, pinfo);

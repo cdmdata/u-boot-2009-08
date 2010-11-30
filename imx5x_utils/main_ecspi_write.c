@@ -5,7 +5,7 @@
 
 void check_page_size(int base)
 {
-	unsigned offset_bits; 
+	unsigned offset_bits;
 	unsigned block_size;
 	read_block_rtn read_rtn;
 	write_blocks_rtn write_rtn;
@@ -25,8 +25,8 @@ void check_page_size(int base)
 void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 {
 	unsigned ret;
-	unsigned partial = length & 0x3ff; 
-	unsigned offset_bits; 
+	unsigned partial = length & 0x3ff;
+	unsigned offset_bits;
 	unsigned block_size;
 	unsigned page;
 	unsigned diff;
@@ -38,7 +38,7 @@ void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 		my_memset(&ubl[length], 0xff, partial);
 		length += partial;
 	}
-	
+
 	ecspi_init(base);
 	offset_bits = identify_chip_rtns(base, &block_size, &read_rtn, &write_rtn);
 	if (!offset_bits) {

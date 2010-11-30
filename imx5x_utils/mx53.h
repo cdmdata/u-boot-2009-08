@@ -20,15 +20,15 @@
 
 #define GPIO3_BASE	0x53f8c000
 #define WDOG_BASE	0x53f98000
-#define CCM_BASE 	0x53fd4000
-#define ESD_BASE 	0x63fd9000
+#define CCM_BASE	0x53fd4000
+#define ESD_BASE	0x63fd9000
 
 #define IOMUXC_BASE_ADDR (0x53FA8000)
 #define ESDCTL_BASE_ADDR (0x63FD9000)
 
 // AIPS Constants
-#define CSP_BASE_REG_PA_AIPS1 	0x53F00000
-#define CSP_BASE_REG_PA_AIPS2 	0x63F00000
+#define CSP_BASE_REG_PA_AIPS1	0x53F00000
+#define CSP_BASE_REG_PA_AIPS2	0x63F00000
 
 
 #ifdef ASM
@@ -181,7 +181,7 @@ plugin:			.word 0x0
 	.word	0x53FA8728, 0x00380000	/* GRP_B2DS: dse 7 for D16-D23 */
 	.word	0x53FA872c, 0x00380000	/* GRP_B3DS: dse 7 fro D24-D31 */
 #if 1
-//uart1 rxd:PATA_DMACK, txd:PATA_DIOW 
+//uart1 rxd:PATA_DMACK, txd:PATA_DIOW
 	.word	0x53FA8274, 3		//Mux: PATA_DMACK - UART1_RXD
 	.word	0x53FA85F4, 0x1e4	//CTL: PATA_DMACK - UART1_RXD
 	.word	0x53FA8878, 3		//Select: UART1_IPP_UART_RXD_MUX_SELECT_INPUT
@@ -266,7 +266,7 @@ plugin:			.word 0x0
 	ldr	r0,[r1, #CCM_CCGR1]		//index 3 & 4 is UART1, 5&6 UART2
 	bic	r0,r0,#0xff<<(3*2)
 	str	r0,[r1, #CCM_CCGR1]
-	
+
 	ldr	r0,[r1, #CCM_CSCMR1]
 	bic	r0,r0,#3<<24
 	orr	r0,r0,#2<<24			//pll3
@@ -345,7 +345,7 @@ plugin:			.word 0x0
 	bne	91b
 	str	r1, [r3, #ESD_MISC]	// release reset
 #endif
-	BigMov	r1, 0x04008010	 	//PRECHARGE ALL, CS0
+	BigMov	r1, 0x04008010		//PRECHARGE ALL, CS0
 	str	r1, [r3, #ESD_SCR]
 ///
 	ldr	r1, [r3, #ESD_CTL]
@@ -353,7 +353,7 @@ plugin:			.word 0x0
 	bic	r1, r1, #(1<<30)
 	strne	r1, [r3, #ESD_CTL]	// disable CS1
 
-	mov	r1, #0	 	//normal operations again
+	mov	r1, #0		//normal operations again
 	str	r1, [r3, #ESD_SCR]
 93:
 	.endm
@@ -389,11 +389,11 @@ plugin:			.word 0x0
 
 	.macro ecspi1_iomux_dcd_data
 	.word	0x53fa8468, PAD_CSPI1_MOSI	//SW_PAD_CTL_EIM_D18 - ECSPI1_MOSI
-	.word	0x53fa8464, PAD_CSPI1_MISO	//SW_PAD_CTL_EIM_D17 - ECSPI1_MISO 
-	.word	0x53fa846c, PAD_CSPI1_SS1	//SW_PAD_CTL_EIM_D19 - ECSPI1_SS1 
+	.word	0x53fa8464, PAD_CSPI1_MISO	//SW_PAD_CTL_EIM_D17 - ECSPI1_MISO
+	.word	0x53fa846c, PAD_CSPI1_SS1	//SW_PAD_CTL_EIM_D19 - ECSPI1_SS1
 	.word	0x53fa8460, PAD_CSPI1_SCLK	//SW_PAD_CTL_EIM_D16 - ECSPI1_SCLK
 
-	.word	0x53fa8120, ALT4 		//SW_MUX_CTL_PAD_EIM_D18, alt4 ECSPI1_MOSI, alt1 gpio3[18]
+	.word	0x53fa8120, ALT4		//SW_MUX_CTL_PAD_EIM_D18, alt4 ECSPI1_MOSI, alt1 gpio3[18]
 	.word	0x53fa87a4, 3		//mosi input select
 	.word	0x53fa811c, ALT4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
 	.word	0x53fa87a0, 3		//miso input select
@@ -401,17 +401,17 @@ plugin:			.word 0x0
 	.word	0x53fa87ac, 2		//ss1 input select
 	.word	0x53fa8118, ALT4		//SW_MUX_CTL_PAD_EIM_D16, alt4 ECSPI1_SCLK, alt1 gpio3[16]
 	.word	0x53fa879c, 3		//clk input select
-	.word	0	
+	.word	0
 	.endm
 
 	.macro miso_gp_iomux_dcd_data
 	.word	0x53fa811c, 1		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
-	.word	0	
+	.word	0
 	.endm
 
 	.macro miso_ecspi_iomux_dcd_data
 	.word	0x53fa811c, 4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
-	.word	0	
+	.word	0
 	.endm
 
 #define GP3_MISO_BIT	17
@@ -483,7 +483,7 @@ plugin:			.word 0x0
 #define EXEC_PROGRAM		mx53_exec_program
 #define EXEC_DL			mx53_exec_dl
 #define HEADER_UPDATE_END	mx53_header_update_end
-	
+
 #define IVT_BARKER 0x402000d1
 	.macro test_for_header
 	BigMov	r1, IVT_BARKER

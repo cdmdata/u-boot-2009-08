@@ -90,7 +90,7 @@ skip_partition:
 			root_dir_entries, info.fat_sector, info.sectorsPerCluster);
 	if (root_dir_entries == 0) {
 		/*
-	 	 For FAT32
+		 For FAT32
 		 */
 		info.fat32 = 1;
 		info.cluster2StartSector = info.fat_sector + (pboot->numofFATs * pboot->sectorsPerFAT32);

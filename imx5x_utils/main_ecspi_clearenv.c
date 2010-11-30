@@ -5,7 +5,7 @@
 
 void check_page_size(int base)
 {
-	unsigned offset_bits; 
+	unsigned offset_bits;
 	unsigned block_size;
 	erase_sector_rtn erase_rtn;
 
@@ -23,7 +23,7 @@ void check_page_size(int base)
 
 void clearenv(int base, unsigned offset)
 {
-	unsigned offset_bits; 
+	unsigned offset_bits;
 	unsigned block_size;
 	unsigned page;
 	erase_sector_rtn erase_rtn;

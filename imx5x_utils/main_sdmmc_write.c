@@ -6,7 +6,7 @@ void write_ubl(unsigned char* ubl, unsigned length, unsigned start_block)
 {
 	struct sdmmc_dev dev;
 	unsigned ret;
-	unsigned partial = length & 0x1ff; 
+	unsigned partial = length & 0x1ff;
 
 	if (partial) {
 		partial = 0x200 - partial;

@@ -75,7 +75,7 @@ void my_printf(char *str, ...)
 	unsigned cnt;
 	unsigned int arg;
 	va_list arglist;
-	
+
 	va_start(arglist, str);
 	do {
 		ch = *str;

@@ -76,7 +76,7 @@ init_tab:
 	.short	0x0060		//UTS (0xb4)
 init_tab_end:
 	.align	2
-2:	
+2:
 #endif
 	bl	TransmitCRLF
 	mov	r0,sp
@@ -121,7 +121,7 @@ init_tab_end:
 	ldrb	r0,[rTable]
 	movs	r0,r0
 	bne	1b
-	
+
 	add	rTable, rTable, #1
 	BigMov	rIIM,IIM_BASE
 	ldr	r0, [rIIM, #I_PREV]
@@ -156,11 +156,11 @@ init_tab_end:
 	movs	r0,r0
 	bne	1b
 	b	9f
-	
+
 11:
 	adr	r0,unexpected_PREV_value_str
 	b	12f
-	
+
 8:
 	BigMov	r0,L1(OPEN_PAREN)
 	bl	TransmitX
@@ -249,7 +249,7 @@ burn_fuse:
 	tst	r6,#0xff
 	mov	pc, r5
 
-	
+
 //In: r0 @asciz str
 //Out: r0 past str
 transmit_string:

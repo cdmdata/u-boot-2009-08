@@ -553,7 +553,7 @@ unsigned identify_chip_rtns(int base, unsigned *pblock_size, read_block_rtn *pre
 
 static unsigned atmel_status(int base)
 {
-	unsigned chip_status; 
+	unsigned chip_status;
 //	debug_pr("%s\n", __func__);
 	chip_status = ecspi_cmd(base, SF_STATUS << 8, CTL_DEFAULT(16, ATMEL_STATUS_CLOCK));
 //	debug_pr("chip_status = %x\n", chip_status);
@@ -619,7 +619,7 @@ static void atmel_erase_block(int base, unsigned page, unsigned offset_bits)
 
 unsigned atmel_chip_erase(int base)
 {
-	unsigned chip_erase; 
+	unsigned chip_erase;
 //	debug_pr("%s\n", __func__);
 	chip_erase = ecspi_cmd(base, SF_CHIP_ERASE, CTL_DEFAULT(32, ATMEL_CLOCK));
 	atmel_wait_for_ready(base);
@@ -730,7 +730,7 @@ static void st_read_block(int base, unsigned page, unsigned* dst, unsigned offse
 {
 #if 1
 	//5 - 1 opcode, 3 address, 1 dummy bytes in, infinite out
-	unsigned cmd2 = (page << (offset_bits + 8)); 		// +8 for dummy byte
+	unsigned cmd2 = (page << (offset_bits + 8));		// +8 for dummy byte
 	debug_pr("%s: cmd2=%x page=%x\n", __func__, cmd2, page);
 	ecspi_write(base, &cmd2, 4, ST_FAST_READ, 8, ST_CLOCK);
 	ecspi_read(base, dst, block_size, 0, 0, 0, ST_CLOCK);
@@ -743,7 +743,7 @@ static void st_read_block(int base, unsigned page, unsigned* dst, unsigned offse
 
 static unsigned st_status(int base)
 {
-	unsigned chip_status; 
+	unsigned chip_status;
 	debug_pr("%s\n", __func__);
 	chip_status = ecspi_cmd(base, ST_READ_STATUS << 8, CTL_DEFAULT(16, ST_SLOW_CLOCK));
 	debug_pr("chip_status = %x\n", chip_status);
@@ -853,7 +853,7 @@ static void sst_read_block(int base, unsigned page, unsigned* dst, unsigned offs
 {
 #if 1
 	//5 - 1 opcode, 3 address, 1 dummy bytes in, infinite out
-	unsigned cmd2 = (page << (offset_bits + 8)); 		// +8 for dummy byte
+	unsigned cmd2 = (page << (offset_bits + 8));		// +8 for dummy byte
 	debug_pr("%s: cmd2=%x page=%x\n", __func__, cmd2, page);
 	ecspi_write(base, &cmd2, 4, SST_FAST_READ, 8, SST_CLOCK);
 	ecspi_read(base, dst, block_size, 0, 0, 0, SST_CLOCK);
@@ -866,7 +866,7 @@ static void sst_read_block(int base, unsigned page, unsigned* dst, unsigned offs
 
 static unsigned sst_status(int base)
 {
-	unsigned chip_status; 
+	unsigned chip_status;
 	debug_pr("%s\n", __func__);
 	chip_status = ecspi_cmd(base, SST_READ_SR << 8, CTL_DEFAULT(16, SST_SLOW_CLOCK));
 	debug_pr("chip_status = %x\n", chip_status);
@@ -942,7 +942,7 @@ static void wait_for_miso_high(int base)
 
 static void sst_write_block(int base, unsigned page, unsigned* src, unsigned offset_bits, unsigned block_size)
 {
-	unsigned char *p = (unsigned char *)src; 
+	unsigned char *p = (unsigned char *)src;
 	unsigned cmd_rem = ((page << offset_bits) << 16) | (p[3] << 8) | p[2];
 	unsigned i = 0;
 	debug_pr("%s: block_size=0x%x page=%x, *src(%x)=%x\n", __func__, block_size, page, src, *src);

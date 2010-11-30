@@ -14,8 +14,8 @@
 	.global TransmitX
 	.global ReceiveX
 	.global hw_watchdog_reset
-	.global header_search	
-	.global exec_program	
+	.global header_search
+	.global exec_program
 	.global exec_dl
 	.global header_update_end
 	.global header_present
@@ -123,7 +123,7 @@ assem_start:
 	BigMov	rUART,UART_BASE	//0x28
 
 	config_uart_clocks
-////////	
+////////
 	adr	r6,init_tab
 	adr	r7,init_tab_end
 	add	r1,rUART, #UCR1
@@ -360,7 +360,7 @@ print_hex:
 	movs	r2, r2, LSL #4
 	bne	1b
 	mov	pc, r3
-	
+
 	.section .text.hw_watchdog_reset,"x"
 hw_watchdog_reset:
 	BigMov	r1, WDOG_BASE
@@ -397,11 +397,11 @@ ReceiveX:
 
 	.section .text.header_search,"x"
 header_search:
-	b HEADER_SEARCH	
+	b HEADER_SEARCH
 
 	.section .text.exec_program,"x"
 exec_program:
-	b EXEC_PROGRAM	
+	b EXEC_PROGRAM
 
 	.section .text.exec_dl,"x"
 exec_dl:
