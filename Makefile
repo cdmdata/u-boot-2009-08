@@ -495,6 +495,10 @@ init.scr: init.script
 upgrade.scr: upgrade.script
 	tools/mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "U-Boot upgrade script" -d $< $@
 
+$(BOARD)_bootscr%: board/$(BOARDDIR)/$(BOARD)_bootscr%.txt
+	echo "Board directory ($(BOARDDIR))" ;
+	tools/mkimage -A arm -O linux -T script -C none -a 0 -e 0 -n "$(BOARD) boot script" -d $< $@
+
 #########################################################################
 else	# !config.mk
 all $(obj)u-boot.hex $(obj)u-boot.srec $(obj)u-boot.bin \
