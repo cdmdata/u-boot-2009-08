@@ -47,6 +47,8 @@ void reverse_word(unsigned *dst, int count);
 void reverse_word2(unsigned *dst, unsigned *src, int count);
 
 int common_load_block_of_file(struct common_info *pinfo, unsigned block_size);
+int ram_test(unsigned *ram_base);
+
 int get_ecspi_base(void);
 uint get_uart_base(void);
 uint get_mmc_base(void);

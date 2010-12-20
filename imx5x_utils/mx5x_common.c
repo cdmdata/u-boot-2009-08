@@ -177,3 +177,43 @@ int common_load_block_of_file(struct common_info *pinfo, unsigned block_size)
 	}
 	return 0;
 }
+
+int ram_test(unsigned *ram_base)
+{
+	unsigned *p = ram_base;
+	unsigned *p_end = &ram_base[1<<10];	//test 4K of memory 
+	unsigned expected;
+	unsigned val[4];
+	while (p < p_end) {
+		p[0] = ((unsigned)p);
+		p[1] = ~((unsigned)p);
+		p[2] = ((unsigned)p) ^ 0xaaaaaaaa;
+		p[3] = ((unsigned)p) ^ 0x55555555;
+		p += 4;
+	}
+	p = ram_base;
+	for (;;) {
+		if (p >= p_end) {
+//			my_printf("ram test passed\r\n");
+			return 1;
+		}
+		val[0] = p[0];
+		val[1] = p[1];
+		val[2] = p[2];
+		val[3] = p[3];
+		expected = (unsigned)p;
+		if (val[0] != expected) break;
+
+		expected = ~((unsigned)p);
+		if (val[1] != expected) break;
+
+		expected = ((unsigned)p) ^ 0xaaaaaaaa;
+		if (val[2] != expected) break;
+
+		expected = ((unsigned)p) ^ 0x55555555; 
+		if (val[3] != expected) break;
+		p += 4;
+	}
+	my_printf(" %08x: %08x %08x %08x %08x, %08x\r\n", p, val[0], val[1], val[2], val[3], expected);
+	return 0;
+}
