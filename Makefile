@@ -329,18 +329,18 @@ $(obj)u-boot.sha1:	$(obj)u-boot.bin
 $(obj)u-boot.dis:	$(obj)u-boot
 		$(OBJDUMP) -d $< > $@
 
-$(obj)u-boot-no-padding.bin:	$(obj)u-boot.bin
+$(obj)$(SOC)_u-boot.no-padding:	$(obj)u-boot.bin
 		dd if=$< of=$@ bs=1024 skip=1
 
-$(obj)uboot_image.o : $(obj)%.o : $(obj)u-boot-no-padding.bin imx5x_utils/uboot_image.lds
+$(obj)$(SOC)_uboot_image.o : $(obj)%.o : $(obj)$(SOC)_u-boot.no-padding imx5x_utils/uboot_image.lds
 	$(LD) -r -o $(obj)$*-temp.o -b binary $<; \
 	$(LD) -nostdlib -T $(filter %.lds,$^) -o $@  $(obj)$*-temp.o; \
 	rm -f $(obj)$*-temp.o
 
-$(obj)mx51_ubl_ecspi.omx51_2 : imx5x_utils/$(obj)mx51_ecspi.omx51_2 $(obj)uboot_image.o imx5x_utils/mx5x.lds
+$(obj)mx51_ubl_ecspi.omx51_2 : imx5x_utils/$(obj)mx51_ecspi.omx51_2 $(obj)mx51_uboot_image.o imx5x_utils/mx5x.lds
 	$(LD) --defsym=hdr_offset=0x400 --defsym=load_addr=0x1ffe2000 -static --no-warn-mismatch -nostdlib -T $(filter %.lds,$^) $(filter-out %.lds,$^) -o $@ -M >$(obj)$*.map
 
-$(obj)mx53_ubl_ecspi.omx53_2 : imx5x_utils/$(obj)mx53_ecspi.omx53_2 $(obj)uboot_image.o imx5x_utils/mx5x.lds
+$(obj)mx53_ubl_ecspi.omx53_2 : imx5x_utils/$(obj)mx53_ecspi.omx53_2 $(obj)mx53_uboot_image.o imx5x_utils/mx5x.lds
 	$(LD) --defsym=hdr_offset=0x400 --defsym=load_addr=0xf8006000 -static --no-warn-mismatch -nostdlib -T $(filter %.lds,$^) $(filter-out %.lds,$^) -o $@ -M >$(obj)$*.map
 
 $(obj)$(SOC)_ubl_ecspi.bin : $(obj)$(SOC)_ubl_ecspi.o$(SOC)_2 
