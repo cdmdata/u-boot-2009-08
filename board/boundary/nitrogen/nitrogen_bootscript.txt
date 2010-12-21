@@ -1,0 +1,67 @@
+if fatload mmc 0 92000000 nitrogen-logo*.bmp ; then 
+	bmp display 92000000 ; 
+else
+	if fatload mmc 0 92000000 logo*.bmp ; then 
+		bmp display 92000000 ; 
+	fi
+fi
+
+lecho "check U-Boot" ;
+if fatload mmc 0 92000000 u-boot-nitrogen*.bin ; then
+      if sf probe 1 27000000 ; then
+           if sf read 0x92400000 0x400 $filesize ; then
+               if cmp.b 0x92000000 0x92400000 $filesize ; then
+                   lecho "..." ;
+               else
+                   lecho "Need U-Boot upgrade" ;
+                   lecho "Program in 10 seconds" ;
+                   for n in 5 4 3 2 1 0 ; do
+                        lecho $n ;
+                        sleep 1 ;
+                   done
+                   sf erase 0 0x40000 ;
+		   # two steps to prevent bricking
+                   sf write 0x92000400 0x800 $filesize
+                   sf write 0x92000000 0x400 0x400
+                   if sf read 0x92400000 0x400 $filesize ; then
+                       if cmp.b 0x92000000 0x92400000 $filesize ; then
+                           while lecho "U-Boot upgraded. Cycle power" ; do
+				sleep 120
+			   done			   
+                       else
+                           lecho "Read verification error" ;
+                       fi
+                   else
+                        lecho "Error re-reading EEPROM" ;
+                   fi
+               fi
+           else
+               lecho "Error reading boot loader from EEPROM" ;
+           fi
+      else
+           lecho "Error initializing EEPROM" ;
+      fi ;
+else
+     lecho "No U-Boot image found on SD card" ;
+fi
+
+if fatload mmc 0 92000000 uImag* ; then
+	set bootm "bootm 92000000 " ;
+	set bootargs "$bootargs console=ttymxc0,115200 " ;
+	if fatload mmc 0 92400000 initrd*.u-boot ; then
+		set bootm $bootm 92400000 ;
+		run bootm ;
+	else
+		echo "No ram-disk" ;
+	fi
+else
+	echo "No Linux kernel" ;
+fi
+
+if fatload mmc 0 90200000 nk6-nitrogen*.nb0 ; then
+	lecho "Launching CE6" ;	
+	go 90200000 ;
+else
+	lecho "No system image" ;
+fi
+

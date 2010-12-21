@@ -154,7 +154,7 @@ void *__ioremap(unsigned long offset, size_t size, unsigned long flags)
 {
 	if (1 == flags) {
 		if (offset >= PHYS_SDRAM_1 &&
-		offset < (unsigned long)(PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
+		offset < (unsigned long)((unsigned long)PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
 			return (void *)((offset - PHYS_SDRAM_1) + 0xB0000000);
 		else
 			return NULL;
