@@ -460,7 +460,7 @@ int fec_get_mac_addr(unsigned char *mac)
 
 unsigned short fec_setup_pins[] = {
 	/** MDIO, EIM_EB2, alt 3, IOMUXC_FEC_FEC_MDI_SELECT_INPUT */
-	0x3, 0x0d4,  0x01fd, 0x468,  0x0, 0x954,
+	0x3, 0x0d4,  0x01f5, 0x468,  0x0, 0x954,
 	/** RDATA[1], EIM_EB3, alt 3, IOMUXC_FEC_FEC_RDATA_1_SELECT_INPUT */
 	0x3, 0x0d8,  0x0180, 0x46c,  0x0, 0x95c,
 	/** RDATA[2], EIM_CS2, alt 3, IOMUXC_FEC_FEC_RDATA_2_SELECT_INPUT */
