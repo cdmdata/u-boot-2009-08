@@ -216,8 +216,13 @@ uart_init_done:
 //	bl	TransmitX
 
 	bl	main
-	bl	main
-	bl	main
+#define LL4(a,b,c,d) ((a)+(b<<8)+(c<<16)+(d<<24))
+	BigMov	r0, LL4('W','D','R','\n')
+	bl	TransmitX
+
+	BigMov	r1, WDOG_BASE
+	BigMov	r0, 0x4
+	strh	r0,[r1, #WDOG_WCR]
 3:	b	3b
 
 Basic_Init_ESD:

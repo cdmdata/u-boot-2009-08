@@ -18,6 +18,7 @@ int main(void)
 {
 	struct common_info ci;
 	int base = get_ecspi_base();
+	unsigned char *ram_base = (unsigned char *)get_ram_base();
 #ifdef DEBUG
 	unsigned offset = ((unsigned)0x1400);	/* 1k aligned */
 #else
@@ -28,8 +29,11 @@ int main(void)
 	unsigned offset_bits;
 	unsigned block_size;
 	read_block_rtn read_rtn;
-
-	ci.search = ci.buf = ci.initial_buf = (unsigned *)0x93f00000;
+	if (!ram_test((unsigned *)ram_base)) {
+		flush_uart();
+		return 0;
+	}
+	ci.search = ci.buf = ci.initial_buf = (unsigned *)(ram_base +0x03f00000);
 	ci.hdr = NULL;
 	ci.cur_end = (void*)(((unsigned)ci.buf) + 0x10000);
 	ci.end = NULL;
@@ -64,8 +68,11 @@ int main(void)
 	}
 #endif
 	exec_program(&ci, 0);
-	dump_mem(ci.initial_buf, offset, 14);
+	dump_mem(ci.initial_buf, offset, 1);
 	my_printf("exec_program failed, hdr=%x\n", ci.hdr);
+	if (!ram_test((unsigned *)ram_base)) {
+		my_printf("ram test failed\r\n");
+	}
 	flush_uart();
 	return 0;
 }

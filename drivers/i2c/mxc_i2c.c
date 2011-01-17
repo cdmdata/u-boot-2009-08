@@ -96,72 +96,44 @@ void i2c_init(int speed, int unused)
 	i2c_reset();
 }
 
-static int wait_idle(void)
+#define ST_BUS_IDLE 0, I2SR_IBB
+#define ST_BUS_BUSY I2SR_IBB, I2SR_IBB
+#define ST_BYTE_COMPLETE I2SR_ICF, I2SR_ICF
+#define ST_BYTE_PENDING 0, I2SR_ICF
+static unsigned wait_for_sr_state(unsigned state, unsigned mask)
 {
 	int timeout = I2C_MAX_TIMEOUT;
-
-	while ((__REG16(I2C_BASE + I2SR) & I2SR_IBB) && --timeout) {
-		__REG16(I2C_BASE + I2SR) = 0;
+	unsigned sr;
+	for (;;) {
+		sr = __REG16(I2C_BASE + I2SR);
+		if ((sr & mask) == state)
+			break;
+		if (!(--timeout)) {
+			printf("%s: failed sr=%x cr=%x state=%x mask=%x\n", __func__, sr, __REG16(I2C_BASE + I2CR), state, mask);
+			return 0;
+		}
 		udelay(I2C_TIMEOUT_TICKET);
 	}
-	DPRINTF("%s:%x\n", __func__, __REG16(I2C_BASE + I2SR));
-	return timeout ? timeout : (!(__REG16(I2C_BASE + I2SR) & I2SR_IBB));
+	DPRINTF("%s:%x\n", __func__, sr);
+	return sr | 0x10000;
 }
 
-static int wait_busy(void)
+static int tx_byte(u8 byte, int clear_wait)
 {
-	int timeout = I2C_MAX_TIMEOUT;
-
-	while ((!(__REG16(I2C_BASE + I2SR) & I2SR_IBB) && (--timeout))) {
-		__REG16(I2C_BASE + I2SR) = 0;
-		udelay(I2C_TIMEOUT_TICKET);
-	}
-	return timeout ? timeout : (__REG16(I2C_BASE + I2SR) & I2SR_IBB);
-}
-
-static int wait_complete(void)
-{
-	int timeout = I2C_MAX_TIMEOUT;
-
-	while ((!(__REG16(I2C_BASE + I2SR) & I2SR_ICF)) && (--timeout)) {
-		__REG16(I2C_BASE + I2SR) = 0;
-		udelay(I2C_TIMEOUT_TICKET);
-	}
-	DPRINTF("%s:%x\n", __func__, __REG16(I2C_BASE + I2SR));
-	{
-		int i;
-		for (i = 0; i < 200; i++)
-			udelay(10);
-
-	}
-	__REG16(I2C_BASE + I2SR) = 0;	/* clear interrupt */
-
-	return timeout;
-}
-
-static int tx_byte(u8 byte)
-{
+	unsigned sr;
 	__REG16(I2C_BASE + I2DR) = byte;
-
-	if (!wait_complete() || __REG16(I2C_BASE + I2SR) & I2SR_RX_NO_AK) {
-		DPRINTF("%s:%x <= %x\n", __func__, __REG16(I2C_BASE + I2SR),
-			byte);
+	if (clear_wait) {
+		/* cannot use
+		 * wait_for_sr_state(ST_BYTE_PENDING);
+		 * because the time period low is very very small */
+		udelay(10);
+	}
+	sr = wait_for_sr_state(ST_BYTE_COMPLETE);
+	if ((!sr) || (sr & I2SR_RX_NO_AK)) {
+		DPRINTF("%s:%x <= %x\n", __func__, sr, byte);
 		return -1;
 	}
 	DPRINTF("%s:%x\n", __func__, byte);
-	return 0;
-}
-
-static int rx_byte(u32 *pdata, int last)
-{
-	if (!wait_complete())
-		return -1;
-
-	if (last)
-		__REG16(I2C_BASE + I2CR) = I2CR_IEN;
-
-	*pdata = __REG16(I2C_BASE + I2DR);
-	DPRINTF("%s:%x\n", __func__, *pdata);
 	return 0;
 }
 
@@ -174,7 +146,7 @@ int i2c_probe(uchar chip)
 	for (ret = 0; ret < 1000; ret++)
 		udelay(1);
 	__REG16(I2C_BASE + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX;
-	ret = tx_byte(chip << 1);
+	ret = tx_byte(chip << 1, 0);
 	__REG16(I2C_BASE + I2CR) = I2CR_IEN;
 
 	return ret;
@@ -184,7 +156,7 @@ static int i2c_addr(uchar chip, uint addr, int alen)
 {
 	int i, retry = 0;
 	for (retry = 0; retry < 3; retry++) {
-		if (wait_idle())
+		if (wait_for_sr_state(ST_BUS_IDLE))
 			break;
 		i2c_reset();
 		for (i = 0; i < I2C_MAX_TIMEOUT; i++)
@@ -196,19 +168,18 @@ static int i2c_addr(uchar chip, uint addr, int alen)
 		return -1;
 	}
 	__REG16(I2C_BASE + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX;
-	if (!wait_busy()) {
+	if (!wait_for_sr_state(ST_BUS_BUSY)) {
 		printf("%s:trigger start fail(%x)\n",
 		       __func__, __REG16(I2C_BASE + I2SR));
 		return -1;
 	}
-	if (tx_byte(chip << 1) || (__REG16(I2C_BASE + I2SR) & I2SR_RX_NO_AK)) {
+	if (tx_byte(chip << 1, 0)) {
 		printf("%s:chip address cycle fail(%x)\n",
 		       __func__, __REG16(I2C_BASE + I2SR));
 		return -1;
 	}
 	while (alen--)
-		if (tx_byte((addr >> (alen * 8)) & 0xff) ||
-		    (__REG16(I2C_BASE + I2SR) & I2SR_RX_NO_AK)) {
+		if (tx_byte((addr >> (alen * 8)) & 0xff, 0)) {
 			printf("%s:device address cycle fail(%x)\n",
 			       __func__, __REG16(I2C_BASE + I2SR));
 			return -1;
@@ -218,7 +189,6 @@ static int i2c_addr(uchar chip, uint addr, int alen)
 
 int i2c_read(uchar chip, uint addr, int alen, uchar *buf, int len)
 {
-	int timeout = I2C_MAX_TIMEOUT;
 	uint ret;
 
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
@@ -231,43 +201,43 @@ int i2c_read(uchar chip, uint addr, int alen, uchar *buf, int len)
 
 	__REG16(I2C_BASE + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX | I2CR_RSTA;
 
-	if (tx_byte(chip << 1 | 1) ||
-	    (__REG16(I2C_BASE + I2SR) & I2SR_RX_NO_AK)) {
+	if (tx_byte(chip << 1 | 1, 1)) {
 		printf("%s:Send 2th chip address fail(%x)\n",
 		       __func__, __REG16(I2C_BASE + I2SR));
 		return -1;
 	}
 	__REG16(I2C_BASE + I2CR) = I2CR_IEN | I2CR_MSTA |
-	    ((len == 1) ? I2CR_TX_NO_AK : 0);
+		((len <= 1) ? I2CR_TX_NO_AK : 0);
+	ret = __REG16(I2C_BASE + I2DR);	/* dummy read to clear ICF */
 	DPRINTF("CR=%x\n", __REG16(I2C_BASE + I2CR));
-	ret = __REG16(I2C_BASE + I2DR);
 
-	while (len--) {
-		if (len == 0)
-			__REG16(I2C_BASE + I2CR) = I2CR_IEN | I2CR_MSTA |
-			    I2CR_TX_NO_AK;
-
-		if (rx_byte(&ret, len == 0) < 0) {
-			printf("Read: rx_byte fail\n");
+	for (;;) {
+		if (!wait_for_sr_state(ST_BYTE_COMPLETE)) {
+			printf("%s: fail sr=%x cr=%x, len=%i\n", __func__, __REG16(I2C_BASE + I2SR), __REG16(I2C_BASE + I2CR), len);
 			return -1;
 		}
+		if (len == 2) {
+			__REG16(I2C_BASE + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_TX_NO_AK;
+		}
+		if (len <= 1) {
+			__REG16(I2C_BASE + I2CR) = I2CR_IEN | I2CR_TX_NO_AK;	/* send stop */
+		}
+		ret = __REG16(I2C_BASE + I2DR);
+		DPRINTF("%s:%x\n", __func__, ret);
+		if (len <= 0)
+			break;
 		*buf++ = ret;
+		if (!(--len))
+			break;
+		
 	}
-
-	while (__REG16(I2C_BASE + I2SR) & I2SR_IBB && --timeout) {
-		__REG16(I2C_BASE + I2SR) = 0;
-		udelay(I2C_TIMEOUT_TICKET);
-	}
-	if (!timeout) {
-		printf("%s:trigger stop fail(%x)\n",
-		       __func__, __REG16(I2C_BASE + I2SR));
-	}
+	if (!wait_for_sr_state(ST_BUS_IDLE))
+		printf("%s:trigger stop fail\n", __func__);
 	return 0;
 }
 
 int i2c_write(uchar chip, uint addr, int alen, uchar *buf, int len)
 {
-	int timeout = I2C_MAX_TIMEOUT;
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
 		__func__, chip, addr, alen, len);
 
@@ -275,14 +245,13 @@ int i2c_write(uchar chip, uint addr, int alen, uchar *buf, int len)
 		return -1;
 
 	while (len--)
-		if (tx_byte(*buf++))
+		if (tx_byte(*buf++, 0))
 			return -1;
 
 	__REG16(I2C_BASE + I2CR) = I2CR_IEN;
 
-	while (__REG16(I2C_BASE + I2SR) & I2SR_IBB && --timeout)
-		udelay(I2C_TIMEOUT_TICKET);
-
+	if (!wait_for_sr_state(ST_BUS_IDLE))
+		printf("%s:trigger stop fail\n", __func__);
 	return 0;
 }
 
