@@ -812,7 +812,7 @@ int board_init(void)
 	setup_spi();
 #endif
 
-	gd->bd->bi_arch_number = MACH_TYPE_MX53_EVK;	/* board id for linux */
+	gd->bd->bi_arch_number = MACH_TYPE_MX53_NITROGEN;	/* board id for linux */
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 

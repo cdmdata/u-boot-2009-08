@@ -1073,7 +1073,7 @@ int board_init(void)
 	debug_putc('d');
 	set_board_rev();
 
-	gd->bd->bi_arch_number = MACH_TYPE_MX51_BABBAGE;	/* board id for linux */
+	gd->bd->bi_arch_number = MACH_TYPE_MX51_NITROGEN;	/* board id for linux */
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 

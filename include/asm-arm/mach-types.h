@@ -3071,6 +3071,8 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_BUG20                3088
 #define MACH_TYPE_GOFLEXNET            3089
 #define MACH_TYPE_TORBRECK             3090
+#define MACH_TYPE_MX51_NITROGEN        3167
+#define MACH_TYPE_MX53_NITROGEN        3168
 
 #ifdef CONFIG_ARCH_EBSA110
 # ifdef machine_arch_type
@@ -39790,6 +39792,30 @@ extern unsigned int __machine_arch_type;
 # define machine_is_mx50_rdp()  (machine_arch_type == MACH_TYPE_MX50_RDP)
 #else
 # define machine_is_mx50_rdp()  (0)
+#endif
+
+#ifdef CONFIG_MACH_MX51_NITROGEN
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_MX51_NITROGEN
+# endif
+# define machine_is_nitrogen()	(machine_arch_type == MACH_TYPE_MX51_NITROGEN)
+#else
+# define machine_is_nitrogen()	(0)
+#endif
+
+#ifdef CONFIG_MACH_MX53_NITROGEN
+# ifdef machine_arch_type
+#  undef machine_arch_type
+#  define machine_arch_type	__machine_arch_type
+# else
+#  define machine_arch_type	MACH_TYPE_MX53_NITROGEN
+# endif
+# define machine_is_nitrogen53()	(machine_arch_type == MACH_TYPE_MX53_NITROGEN)
+#else
+# define machine_is_nitrogen53()	(0)
 #endif
 
 /*
