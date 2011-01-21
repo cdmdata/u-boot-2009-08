@@ -39,6 +39,7 @@
 #endif
 #include <div64.h>
 #include "crm_regs.h"
+#include <asm/cache.h>
 
 enum pll_clocks {
 PLL1_CLK = MXC_DPLL1_BASE,
@@ -669,6 +670,41 @@ static u32 calc_per_cbcdr_val(u32 per_clk, u32 cbcmr)
 
 	return cbcdr;
 }
+
+static u32 __get_uart_clk(void)
+{
+	u32 freq = 0, reg, pred, podf;
+	reg = __REG(MXC_CCM_CSCMR1);
+	switch ((reg & MXC_CCM_CSCMR1_UART_CLK_SEL_MASK) >>
+		MXC_CCM_CSCMR1_UART_CLK_SEL_OFFSET) {
+	case 0x0:
+		freq = __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+		break;
+	case 0x1:
+		freq = __decode_pll(PLL2_CLK, CONFIG_MX51_HCLK_FREQ);
+		break;
+	case 0x2:
+		freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
+		break;
+	case 0x4:
+		freq = __get_lp_apm();
+		break;
+	default:
+		break;
+	}
+
+	reg = __REG(MXC_CCM_CSCDR1);
+
+	pred = (reg & MXC_CCM_CSCDR1_UART_CLK_PRED_MASK) >>
+		MXC_CCM_CSCDR1_UART_CLK_PRED_OFFSET;
+
+	podf = (reg & MXC_CCM_CSCDR1_UART_CLK_PODF_MASK) >>
+		MXC_CCM_CSCDR1_UART_CLK_PODF_OFFSET;
+	freq /= (pred + 1) * (podf + 1);
+
+	return freq;
+}
+
 
 static u32 calc_per_cscdr1_val(u32 per_clk)
 {

@@ -284,10 +284,10 @@ waitosc:
 	ldr r0, =0x59E35100
 	str r0, [rClk, #CLKCTL_CBCDR]
 
-	/* Use default for UART clock */
-	ldr r0, =0xA6A2A020
+	/* Use PLL2 for UART clock, get 66.5MHz from it */
+	ldr r0, =0xA5A2A020
 	str r0, [rClk, #CLKCTL_CSCMR1]
-	ldr r0, =0x00C30318
+	ldr r0, =0x00C30321
 	str r0, [rClk, #CLKCTL_CSCDR1]
 
 	divisor_change_wait rClk
