@@ -22,6 +22,8 @@
 #define GPIO4_BASE	0x73f90000
 #define WDOG_BASE	0x73f98000
 #define CCM_BASE	0x73fd4000
+#define I2C1_BASE_ADDR  0x83fc8000
+#define I2C_BASE	I2C1_BASE_ADDR
 #define ESD_BASE	0x83fd9000
 #define ESD_CTL0  0x000
 #define ESD_CFG0  0x004
@@ -29,6 +31,12 @@
 #define ESD_CFG1  0x00c
 #define ESD_MISC  0x010
 #define ESD_SCR   0x014
+#define ESD_DLY1  0x020
+#define ESD_DLY2  0x024
+#define ESD_DLY3  0x028
+#define ESD_DLY4  0x02c
+#define ESD_DLY5  0x030
+#define ESD_GPR	  0x034
 
 // AIPS Constants
 #define CSP_BASE_REG_PA_AIPS1	0x73F00000
@@ -238,11 +246,11 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x83fd9014, 0x0000801a	//emrs(2)
 	.word	0x83fd9014, 0x0000801b	//emrs(3)
 	.word	0x83fd9014, 0x00448019	//emrs(1) - 50 ohms ODT
-	.word	0x83fd9014, 0x07328018	//MRS
+	.word	0x83fd9014, 0x07328018	//MRS (load mode register)
 	.word	0x83fd9014, 0x04008008	//PRECHARGE ALL
 	.word	0x83fd9014, 0x00008010	//auto-refresh
 	.word	0x83fd9014, 0x00008010	//auto-refresh
-	.word	0x83fd9014, 0x06328018	//MRS
+	.word	0x83fd9014, 0x06328018	//MRS (load mode register)
 	.word	0x83fd9014, 0x03c48019	//emrs(1) - calibrate vs 0x03808019
 //
 	.word	0x83fd9014, 0x00448019	//emrs(1) - buffers enabled, RDQS disable, DQS enable,
@@ -257,11 +265,11 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x83fd9014, 0x0000801f	//emrs(3)
 	.word	0x83fd9014, 0x0044801d	//emrs(1) - 50 ohms ODT vs 0x0000801d
 //
-	.word	0x83fd9014, 0x0732801c	//MRS
+	.word	0x83fd9014, 0x0732801c	//MRS (load mode register)
 	.word	0x83fd9014, 0x0400800c	//PRECHARGE ALL
 	.word	0x83fd9014, 0x00008014	//auto-refresh
 	.word	0x83fd9014, 0x00008014	//auto-refresh
-	.word	0x83fd9014, 0x0632801c	//MRS
+	.word	0x83fd9014, 0x0632801c	//MRS (load mode register)
 	.word	0x83fd9014, 0x03c4801d	//emrs(1) - calibrate vs 0x0380801d
 //
 	.word	0x83fd9014, 0x0044801d	//emrs(1) - buffers enabled, RDQS disable, DQS enable,
@@ -419,6 +427,26 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x73fa8218, ALT3	//SW_MUX_CTL_PAD_CSPI1_SS0, gpio4[24], alt 3
 	.word	0x73fa821c, ALT3	//SW_MUX_CTL_PAD_CSPI1_SS1, gpio4[25], alt 3
 	.word	0x73fa8224, 0		//SW_MUX_CTL_PAD_CSPI1_SCLK, gpio4[27], alt 3
+	.word	0
+	.endm
+
+	.macro i2c1_iomux_dcd_data
+	.word	0
+	.endm
+
+	.macro ddr_single_iomux_dcd_data
+	.word	0x73fa84bc, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS0, Enable pull down
+	.word	0x73fa84c0, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS1, Enable pull down
+	.word	0x73fa84c4, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS2, Enable pull down
+	.word	0x73fa84c8, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS3, Enable pull down
+	.word	0
+	.endm
+
+	.macro ddr_differential_iomux_dcd_data
+	.word	0x73fa84bc, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
+	.word	0x73fa84c0, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
+	.word	0x73fa84c4, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS2, Disable pull down
+	.word	0x73fa84c8, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS3, Disable pull down
 	.word	0
 	.endm
 

@@ -2,6 +2,7 @@
 	.global get_uart_base
 	.global get_ecspi_base
 	.global get_mmc_base
+	.global iomuxc_setup_i2c1
 	.global iomuxc_setup_ecspi
 	.global iomuxc_miso_gp
 	.global iomuxc_miso_ecspi
@@ -19,6 +20,8 @@
 	.global exec_dl
 	.global header_update_end
 	.global header_present
+	.global iomuxc_ddr_single
+	.global iomuxc_ddr_differential
 #define rFNAME r8
 #define rFOFF r9
 #define rUART r10
@@ -160,6 +163,11 @@ uart_init_done:
 	bne	1b
 //	mov	r0, #'A'
 //	bl	TransmitX
+#ifdef PMIC_DA9053_ADDR
+	ldr	r0, =I2C_BASE
+	mov	r1, #PMIC_DA9053_ADDR
+	bl	power_up_ddr
+#endif
 	bl	Basic_Init_ESD
 	mov	r0,#0x10000
 2:	subs	r0,r0,#1
@@ -293,7 +301,15 @@ iomuxc_setup_ecspi:
 	b	Basic_Init1
 ECSPI1_IOMUX_TABLE:
 	ecspi1_iomux_dcd_data
-
+///
+	.section .text.iomuxc_setup_i2c1,"x"
+iomuxc_setup_i2c1:
+	i2c1_clk_setup CCM_BASE
+	adr	r3, I2C1_IOMUX_TABLE
+	b	Basic_Init1
+I2C1_IOMUX_TABLE:
+	i2c1_iomux_dcd_data
+///
 	.section .text.iomuxc_miso_gp,"x"
 iomuxc_miso_gp:
 	adr	r3, MISO_GP_TABLE
@@ -329,6 +345,20 @@ iomuxc_setup_mmc:
 	b	Basic_Init1
 MMC_IOMUX_TABLE:
 	mmc_iomux_dcd_data
+	
+	.section .text.iomuxc_ddr_single,"x"
+iomuxc_ddr_single:
+	adr	r3, DDR_SINGLE_IOMUX_TABLE
+	b	Basic_Init1
+DDR_SINGLE_IOMUX_TABLE:
+	ddr_single_iomux_dcd_data
+
+	.section .text.iomuxc_ddr_differential,"x"
+iomuxc_ddr_differential:
+	adr	r3, DDR_DIFF_IOMUX_TABLE
+	b	Basic_Init1
+DDR_DIFF_IOMUX_TABLE:
+	ddr_differential_iomux_dcd_data
 
 	.section .text.mmc_read_cd,"x"
 mmc_read_cd:

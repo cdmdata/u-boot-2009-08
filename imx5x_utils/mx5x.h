@@ -59,6 +59,12 @@
 	str	r0,[r1, #CCM_CCGR4]
 	.endm
 
+	.macro i2c1_clk_setup, ccm_base
+	BigMov	r1,\ccm_base
+	ldr	r0,[r1, #CCM_CCGR1]		//index 9 is i2c1_ser_clk_enable
+	orr	r0,r0,#0x3<<(9*2)
+	str	r0,[r1, #CCM_CCGR1]
+	.endm
+
 
 #endif
-

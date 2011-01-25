@@ -1,4 +1,7 @@
 //#define USE_CSD1 1
+//#define REV1
+//#define DDR2_DIV	1	//comment for fast clock 
+//#define PMIC_DA9053_ADDR 0x48
 
 #define CPU_2_BE_32(l) \
        ((((l) & 0x000000FF) << 24) | \
@@ -18,10 +21,77 @@
 #define UART3_BASE	0x5000c000
 #define UART_BASE	UART2_BASE
 
+
 #define GPIO3_BASE	0x53f8c000
 #define WDOG_BASE	0x53f98000
 #define CCM_BASE	0x53fd4000
+#define I2C1_BASE_ADDR  0x63fc8000
+#define I2C_BASE	I2C1_BASE_ADDR
 #define ESD_BASE	0x63fd9000
+#define ESD_CTL		0x000
+#define ESD_PDC		0x004
+#define ESD_OTC		0x008
+#define ESD_CFG0	0x00c
+#define ESD_CFG1	0x010
+#define ESD_CFG2	0x014
+#define ESD_MISC	0x018
+#define ESD_SCR		0x01c
+#define ESD_REF		0x020
+#define ESD_WCC		0x024
+#define ESD_RCC		0x028
+#define ESD_RWD		0x02c
+#define ESD_OR		0x030
+#define ESD_MRR		0x034
+#define ESD_CFG3_LP	0x038
+#define ESD_MR4		0x03c
+#define ESD_ZQHWCTRL	0x040
+#define ESD_ZQSWCTRL	0x044
+#define ESD_WLGCR	0x048
+#define ESD_WLDECTRL0	0x04c
+#define ESD_WLDECTRL1	0x050
+#define ESD_WLDLST	0x054
+#define ESD_ODTCTRL	0x058
+#define ESD_RDDQDLBY0	0x05c
+#define ESD_RDDQDLBY1	0x060
+#define ESD_RDDQDLBY2	0x064
+#define ESD_RDDQDLBY3	0x068
+#define ESD_WRDQDLBY0	0x06c
+#define ESD_WRDQDLBY1	0x070
+#define ESD_WRDQDLBY2	0x074
+#define ESD_WRDQDLBY3	0x078
+#define ESD_DGCTRL0	0x07c
+#define ESD_DGCTRL1	0x080
+#define ESD_DGDLST	0x084
+#define ESD_RDDLCTL	0x088
+#define ESD_RDDLST	0x08c
+#define ESD_WRDLCTL	0x090
+#define ESD_WRDLST	0x094
+#define ESD_SDCTRL	0x098
+#define ESD_ZQLP2CTL	0x09c
+#define ESD_RDDLHWCTL	0x0a0
+#define ESD_WRDLHWCTL	0x0a4
+#define ESD_RDDLHWST0	0x0a8
+#define ESD_RDDLHWST1	0x0ac
+#define ESD_WRDLHWST0	0x0b0
+#define ESD_WRDLHWST1	0x0b4
+#define ESD_WLHWERR	0x0b8
+#define ESD_DGHWST0	0x0bc
+#define ESD_DGHWST1	0x0c0
+#define ESD_DGHWST2	0x0c4
+#define ESD_DGHWST3	0x0c8
+#define ESD_PDCMPR1	0x0cc
+#define ESD_PDCMPR2	0x0d0
+#define ESD_SWDAR	0x0d4
+#define ESD_SWDRDR0	0x0d8
+#define ESD_SWDRDR1	0x0dc
+#define ESD_SWDRDR2	0x0e0
+#define ESD_SWDRDR3	0x0e4
+#define ESD_SWDRDR4	0x0e8
+#define ESD_SWDRDR5	0x0ec
+#define ESD_SWDRDR6	0x0f0
+#define ESD_SWDRDR7	0x0f4
+#define ESD_MUR		0x0f8
+#define ESD_WRCADL	0x0fc
 
 #define IOMUXC_BASE_ADDR (0x53FA8000)
 #define ESDCTL_BASE_ADDR (0x63FD9000)
@@ -153,6 +223,28 @@ image_len:		.word program_length
 plugin:			.word 0x0
 	.endm
 
+#define ALT0	0x0
+#define ALT1	0x1
+#define ALT3	0x3
+#define ALT4	0x4
+#define ALT5	0x5
+#define SION	0x10	//0x10 means force input path of BGA contact
+
+#define DSE_LOW		(0x0 << 1)
+#define DSE_MEDIUM	(0x1 << 1)
+#define DSE_HIGH	(0x2 << 1)
+#define DSE_MAX		(0x3 << 1)
+#define OPENDRAIN_ENABLE (0x1 << 3)
+#define R360K_PD	(0x0 << 4)
+#define R75K_PU		(0x1 << 4)
+#define R100K_PU	(0x2 << 4)
+#define R22K_PU		(0x3 << 4)
+#define KEEPER		(0x0 << 6)
+#define PULL		(0x1 << 6)
+#define PKE_ENABLE	(0x1 << 7)
+#define HYS_ENABLE	(0x1 << 8)
+#define VOT_LOW		(0x0 << 13)
+#define VOT_HIGH	(0x1 << 13)
 
 /* DCD */
 	.macro iomux_dcd_data
@@ -198,12 +290,26 @@ plugin:			.word 0x0
 	.endm
 
 	.macro esd_dcd_data
-	.word	0x63FD9088, 0x2b2f3031	/* RDDLCTL */
-	.word	0x63FD9090, 0x40363333	/* WRDLCTL */
+#ifdef REV1
+#ifdef DDR2_DIV
+	.word	0x63FD907c, 0x01080104	/* DGCTRL0 */
+	.word	0x63FD9080, 0x01080109	/* DGCTRL1 */
+	.word	0x63FD9088, 0x40434346	/* RDDLCTL */
+	.word	0x63FD9090, 0x413f3e3f	/* WRDLCTL */
+#else
+	.word	0x63FD907c, 0x013a013c	/* DGCTRL0 */
+	.word	0x63FD9080, 0x013a0145	/* DGCTRL1 */
+	.word	0x63FD9088, 0x34313634	/* RDDLCTL */
+	.word	0x63FD9090, 0x433e3e3e	/* WRDLCTL */
+#endif
+#else
+	.word	0x63FD907c, 0x01790133	/* DGCTRL0 */
+	.word	0x63FD9080, 0x013b017d	/* DGCTRL1 */
+	.word	0x63FD9088, 0x272a2930	/* RDDLCTL */
+	.word	0x63FD9090, 0x57514a49	/* WRDLCTL */
+#endif
 	.word	0x63FD9098, 0x00000f00	/* SDCTRL */
 	.word	0x63FD90f8, 0x00000800	/* MUR */
-	.word	0x63FD907c, 0x01310132	/* DGCTRL0 */
-	.word	0x63FD9080, 0x0133014b	/* DGCTRL1 */
 	.word	0x63FD9018, 0x000016d0	/* ESDMISC, (0)8 banks, (2)DDR2 */
 
 #ifdef USE_CSD1
@@ -288,10 +394,10 @@ plugin:			.word 0x0
 	bl	print_hex
 #endif
 
-#if 1	//slow ddr2
+#ifdef DDR2_DIV
 	BigMov	r1,CCM_BASE
 	ldr	r0,[r1, #CCM_CBCDR]
-	orr	r0, r0, #(1 << 16)		//slow ddr2
+	orr	r0, r0, #(DDR2_DIV << 16)		//slow ddr2
 	str	r0,[r1, #CCM_CBCDR]
 #endif
 
@@ -303,10 +409,6 @@ plugin:			.word 0x0
 	bl	print_hex
 #endif
 	.endm
-
-#define ESD_CTL  0x000
-#define ESD_MISC  0x018
-#define ESD_SCR   0x01c
 
 	.macro test_watchdog_reset
 	BigMov	r1, SRC_BASE
@@ -358,28 +460,6 @@ plugin:			.word 0x0
 93:
 	.endm
 
-#define ALT0	0x0
-#define ALT1	0x1
-#define ALT3	0x3
-#define ALT4	0x4
-#define SION	0x10	//0x10 means force input path of BGA contact
-
-#define DSE_LOW		(0x0 << 1)
-#define DSE_MEDIUM	(0x1 << 1)
-#define DSE_HIGH	(0x2 << 1)
-#define DSE_MAX		(0x3 << 1)
-#define OPENDRAIN_ENABLE (0x1 << 3)
-#define R360K_PD	(0x0 << 4)
-#define R75K_PU		(0x1 << 4)
-#define R100K_PU	(0x2 << 4)
-#define R22K_PU		(0x3 << 4)
-#define KEEPER		(0x0 << 6)
-#define PULL		(0x1 << 6)
-#define PKE_ENABLE	(0x1 << 7)
-#define HYS_ENABLE	(0x1 << 8)
-#define VOT_LOW		(0x0 << 13)
-#define VOT_HIGH	(0x1 << 13)
-
 #define PAD_CSPI1_MOSI	(HYS_ENABLE | DSE_HIGH)
 #define PAD_CSPI1_MISO	(HYS_ENABLE | DSE_HIGH)
 #define PAD_CSPI1_SS0	(HYS_ENABLE | DSE_HIGH)
@@ -401,6 +481,34 @@ plugin:			.word 0x0
 	.word	0x53fa87ac, 2		//ss1 input select
 	.word	0x53fa8118, ALT4		//SW_MUX_CTL_PAD_EIM_D16, alt4 ECSPI1_SCLK, alt1 gpio3[16]
 	.word	0x53fa879c, 3		//clk input select
+	.word	0
+	.endm
+
+	.macro i2c1_iomux_dcd_data
+	.word	0x53FA814c, ALT5 | SION	//Mux: EIM_D28, SDA of i2c1
+	.word	0x53FA8494, PULL | PKE_ENABLE | DSE_HIGH | R100K_PU | HYS_ENABLE
+	.word	0x53FA8818, 1		//Select EIM_D28
+	.word	0x53FA812c, ALT5 | SION	//Mux: EIM_D21, SCL of i2c1
+	.word	0x53FA8474, PULL | PKE_ENABLE | DSE_HIGH | R100K_PU | HYS_ENABLE
+	.word	0x53FA8814, 1		//Select EIM_D21
+	.word	0
+	.endm
+
+	.macro ddr_single_iomux_dcd_data
+	/* Enable pull down */
+	.word	0x53FA857c, 0x003800c0	/* SDQS0: pue=1 PKE=1, dse 7 */
+	.word	0x53FA8590, 0x003800c0	/* SDQS1: pue=1 PKE=1, dse 7 */
+	.word	0x53FA8568, 0x003800c0	/* SDQS2: pue=1 PKE=1, dse 7 */
+	.word	0x53FA8558, 0x003800c0	/* SDQS3: pue=1 PKE=1, dse 7 */
+	.word	0
+	.endm
+
+	.macro ddr_differential_iomux_dcd_data
+	/* Disable pull down */
+	.word	0x53FA857c, 0x00380040	/* SDQS0: pue=1 but PKE=0, dse 7 */
+	.word	0x53FA8590, 0x00380040	/* SDQS1: pue=1 but PKE=0, dse 7 */
+	.word	0x53FA8568, 0x00380040	/* SDQS2: pue=1 but PKE=0, dse 7 */
+	.word	0x53FA8558, 0x00380040	/* SDQS3: pue=1 but PKE=0, dse 7 */
 	.word	0
 	.endm
 
