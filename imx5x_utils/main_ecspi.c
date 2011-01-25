@@ -5,8 +5,8 @@
 #define NULL 0
 extern const int payload_offset;
 
-//#define USE_CRC32
-//#define USE_ADLER32
+//#define USE_CRC32, crc32 mx51_u-boot.no-padding
+//#define USE_ADLER32 adler32 mx51_u-boot.no-padding
 #ifdef USE_CRC32
 unsigned crc32(unsigned crc, const unsigned char *buf, unsigned len);
 #endif
