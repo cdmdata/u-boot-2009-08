@@ -1,6 +1,7 @@
 #include <stdarg.h>
 //#define DEBUG
 #include "mx5x_common.h"
+#include "mx5x_i2c.h"
 
 #define UTXD 0x0040
 #define USR2 0x0098
@@ -216,4 +217,27 @@ int ram_test(unsigned *ram_base)
 	}
 	my_printf(" %08x: %08x %08x %08x %08x, %08x\r\n", p, val[0], val[1], val[2], val[3], expected);
 	return 0;
+}
+
+const unsigned char reg_data[] = {
+		0x33, 0, 0x33, 0x4d,		/* 0.9V to LDO2 */
+		0x2e, 0, 0x2e, 0x75,		/* 1.8V to VBUCKCORE */
+		0x30, 0, 0x30, 0x63,		/* 1.8V to VBUCKMEM */
+};
+
+int power_up_ddr(unsigned i2c_base, unsigned chip)
+{
+	int ret;
+	int i;
+	unsigned char buf[4];
+	
+	i2c_init(i2c_base, 400000);
+	for (i = 0; i < sizeof(reg_data); i += 2) {
+		buf[0] = reg_data[i+1];
+		ret = i2c_write(i2c_base, chip, reg_data[i], 1, buf, 1);
+		if (ret)
+			return ret;
+	}
+	delayMicro(1000);
+	return ret;
 }

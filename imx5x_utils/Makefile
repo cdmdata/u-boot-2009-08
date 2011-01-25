@@ -6,7 +6,7 @@ LIB	= $(obj)libbd.a
 
 COBJS_MAIN := main_ecspi.o main_ecspi_write.o main_sdmmc.o main_sdmmc_write.o
 SOBJS_MAIN := mx5x_fuses.o$(SOC)_ecspi mx5x_fuses.o$(SOC) mx5x_base.o$(SOC)  
-COBJS	:= mx5x_common.o mx5x_ecspi.o mx5x_sdmmc.o $(SOC)_header.o adler32.o $(SOC)_ddr_calibrate.o
+COBJS	:= mx5x_common.o mx5x_ecspi.o mx5x_i2c.o mx5x_sdmmc.o $(SOC)_header.o adler32.o $(SOC)_ddr_calibrate.o
 SOBJS	:= _udivsi3.o xmodemReceive.o
 
 SRCS	:= $(SOBJS:.o=.S) mx5x_fuses.S mx5x_base.S $(COBJS:.o=.c) $(COBJS_MAIN:.o=.c)

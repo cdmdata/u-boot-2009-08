@@ -4,10 +4,14 @@ typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 typedef unsigned int size_t;
 typedef unsigned int uint;
-
+#define NULL 0
 #define IO_READ(r,o)      (*((volatile uint32_t*)((r)+(o))))
 #define IO_WRITE(r,o,d)   (*((volatile uint32_t*)((r)+(o))) = ((uint32_t)(d)))
 #define IO_MOD(r,o,m,d)   IO_WRITE((r),(o),(IO_READ((r),(o)) & (~(m))) | (d))
+
+#define IO_READ16(r,o)      (*((volatile uint16_t*)((r)+(o))))
+#define IO_WRITE16(r,o,d)   (*((volatile uint16_t*)((r)+(o))) = ((uint16_t)(d)))
+#define IO_MOD16(r,o,m,d)   IO_WRITE16((r),(o),(IO_READ16((r),(o)) & (~(m))) | (d))
 
 struct common_info {
 	void *buf;
@@ -59,6 +63,7 @@ unsigned ecspi_read_miso(void);
 void iomuxc_setup_mmc(void);
 unsigned mmc_read_cd(void);
 
+void iomuxc_setup_i2c1(void);
 void iomuxc_setup_ecspi(void);
 void iomuxc_miso_gp(void);
 void iomuxc_miso_ecspi(void);
