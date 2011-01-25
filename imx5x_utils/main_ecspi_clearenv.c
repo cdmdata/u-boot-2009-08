@@ -21,7 +21,7 @@ void check_page_size(int base)
 	}
 }
 
-void clearenv(int base, unsigned offset)
+void clearenv(int base, unsigned offset, unsigned size)
 {
 	unsigned offset_bits;
 	unsigned block_size;
@@ -32,19 +32,25 @@ void clearenv(int base, unsigned offset)
 	offset_bits = identify_chip_erase_rtn(base, &block_size, &erase_rtn);
 	page = offset / block_size;
 	my_printf("block_size = 0x%x\n", block_size);
-	erase_rtn(base, page, offset_bits);
+	for (;;) {
+		erase_rtn(base, page, offset_bits);
+		page++;
+		if (size <= block_size)
+			break;
+		size -= block_size;
+	}
 }
 
 int xmodem_load(unsigned char * dest);
 
-#define CONFIG_ENV_SF_SECT_SIZE		(4 * 1024)
-#define CONFIG_ENV_SF_OFFSET		((384 * 1024)-CONFIG_ENV_SF_SECT_SIZE)
+#define CONFIG_ENV_SF_SIZE		(4 * 1024)
+#define CONFIG_ENV_SF_OFFSET		((384 * 1024)-CONFIG_ENV_SF_SIZE)
 
 int main(void)
 {
 	int base = get_ecspi_base();
 	check_page_size(base);
-	clearenv(base, CONFIG_ENV_SF_OFFSET);
+	clearenv(base, CONFIG_ENV_SF_OFFSET, CONFIG_ENV_SF_SIZE);
 	flush_uart();
 	return 0;
 }
