@@ -1046,6 +1046,7 @@ int print_cpuinfo(void)
 	       (get_board_rev() & 0xFF) >> 4,
 	       (get_board_rev() & 0xF),
 		__get_mcu_main_clk() / 1000000);
+	mxc_dump_clocks();
 	return 0;
 }
 #endif
