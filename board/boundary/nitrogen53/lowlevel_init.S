@@ -96,6 +96,7 @@
         str r1, [r0, #CLKCTL_CBCMR]
         ldr r1, CCM_VAL_0x02888945
         orr r1, r1, #(1 << 16)
+	ldr r2, [r0, #CLKCTL_CBCDR]
         str r1, [r0, #CLKCTL_CBCDR]
         /* make sure change is effective */
 1:      ldr r1, [r0, #CLKCTL_CDHIPR]
@@ -118,7 +119,6 @@
 	orr r1, r1, #(CONFIG_SYS_AXIB_PODF << 19)
 //	orr r1, r1, #(CONFIG_SYS_AXIA_PODF << 16)	//keep same AXI_A_PODF
 	ldr r0, CCM_BASE_ADDR_W
-	ldr r2, [r0, #CLKCTL_CBCDR]
 	and r2, r2, #(7 << 16)				//keep same AXI_A_PODF
 	orr r1, r1, r2
 	str r1, [r0, #CLKCTL_CBCDR]
