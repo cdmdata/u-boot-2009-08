@@ -12,6 +12,8 @@
 	.global ecspi_read_miso
 	.global mmc_read_cd
 	.global get_ram_base
+	.global get_ram_size
+	.global get_tapeout_version
 	.global TransmitX
 	.global ReceiveX
 	.global hw_watchdog_reset
@@ -169,9 +171,11 @@ uart_init_done:
 	bl	power_up_ddr
 #endif
 	bl	Basic_Init_ESD
+	ddr_init
 	mov	r0,#0x10000
 2:	subs	r0,r0,#1
 	bne	2b
+	esd_zqcalibrate
 //	mov	r0, #'X'
 //	bl	TransmitX
 #ifdef USE_CSD1
@@ -276,6 +280,16 @@ ESD_TABLE:
 	.section .text.get_ram_base,"x"
 get_ram_base:
 	BigMov	r0,RAM_BASE
+	mov	pc, lr
+
+	.section .text.get_ram_size,"x"
+get_ram_size:
+	ddr_get_size
+	mov	pc, lr
+
+	.section .text.get_tapeout_version,"x"
+get_tapeout_version:
+	ddr_get_tapeout
 	mov	pc, lr
 
 	.section .text.get_uart_base,"x"

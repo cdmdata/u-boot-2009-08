@@ -44,6 +44,34 @@
 
 
 #ifdef ASM
+	.macro ddr_init
+	.endm
+
+	.macro ddr_get_size
+	BigMov	r0, ESD_BASE
+	ldr	r1, [r0, #ESD_MISC];
+	and	r2, r1, #(1 << 6)
+	mov	r2, r2, LSR #6		//bank bits
+
+	ldr	r1, [r0, #ESD_CTL1];
+	add	r2, r1, LSR #31		//chip select 1 bit
+	
+	ldr	r1, [r0, #ESD_CTL0];
+	and	r0, r1, #(7 << 24)
+	add	r2, r0, LSR #24		//rows
+	and	r0, r1, #(3 << 20)
+	add	r2, r0, LSR #20		//columns
+	and	r0, r1, #(1 << 17)
+	add	r2, r0, LSR #17		//memory width
+	add	r2, #11+8+2+1		//11 more rows, 8 more column, 2 more banks, 1 more width
+	mov	r0, #1
+	mov	r0, r0, LSL r2
+	.endm
+
+	.macro ddr_get_tapeout
+	mov	r0, #1
+	.endm
+	
 	.equiv	IIM_BASE,	0x83f98000	//weird 0x53ffc000 in documentation
 	.equiv	I_STAT,		0x0000
 	.equiv	I_STATM,	0x0004
@@ -331,6 +359,9 @@ dcd:		.word	0xb17219e9	//0x1c
 91:	ldr	r1, [r3, #ESD_SCR]
 	tst	r1, #1<<14
 	beq	91b
+	.endm
+
+	.macro	esd_zqcalibrate
 	.endm
 
 	.macro Turn_off_CS1

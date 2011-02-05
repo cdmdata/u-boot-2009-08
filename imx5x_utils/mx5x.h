@@ -34,7 +34,24 @@
 	.equiv	ONEMS,	0x00b0
 	.equiv	UTS,	0x00b4
 
-////
+	.macro	debug_ch ch
+	stmdb	sp!,{r0,r1,lr}
+	mov	r0, #\ch
+	bl	TransmitX
+	ldmia	sp!,{r0,r1,lr}
+	.endm
+
+	.macro	debug_hex reg
+	stmdb	sp!,{r0,r1,r2,r3,lr}
+	str	\reg, [sp, #-4]!
+	mov	r0, #' '
+	bl	TransmitX
+	ldr	r0,[sp]
+	bl	print_hex
+	add	sp, sp, #4
+	ldmia	sp!,{r0,r1,r2,r3,lr}
+	.endm
+	////
 	.macro fentry name,offset
 	.asciz	"\name"
 	.byte	 ((\offset) & 0xff), ((\offset) >> 8)
@@ -45,6 +62,7 @@
 	.byte	 ((\offset) & 0xff), ((\offset) >> 8), (\mask)
 	.endm
 
+	.equiv	CCM_CCDR, 0x04
 	.equiv	CCM_CBCDR, 0x14
 	.equiv	CCM_CSCMR1, 0x1c
 	.equiv	CCM_CSCDR1, 0x24
@@ -66,5 +84,152 @@
 	str	r0,[r1, #CCM_CCGR1]
 	.endm
 
+/* Assuming 24MHz input clock with doubler ON
+ * fdck_2 = 4 * fref * (MFI + (MFN/MFD))/PDF
+ * fdck_2 = (MFN/MFD + MFI) * 96 /PDF
+ * 
+ * (MFI >= 5) && (MFI <= 15)
+ * (PDF >= 1) && (PDF <= 16)
+ * (MFD >= 1) && (MFD <= 0x3fffffe)
+ * (MFN >= -0x3fffffe) && (MFN <= 0x3fffffe) && (|MFN| <= MFD)
+ * 
+ * BRM = 0 if MFD < 8
+ * BRM = 1 if MFD >= 8
+ */
+#define MAKE_OP(mfi, pdf) (((mfi) << 4) | (pdf - 1))
+
+	.equiv	DP_CTL_RESTART,	0x10
+	.equiv	DP_CTL_BRMO,	0x02
+	.equiv	DP_CTL_DIV1,	0x1000
+	.equiv	DP_CTL_DIV2,	0x0
+
+//(41/48 + 8) * 96 / 1 = 850
+	.equiv	DP_OP_850,	MAKE_OP(8, 1)
+	.equiv	DP_MFN_850,	41
+	.equiv	DP_MFD_850,	(48 - 1)
+	.equiv	DP_CTL_850,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+//(1/3 + 8) * 96 / 1 = 800
+	.equiv	DP_OP_800,	MAKE_OP(8, 1)
+	.equiv	DP_MFN_800,	1
+	.equiv	DP_MFD_800,	(3 - 1)
+	.equiv	DP_CTL_800,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+
+//(7/24 + 7) * 96 / 1 = 700
+	.equiv	DP_OP_700,	MAKE_OP(7, 1)
+	.equiv	DP_MFN_700,	7
+	.equiv	DP_MFD_700,	(24 - 1)
+	.equiv	DP_CTL_700,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+//(89/96 + 6) * 96 / 1 = 665
+	.equiv	DP_OP_665,	MAKE_OP(6, 1)
+	.equiv	DP_MFN_665,	89
+	.equiv	DP_MFD_665,	(96 - 1)
+	.equiv	DP_CTL_665,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+//(1/4 + 6) * 96 / 1 = 600
+	.equiv	DP_OP_600,	MAKE_OP(6, 1)
+	.equiv	DP_MFN_600,	1
+	.equiv	DP_MFD_600,	(4 - 1)
+	.equiv	DP_CTL_600,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+//(13/24 + 5) * 96 / 1 = 532
+	.equiv	DP_OP_532,	MAKE_OP(5, 1)
+	.equiv	DP_MFN_532,	13
+	.equiv	DP_MFD_532,	(24 - 1)
+	.equiv	DP_CTL_532,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+//(1/3 + 8) * 96 / 2 = 400
+	.equiv	DP_OP_400,	MAKE_OP(8, 2)
+	.equiv	DP_MFN_400,	1
+	.equiv	DP_MFD_400,	(3 - 1)
+	.equiv	DP_CTL_400,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+
+//(0/2 + 7) * 96 / 2 = 336
+	.equiv	DP_OP_336,	MAKE_OP(7, 2)
+	.equiv	DP_MFN_336,	0
+	.equiv	DP_MFD_336,	(2 - 1)
+	.equiv	DP_CTL_336,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+
+//(15/16 + 6) * 96 / 2 = 333
+	.equiv	DP_OP_333,	MAKE_OP(6, 2)
+	.equiv	DP_MFN_333,	15
+	.equiv	DP_MFD_333,	(16 - 1)
+	.equiv	DP_CTL_333,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+//(7/8 + 6) * 96 / 2 = 330
+	.equiv	DP_OP_330,	MAKE_OP(6, 2)
+	.equiv	DP_MFN_330,	7
+	.equiv	DP_MFD_330,	(8 - 1)
+	.equiv	DP_CTL_330,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+//(0/2 + 10) * 96 / 3 = 320
+	.equiv	DP_OP_320,	MAKE_OP(10, 3)
+	.equiv	DP_MFN_320,	0
+	.equiv	DP_MFD_320,	(2 - 1)
+	.equiv	DP_CTL_320,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+
+//(0/2 + 9) * 96 / 2 = 432
+// 432 / 2 = 216
+	.equiv	DP_OP_216,	MAKE_OP(9, 2)
+	.equiv	DP_MFN_216,	0
+	.equiv	DP_MFD_216,	(2 - 1)
+	.equiv	DP_CTL_216,	(0x0220 | DP_CTL_DIV2 | DP_CTL_RESTART)
+
+//(1/3 + 8) * 96 / 2 = 400
+	.equiv	DP_OP_200,	MAKE_OP(8, 2)
+	.equiv	DP_MFN_200,	1
+	.equiv	DP_MFD_200,	(3 - 1)
+	.equiv	DP_CTL_200,	(0x0220 | DP_CTL_DIV2 | DP_CTL_RESTART)
+
+
+#define PLL_DP_CTL      0x00
+#define PLL_DP_CONFIG   0x04
+#define PLL_DP_OP       0x08
+#define PLL_DP_MFD      0x0C
+#define PLL_DP_MFN      0x10
+#define PLL_DP_MFNMINUS 0x14
+#define PLL_DP_MFNPLUS  0x18
+#define PLL_DP_HFS_OP   0x1C
+#define PLL_DP_HFS_MFD  0x20
+#define PLL_DP_HFS_MFN  0x24
+#define PLL_DP_TOGC     0x28
+#define PLL_DP_DESTAT   0x2C
+	.macro pll_op_mfd_mfn r_pll, dp_op, dp_mfd, dp_mfn
+	mov r0, #\dp_op
+	str r0, [\r_pll, #PLL_DP_OP]
+	str r0, [\r_pll, #PLL_DP_HFS_OP]
+
+	mov r0, #\dp_mfd
+	str r0, [\r_pll, #PLL_DP_MFD]
+	str r0, [\r_pll, #PLL_DP_HFS_MFD]
+
+	mov r0, #\dp_mfn
+	str r0, [\r_pll, #PLL_DP_MFN]
+	str r0, [\r_pll, #PLL_DP_HFS_MFN]
+	.endm
+
+	.macro pll_freq	r_pll, freq
+	pll_op_mfd_mfn	\r_pll, DP_OP_\freq, DP_MFD_\freq, DP_MFN_\freq
+	.endm
+	
+	.macro start_pll r_pll, dp_ctl
+	ldr r0, =\dp_ctl
+	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
+1:	ldr r0, [\r_pll, #PLL_DP_CTL]
+	tst r0, #0x1
+	beq 1b
+	.endm
+
+	.macro start_pll_freq r_pll, freq
+	start_pll	\r_pll, DP_CTL_\freq
+	.endm
+
+	.macro divisor_change_wait r_clk
+	/* make sure divider effective */
+1:	ldr r0, [\r_clk, #CLKCTL_CDHIPR]
+	cmp r0, #0x0
+	bne 1b
+	.endm
 
 #endif

@@ -68,6 +68,8 @@ void iomuxc_setup_ecspi(void);
 void iomuxc_miso_gp(void);
 void iomuxc_miso_ecspi(void);
 unsigned get_ram_base(void);
+unsigned get_ram_size(void);
+unsigned get_tapeout_version(void);
 
 void header_search(struct common_info *pinfo);
 void header_update_end(struct common_info *pinfo);

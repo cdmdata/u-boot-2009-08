@@ -1,8 +1,6 @@
 #include "mx5x_common.h"
 #include "mx53.h"
 
-#define MEM_END_INDEX (64 << 20)	//256M memory
-
 #define FAST_COUNT (1 << 10)		//test 4K of low memory, 4K high mem
 #define AGGRESSIVE_COUNT (1 << 19)	//test 2M of low memory, 2M high mem
 #define SLOW_COUNT (32 << 20)	//test 128M of low memory, 128M of high mem
@@ -400,7 +398,7 @@ void store_reg(unsigned esd_base, unsigned *vals, unsigned reg, unsigned short *
 			unsigned val = delay_to_cycle(vals[i], map, cdelay);
 			t |= (val & 0xff) << (i << 3);
 		}
-//		if (reg == ESD_WRDLCTL)
+		if (reg == ESD_WRDLCTL)
 			my_printf("%s = %x\n", (reg == ESD_WRDLCTL) ? "WRDLCTL" : "RDDLCTL", t);
 		enter_config_mode(esd_base);
 		IO_WRITE(esd_base, reg, t);
@@ -632,6 +630,7 @@ unsigned _find_window(struct check_outside_in *p, unsigned low, unsigned high)
 {
 	int i;
 	unsigned sum = 0;
+	unsigned s;
 	unsigned bound = low;
 	unsigned down = 0;
 	for (i = 0; i < 32; i++) {
@@ -673,9 +672,9 @@ unsigned _find_window(struct check_outside_in *p, unsigned low, unsigned high)
 				bound++;
 		}
 	}
-	sum = p->upd_rtn(p, 0, 0);
-	my_printf("Range checked: %x - %x\n", low, high);
-	for (i = 0; i < 32; i++) {
+	s = p->upd_rtn(p, 0, 0);
+	my_printf("Range checked: %x - %x, valid mask=%x, update mask=%x\n", low, high, sum, s);
+	if (sum) for (i = 0; i < 32; i++) {
 		int width = p->high_bound[i] - p->low_bound[i] + 1; 
 		if (width <= 0) {
 			my_printf("DQ%2x invalid\n", i);
@@ -684,7 +683,7 @@ unsigned _find_window(struct check_outside_in *p, unsigned low, unsigned high)
 					p->low_bound[i], p->high_bound[i], width);
 		}
 	}
-	return sum;
+	return s;
 }
 
 unsigned find_window(struct check_outside_in *p, unsigned prev_bad_mask)
@@ -774,7 +773,7 @@ void get_limits(struct check_outside_in *p, unsigned *limits)
 	limits[1] = high;
 }
 
-int calibrate_delay(unsigned esd_base, unsigned *ram_base, int differential)
+int calibrate_delay(unsigned esd_base, unsigned *ram_base, unsigned *ram_end, int differential)
 {
 	int ret = 0;
 	unsigned zero_point;
@@ -798,7 +797,7 @@ int calibrate_delay(unsigned esd_base, unsigned *ram_base, int differential)
 	p.esd_base = wd.esd_base = dg.esd_base = esd_base;
 	p.ram_start = ram_base;
 	p.ram_stop = &ram_base[FAST_COUNT];
-	p.ram_end = &ram_base[MEM_END_INDEX];
+	p.ram_end = ram_end;
 	wd.reg = ESD_WRDLCTL;
 	dg.reg = ESD_DGCTRL0;
 	wd.pio = (differential) ? &dg : NULL;
@@ -883,9 +882,7 @@ int calibrate_delay(unsigned esd_base, unsigned *ram_base, int differential)
 #define EMR3 3
 #define MAKE_CMD(reg, addr, cs) (((reg) << 0) | ((addr) << 16) | (3 << 4) | ((cs) << 3) | 0x8000)
 
-
-#define MODE_SINGLE (1 << 29)
-#define MODE_MASK (1 << 29)
+#define MODE_SINGLE 1
 #define MODE_DIFFERENTIAL 0
 #define DIFF_DQS_EN (1 << 15)
 
@@ -895,15 +892,16 @@ void iomuxc_ddr_single(void);
 void switch_to_mode(unsigned esd_base, unsigned mode)
 {
 	unsigned ctl;
+	unsigned addr =  ODT_TERM | (mode << 10);
 	ctl = IO_READ(esd_base, ESD_CTL);
 
 	enter_config_mode(esd_base);
 	//DQS# disable (single-ended)/ enable (differential), 50 ohms
-	IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, mode | (1 << 6) | (1 << 2), 0));	//cs0
+	IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, addr , 0));	//cs0
 	if (ctl & (1 << 30))
-		IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, mode | (1 << 6) | (1 << 2), 1));	//cs1
+		IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, addr, 1));	//cs1
 
-	IO_MOD(esd_base, ESD_DGCTRL0, MODE_MASK, mode);
+	IO_MOD(esd_base, ESD_DGCTRL0, (1 << 29), (mode << 29));
 	if (mode == MODE_DIFFERENTIAL) {
 		my_printf("Enabling differential DQS\n");
 		iomuxc_ddr_differential();
@@ -915,14 +913,13 @@ void switch_to_mode(unsigned esd_base, unsigned mode)
 	delayMicro(2);
 }
 
-unsigned check_mem(unsigned esd_base, unsigned *ram_base)
+unsigned check_mem(unsigned esd_base, unsigned *ram_base, unsigned *ram_end)
 {
 	unsigned *ram_stop = &ram_base[AGGRESSIVE_COUNT];
-	unsigned *ram_end = &ram_base[MEM_END_INDEX];
 	unsigned mask;
 	write_memory_pattern(ram_base, ram_stop, ram_end);
 	mask = check_memory_pattern(ram_base, ram_stop, ram_end, 0);
-	my_printf("check mask %x\n", mask);
+	my_printf("check mask %x, ram_base=%x, ram_stop=%x, ram_end=%x\n", mask, ram_base, ram_stop, ram_end);
 //	my_printf("DLYs: %x %x %x %x %x\n", IO_READ(esd_base, ESD_DLY1), IO_READ(esd_base, ESD_DLY2),
 //			IO_READ(esd_base, ESD_DLY3), IO_READ(esd_base, ESD_DLY4),
 //			IO_READ(esd_base, ESD_DLY5));
@@ -956,13 +953,13 @@ void print_dg(unsigned esd_base)
 		t0, t1,	t2, t3, AVE(t0), AVE(t1), AVE(t2), AVE(t3));
 }
 
-void print_settings(unsigned esd_base)
+void print_settings(unsigned esd_base, unsigned ram_size)
 {
 	my_printf("RDDLCTL: %x  WRDLCTL: %x\n",
 		IO_READ(esd_base, ESD_RDDLCTL), IO_READ(esd_base, ESD_WRDLCTL));
 	my_printf("DGCTRL0: %x  DGCTRL1: %x\n",
 		IO_READ(esd_base, ESD_DGCTRL0), IO_READ(esd_base, ESD_DGCTRL1));
-	
+	my_printf("ram_size: %x, tapeout=%x\n", ram_size, get_tapeout_version());
 }
 
 void hw_calibrate(unsigned esd_base, unsigned *ram_base)
@@ -1048,24 +1045,41 @@ int main(void)
 	int ret = 0;
 	unsigned mask = 0;
 	unsigned *ram_base = (unsigned *)get_ram_base();
+	unsigned ram_size = get_ram_size();
+	unsigned *ram_end = (unsigned *)(((unsigned char *)ram_base) + ram_size);
 	unsigned esd_base = ESD_BASE;
+#if 1
+	unsigned val;
+	enter_config_mode(esd_base);
+//	val = IO_READ(esd_base, ESD_ZQHWCTRL);
+//	my_printf("ZQHWCTRL: %x, ZQSWCTRL: %x\n", val, IO_READ(esd_base, ESD_ZQSWCTRL));
+	IO_WRITE(esd_base, ESD_ZQHWCTRL, 0xa1380000 | (1 << 16));
+	do {
+		val = IO_READ(esd_base, ESD_ZQHWCTRL);
+	} while (val & (1 << 16));
+//	my_printf("ZQHWCTRL: %x, ZQSWCTRL: %x\n", val, IO_READ(esd_base, ESD_ZQSWCTRL));
+//	IO_WRITE(esd_base, ESD_ZQHWCTRL, 0xa13800c0);
+//	IO_WRITE(esd_base, ESD_ZQSWCTRL, (1<<13)|(0<<7)|(3<<2));
+	exit_config_mode(esd_base);
+	my_printf("ZQHWCTRL: %x, ZQSWCTRL: %x\n", IO_READ(esd_base, ESD_ZQHWCTRL), IO_READ(esd_base, ESD_ZQSWCTRL));
+#endif
 	if (1) {
-		mask = check_mem(esd_base, ram_base);
+		mask = check_mem(esd_base, ram_base, ram_end);
 	}
 //	hw_calibrate(esd_base, ram_base);
-	if (mask) {
+	if (0 && mask) {
 		switch_to_mode(esd_base, MODE_SINGLE);
-		ret = calibrate_delay(esd_base, ram_base, 0);
+		ret = calibrate_delay(esd_base, ram_base, ram_end, 0);
 		switch_to_mode(esd_base, MODE_DIFFERENTIAL);
 	}
-	ret = calibrate_delay(esd_base, ram_base, 1);
+	ret = calibrate_delay(esd_base, ram_base, ram_end, 1);
 
-	mask = check_mem(esd_base, ram_base);
+	mask = check_mem(esd_base, ram_base, ram_end);
 //	my_printf("Final DLYs: %x %x %x %x %x, gpr=%x mask=%x\n",
 //			IO_READ(esd_base, ESD_DLY1), IO_READ(esd_base, ESD_DLY2),
 //			IO_READ(esd_base, ESD_DLY3), IO_READ(esd_base, ESD_DLY4),
 //			IO_READ(esd_base, ESD_DLY5), gpr, mask);
-	print_settings(esd_base);
+	print_settings(esd_base, ram_size);
 	my_printf("done\n");
 	for (;;) {
 	}

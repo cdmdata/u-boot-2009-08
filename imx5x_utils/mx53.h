@@ -1,7 +1,23 @@
-//#define USE_CSD1 1
-//#define REV1
-//#define DDR2_DIV	1	//comment for fast clock 
+#define DDR_TYPE	MT47H128M8CF_3			//512MB, 333 MHz
+//#define DDR_TYPE	MT47H128M8CF_3_REV1		//512MB, 333 MHz
+//#define DDR_TYPE	MT47H128M8CF_25E		//512MB, 400 MHz
+//#define DDR_TYPE	MT47H128M8CF_25E_REV1		//512MB, 400 MHz
+//#define DDR_TYPE	MT47H128M8CF_5			//512MB, 200 MHz
+//#define DDR_TYPE	H5PS2G83AFR_S6			//1GB
+//#define DDR_TYPE	H5PS2G83AFR_S5			//1GB
+//#define DDR_TYPE	MT47H64M8CF_25E			//256MB
 //#define PMIC_DA9053_ADDR 0x48
+//#define USE_CSD1 1
+#define TO2
+#define MT47H128M8CF_3		1	//512MB, 333 MHz
+#define MT47H128M8CF_3_REV1	2	//512MB, 333 MHz
+#define MT47H128M8CF_25E	3	//512MB, 400 MHz
+#define MT47H128M8CF_25E_REV1	4	//512MB, 400 MHz
+#define MT47H128M8CF_5		5	//512MB, 200 MHz
+#define H5PS2G83AFR_S6		6	//1GB
+#define H5PS2G83AFR_S5		7	//1GB
+#define MT47H64M8CF_25E		8	//256MB
+
 
 #define CPU_2_BE_32(l) \
        ((((l) & 0x000000FF) << 24) | \
@@ -20,6 +36,11 @@
 #define UART2_BASE	0x53fc0000
 #define UART3_BASE	0x5000c000
 #define UART_BASE	UART2_BASE
+
+#define PLL1_BASE_ADDR		(0x63F80000)
+#define PLL2_BASE_ADDR		(0x63F84000)
+#define PLL3_BASE_ADDR		(0x63F88000)
+#define PLL4_BASE_ADDR		(0x63F8C000)
 
 
 #define GPIO3_BASE	0x53f8c000
@@ -94,14 +115,332 @@
 #define ESD_WRCADL	0x0fc
 
 #define IOMUXC_BASE_ADDR (0x53FA8000)
-#define ESDCTL_BASE_ADDR (0x63FD9000)
 
 // AIPS Constants
 #define CSP_BASE_REG_PA_AIPS1	0x53F00000
 #define CSP_BASE_REG_PA_AIPS2	0x63F00000
 
+#define ODT_TERM_OHM_50		((1 << 6) | (1 << 2))
+#define ODT_TERM_OHM_75		(1 << 2)
+#define ODT_TERM_OHM_150	(1 << 6)
+#define ODT_TERM_DISABLED	(0)
 
+#define ODT_TERM	ODT_TERM_OHM_75
 #ifdef ASM
+/* (4 bits) ddr type
+ * (1 bit)tapeout - 1 or 2
+ * ddr_freq - 200, 336 (more efficient than 333), 400
+ * (1 bit)banks_bits - 2 (4 banks), or 3 (8 banks) 
+ * (3 bits)row_bits - 11-16
+ * (2 bits)column_bits  - 9, 10, 11 
+ * (2 bits)rl - CAS read  latency 3-6 
+ * (2 bits)wl - CAS write latency 2-5 
+ * (3 bits)wr - write recovery for autoprecharge 1-6,  ddr2-400(2-3), ddr2-533(2-4), ddr2-667(2-5), ddr2-800(2-6) 
+ * (3 bits)rcd - 1-6
+ * (3 bits)rp - 1-6
+ * dgctrl0, dgctrl1, rddlctl, wrdlctl
+ */
+	.equiv	ddr_type_offs, 0x0
+	.equiv	ddr_dp_op_offs, 0x3
+	.equiv	ddr_dp_ctl_offs, 0x4
+	.equiv	ddr_dp_mfd_offs, 0x6
+	.equiv	ddr_dp_mfn_offs, 0x7
+	.equiv	ddr_dgctrl0_offs, 0x8
+	.equiv	ddr_dgctrl1_offs, 0xc
+	.equiv	ddr_rddlctl_offs, 0x10
+	.equiv	ddr_wrdlctl_offs, 0x14
+	.equiv	ddr_data_size, 0x18
+
+	.macro ddr_type	type, tapeout, ddr_freq, bank_bits, row_bits, column_bits, rl, wl, wr, rcd, rp, dgctrl0, dgctrl1, rddlctl, wrdlctl
+	.word	(\type) | ((\tapeout - 1) << 4) | ((\bank_bits - 2) << 5) | ((\row_bits - 11) << 6) | ((\column_bits - 9) << 9) | ((\rl - 3) << 11) | ((\wl - 2) << 13) | ((\wr - 1) << 15) | ((\rcd - 1) << 18) | ((\rp - 1) << 21) | ((DP_OP_\ddr_freq) << 24)
+	.word	(DP_MFN_\ddr_freq << 24) | (DP_MFD_\ddr_freq << 16) | DP_CTL_\ddr_freq
+	.word	\dgctrl0
+	.word	\dgctrl1
+	.word	\rddlctl
+	.word	\wrdlctl
+	.endm
+
+	.macro ddr_field rResult, result_bit, rfields, fstart, flen, fadd
+	and	r0, \rfields, #(( 1 << \flen) - 1) << \fstart
+	BigAdd2	r0, ((\fadd) << \fstart)
+	.if (\result_bit > \fstart)
+		orr	\rResult, \rResult, r0, LSL #\result_bit - \fstart
+	.else
+		orr	\rResult, \rResult, r0, LSR #\fstart - \result_bit
+	.endif
+	.endm
+
+	.macro ddr_bank rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 5, 1, (2 + \fadd)
+	.endm
+	.macro ddr_row rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 6, 3, (11 + \fadd)
+	.endm
+	.macro ddr_column rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 9, 2, (9 + \fadd)
+	.endm
+	.macro ddr_rl rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 11, 2, (3 + \fadd)
+	.endm
+	.macro ddr_wl rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 13, 2, (2 + \fadd)
+	.endm
+	.macro ddr_wr rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 15, 3, (1 + \fadd)
+	.endm
+	.macro ddr_rcd rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 18, 3, (1 + \fadd)
+	.endm
+	.macro ddr_rp rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 21, 3, (1 + \fadd)
+	.endm
+	
+	.macro ddr_data
+	//MT47H128M8CF_3  DDR2-667(333MHz), tck=3ns(333Mhz), CL=5 wr=15 ns, rcd=15 ns, rp=15 ns 
+	//512MB = 3 bank bits(8 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 29 bits
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
+	ddr_type	MT47H128M8CF_3_REV1,   1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0165021a, 0x0154015b, 0x27292930, 0x5a4b615c
+
+	//MT47H128M8CF_25E tck=2.5ns(400Mhz), CL=5, wr=15 ns, rcd=12.5 ns, rp=12.5 ns
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01730205, 0x020a020a, 0x201e1e20, 0x57525f4d //v
+	ddr_type	MT47H128M8CF_25E,      1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01780131, 0x0139017d, 0x27292930, 0x57504949
+	ddr_type	MT47H128M8CF_25E_REV1, 1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x013a013c, 0x013a0145, 0x34313634, 0x433e3e3e
+
+	//MT47H128M8CF_5 tck=5ns(200Mhz), CL=3, wr=15 ns, rcd=15 ns, rp=15 ns
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
+	ddr_type	MT47H128M8CF_5,        1, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
+
+	//H5PS2G83AFR_S6  DDR2-800(400Mhz), RL=6, WR=15ns, tRCD=6, tRP=6
+	//1GB   = 3 bank bits(8 banks) + 15 row bits + 10 column bits + 2 bits(32 bit width) = 30 bits
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+	ddr_type	H5PS2G83AFR_S6,        2, 400, 3, 15, 10, 6, 5, 6, 6, 6, 0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
+
+	//H5PS2G83AFR_S5  DDR2-800(400Mhz), RL=5, WR=15ns, tRCD=5, tRP=5
+	//1GB   = 3 bank bits(8 banks) + 15 row bits + 10 column bits + 2 bits(32 bit width) = 30 bits
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+	ddr_type	H5PS2G83AFR_S5,        2, 400, 3, 15, 10, 5, 4, 6, 5, 5, 0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
+
+	//MT47H64M8CF_25E, tck=2.5 ns(400Mhz), CL=5, WR=15ns, tRCD=12.5ns, tRP=12.5ns
+	//256MB = 2 bank bits(4 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 28 bits
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+	ddr_type	MT47H64M8CF_25E,       2, 400, 2, 14, 10, 5, 4, 6, 5, 5, 0x01460204, 0x0146014a, 0x1f1c211f, 0x4f485646
+	.word		0
+	.endm
+	
+	.macro ddr_find_data rFind, rSearch, rResult
+	BigMov	r0, ESD_BASE
+	ldr	r0, [r0, #ESD_ZQHWCTRL]
+	tst	r0, #1 << 31
+	orrne	\rFind, \rFind, #0x10		//tapeout 2
+	mov	\rResult, \rSearch
+	b	98f
+97:	eors	r0, r0, \rFind
+	moveq	\rResult, \rSearch
+	beq	99f
+	cmp	r0, #0x10
+	moveq	\rResult, \rSearch	//use other tapeout setting
+	add	\rSearch, \rSearch, #ddr_data_size
+98:
+	ldr	r0, [\rSearch, #ddr_type_offs]
+	ands	r0, r0, #0x1f
+	bne	97b
+99:
+	.endm
+
+	.macro ddr_pll r_pll, r_ddr
+	ldrb r0, [\r_ddr, #ddr_dp_op_offs]
+	str r0, [\r_pll, #PLL_DP_OP]
+	str r0, [\r_pll, #PLL_DP_HFS_OP]
+
+ 	ldrb r0, [\r_ddr, #ddr_dp_mfd_offs]
+	str r0, [\r_pll, #PLL_DP_MFD]
+	str r0, [\r_pll, #PLL_DP_HFS_MFD]
+
+  	ldrb r0, [\r_ddr, #ddr_dp_mfn_offs]
+	str r0, [\r_pll, #PLL_DP_MFN]
+	str r0, [\r_pll, #PLL_DP_HFS_MFN]
+	.endm
+
+	.macro ddr_start_pll r_pll, r_ddr
+	ldrh r0, [\r_ddr, #ddr_dp_ctl_offs]
+	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
+1:	ldr r0, [\r_pll, #PLL_DP_CTL]
+	tst r0, #0x1
+	beq 1b
+	.endm
+	
+#ifdef USE_CSD1
+#define CS_ENABLES (3 << 30)
+#else
+#define CS_ENABLES (2 << 30)
+#endif
+#define RALAT 4	//was 3
+
+#define DRIVE_STRENGTH_FULL	(0 << 17)	//A1-0 full strength  
+#define DRIVE_STRENGTH_REDUCED  (1 << 17)	//A1-1 reduced strength
+#ifdef TO2
+#define DRIVE_STRENGTH DRIVE_STRENGTH_FULL
+#else
+#define DRIVE_STRENGTH DRIVE_STRENGTH_REDUCED
+#endif
+	.macro ddr_init
+ 	bl	get_ddr_type_addr	//r2 gets address
+	ldr		r1, [r2], #4
+	ddr_find_data	r1, r2, r3
+
+	BigMov		r2,PLL2_BASE_ADDR
+	ddr_pll		r2, r3
+	ddr_start_pll	r2, r3
+
+	BigMov	r4, ESD_BASE
+	ldr	r5, [r3, #ddr_type_offs]
+
+	ldr	r0, [r3, #ddr_dgctrl0_offs]
+	str	r0, [r4, #ESD_DGCTRL0]
+	ldr	r0, [r3, #ddr_dgctrl1_offs]
+	str	r0, [r4, #ESD_DGCTRL1]
+	ldr	r0, [r3, #ddr_rddlctl_offs]
+	str	r0, [r4, #ESD_RDDLCTL]
+	ldr	r0, [r3, #ddr_wrdlctl_offs]
+	str	r0, [r4, #ESD_WRDLCTL]
+
+	mov	r0, #0	/* was 0x0f00, add 3 logic unit of delay to sdclk */
+	str	r0, [r4, #ESD_SDCTRL]
+	mov	r0, #0x00000800
+	str	r0, [r4, #ESD_MUR]	//force remeasure
+
+	mov	r1, #0
+	ddr_bank r1, 5, r5, -1
+	and	r1, r1, #1 << 5		//(0)8 banks
+	BigOrr2	r1, (0x00001610 | (RALAT << 6))
+	str	r1, [r4, #ESD_MISC]
+
+/* 0x84110000, 0xc4110000 ESDCTL, (4)15 rows, (1)10 columns (0)BL 4,  (1)32 bit width*/
+/* 0x83110000, 0xc3110000 ESDCTL, (3)14 rows, (1)10 columns (0)BL 4,  (1)32 bit width*/
+	BigMov	r1, (0x00010000 | CS_ENABLES)
+	ddr_row	r1, 24, r5, -11
+	ddr_column r1, 20, r5, -9
+	str	r1, [r4, #ESD_CTL]
+
+	ldr	r1, =0x4d5122d0
+	ddr_rl	r1, 0, r5, -3
+	str	r1, [r4, #ESD_CFG0]
+	ldr	r1, =0x02d18a20
+	ddr_rcd r1, 29, r5, -1
+	ddr_rp  r1, 26, r5, -1
+	ddr_wl  r1, 0, r5, -2
+	str	r1, [r4, #ESD_CFG1]
+	BigMov	r1, 0x00c70092
+	str	r1, [r4, #ESD_CFG2]
+	BigMov	r1, 0x000026d2
+	str	r1, [r4, #ESD_RWD]
+	BigMov	r1, 0x009f000e
+	str	r1, [r4, #ESD_OR]
+
+	ldr	r1, =0x12272000
+	str	r1, [r4, #ESD_OTC]
+	BigMov	r1, 0x00030012
+	str	r1, [r4, #ESD_PDC]
+
+	ldr	r1, =0x04008010
+	str	r1, [r4, #ESD_SCR]
+	BigMov	r1, 0x00008032
+	str	r1, [r4, #ESD_SCR]
+	orr	r1, r1, #1		//0x8033
+	str	r1, [r4, #ESD_SCR]
+	bic	r1, r1, #2		//0x8031
+	str	r1, [r4, #ESD_SCR]
+#define DLL_RESET (1 << (8 + 16))
+#define DLL_RST0  (1 << 7)
+#define DLL_RST1  (1 << 8)
+	ldr	r2, =0x00028030
+	ddr_wr	r2, 25, r5, -1
+	ddr_rl	r2, 20, r5, 0
+	BigOrr	r0, r2, (DLL_RESET | DLL_RST0)
+	str	r0, [r4, #ESD_SCR]
+	ldr	r1, =0x04008010		//PRECHARGE ALL CS0
+	str	r1, [r4, #ESD_SCR]
+	BigMov	r1, 0x00008020
+	str	r1, [r4, #ESD_SCR]
+	str	r1, [r4, #ESD_SCR]
+	str	r2, [r4, #ESD_SCR]
+
+	ldr	r1, =0x00008031 | (ODT_TERM << 16) | DRIVE_STRENGTH
+	orr	r0, r1, #0x03800000
+	str	r0, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Calibration */
+	str	r1, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Cal exit */
+
+#ifdef USE_CSD1
+	ldr	r1, =0x04008018
+	str	r1, [r4, #ESD_SCR]
+	BigMov	r1, 0x0000803a
+	str	r1, [r4, #ESD_SCR]
+	orr	r1, r1, #1		//0x803b
+	str	r1, [r4, #ESD_SCR]
+	bic	r1, r1, #2		//0x8039
+	str	r1, [r4, #ESD_SCR]
+	ldr	r2, =0x00028038
+	ddr_wr	r2, 25, r5, -1
+	ddr_rl	r2, 20, r5, 0
+	BigOrr	r0, r2, (DLL_RESET | DLL_RST1)
+	str	r0, [r4, #ESD_SCR]
+	ldr	r1, =0x04008018		//PRECHARGE ALL CS0
+	str	r1, [r4, #ESD_SCR]
+	BigMov	r1, 0x00008028
+	str	r1, [r4, #ESD_SCR]
+	str	r1, [r4, #ESD_SCR]
+	str	r2, [r4, #ESD_SCR]
+
+	ldr	r1, =0x00008039 | (ODT_TERM << 16) | DRIVE_STRENGTH
+	orr	r0, r1, #0x03800000
+	str	r0, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Calibration */
+	str	r1, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Cal exit */
+#endif
+
+	mov	r1, #0
+	ddr_row r1, 0, r5, -13
+	mov	r2, #0x00004000
+	cmp	r1, #3
+	movls	r0, #1
+	movls	r0, r0, LSL r1
+	subls	r0, r0, #1
+	orrls	r2, r2, r0, LSL #11	//orr if rows is 13-16
+	str	r1, [r4, #ESD_REF] /* ESDREF, (1)32k refresh cycle rate, n+1 refreshes/cycle */
+	BigMov	r1, 0x00033337
+	str	r1, [r4, #ESD_ODTCTRL]
+	mov	r1, #0
+	str	r1, [r4, #ESD_SCR]		/* ESD_SCR: AXI address readies normal operation */
+	.endm
+
+	.macro ddr_get_size
+	BigMov	r0, ESD_BASE
+	ldr	r1, [r0, #ESD_MISC];
+	mvn	r2, r1, LSR #5
+	and	r2, r2, #1		//bank bits
+
+	ldr	r1, [r0, #ESD_CTL];
+	and	r0, r1, #(1 << 30)
+	add	r2, r0, LSR #30		//chip select 1 bit
+	and	r0, r1, #(7 << 24)
+	add	r2, r0, LSR #24		//rows
+	and	r0, r1, #(7 << 20)
+	add	r2, r0, LSR #20		//columns
+	and	r0, r1, #(1 << 16)
+	add	r2, r0, LSR #16		//memory width
+	add	r2, #11+9+2+1		//11 more rows, 9 more column, 2 more banks, 1 more width
+	mov	r0, #1
+	mov	r0, r0, LSL r2
+	.endm
+
+	.macro ddr_get_tapeout
+	BigMov	r0, ESD_BASE
+	ldr	r0, [r0, #ESD_ZQHWCTRL]
+	mov	r0, r0, LSR #31
+	add	r0, r0, #1
+	.endm
 ////////////////////////////
 // fuse defines
 ////
@@ -221,7 +560,12 @@ reserv2:		.word 0x0
 boot_data:		.word 0xf8006000
 image_len:		.word program_length
 plugin:			.word 0x0
-	.endm
+ddr_type:		.word DDR_TYPE
+			ddr_data
+get_ddr_type_addr:
+	adr	r2,ddr_type
+	mov	pc, lr
+.endm
 
 #define ALT0	0x0
 #define ALT1	0x1
@@ -247,31 +591,57 @@ plugin:			.word 0x0
 #define VOT_HIGH	(0x1 << 13)
 
 /* DCD */
+#define TO1_DQVAL 0x00380000	/* dse 7 - 43 30 34 20 ohm drive strength*/
+#define TO2_DQVAL 0x00200000	/* dse 4 - 75 NA 60 NA ohm drive strength*/
+
+#define TO1_DDR_TYPE 0x06000000		/* 3=20 ohms */
+#define TO2_DDR_TYPE 0x02000000		/* 1=37.5, 33, 30 ohms */
+
+#ifdef TO2
+#define DQVAL TO2_DQVAL
+#define IOMUXC_DDR_TYPE TO2_DDR_TYPE
+#else
+#define DQVAL TO1_DQVAL
+#define IOMUXC_DDR_TYPE TO1_DDR_TYPE
+#endif
+#if 0
+//old values
+#define CAS_VAL		0x00380000	//dse 7
+#define RAS_VAL		0x00380000	//dse 7
+#define ADDDS_VAL	0x00380000	//dse 7
+#define CTLDS_VAL	0x00380000	//dse 7
+#else
+//new values
+#define CAS_VAL		0x00280000	//dse 5
+#define RAS_VAL		0x00280000	//dse 5
+#define ADDDS_VAL	0x00280000	//dse 5
+#define CTLDS_VAL	0x00280000	//dse 5
+#endif
 	.macro iomux_dcd_data
-	.word	0x53FA8554, 0x00380000	/* DQM3: dse 7 - 43 30 34 20 ohm drive strength*/
-	.word	0x53FA8558, 0x00380040	/* SDQS3: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8560, 0x00380000	/* DQM2: dse 7 */
-	.word	0x53FA8564, 0x00380040	/* SDODT1: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8568, 0x00380040	/* SDQS2: pue=1 but PKE=0, dse 7 */
+	.word	0x53FA8554, DQVAL	/* DQM3: */
+	.word	0x53FA8558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
+	.word	0x53FA8560, DQVAL	/* DQM2: */
+	.word	0x53FA8564, DQVAL | 0x40	/* SDODT1: pue=1 but PKE=0 */
+	.word	0x53FA8568, DQVAL | 0x40	/* SDQS2: pue=1 but PKE=0 */
 	.word	0x53FA8570, 0x00200000	/* SDCLK_1: dse 4 - 75 NA 60 NA */
-	.word	0x53FA8574, 0x00380000	/* CAS: dse 7 */
+	.word	0x53FA8574, CAS_VAL	/* CAS: */
 	.word	0x53FA8578, 0x00200000	/* SDCLK_0: dse 4 */
-	.word	0x53FA857c, 0x00380040	/* SDQS0: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8580, 0x00380040	/* SDODT0: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8584, 0x00380000	/* DQM0: dse 7 */
-	.word	0x53FA8588, 0x00380000	/* RAS: dse 7 */
-	.word	0x53FA8590, 0x00380040	/* SDQS1: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8594, 0x00380000	/* DQM1: dse 7 */
-	.word	0x53FA86f0, 0x00380000	/* GRP_ADDDS A0-A15 BA0-BA2: dse 7 */
+	.word	0x53FA857c, DQVAL | 0x40	/* SDQS0: pue=1 but PKE=0 */
+	.word	0x53FA8580, DQVAL | 0x40	/* SDODT0: pue=1 but PKE=0 */
+	.word	0x53FA8584, DQVAL	/* DQM0: */
+	.word	0x53FA8588, RAS_VAL	/* RAS: */
+	.word	0x53FA8590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
+	.word	0x53FA8594, DQVAL	/* DQM1: */
+	.word	0x53FA86f0, ADDDS_VAL	/* GRP_ADDDS A0-A15 BA0-BA2: */
 	.word	0x53FA86f4, 0x00000200	/* GRP_DDRMODE_CTL: DDR2 SDQS0-3 */
 	.word	0x53FA86fc, 0x00000000	/* GRP_DDRPKE: PKE=0 for A0-A15,CAS,CS0,CS1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCLK_0-1,SDWE */
 	.word	0x53FA8714, 0x00000000	/* GRP_DDRMODE: CMOS input type?????? D0-D31 */
-	.word	0x53FA8718, 0x00380000	/* GRP_B0DS: dse 7 for D0-D7 */
-	.word	0x53FA871c, 0x00380000	/* GRP_B1SD: dse 7 for D8-D15 */
-	.word	0x53FA8720, 0x00380000	/* GRP_CTLDS: dse 7 for CS0-1, SDCKE0-1, SDWE*/
-	.word	0x53FA8724, 0x06000000	/* GRP_DDR_TYPE: A0-A15,CAS,CS0-1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCKE0-1,SDCLK_0-1,SDODT0-1,SDQS0-3,SDWE  3=20 ohms*/
-	.word	0x53FA8728, 0x00380000	/* GRP_B2DS: dse 7 for D16-D23 */
-	.word	0x53FA872c, 0x00380000	/* GRP_B3DS: dse 7 fro D24-D31 */
+	.word	0x53FA8718, DQVAL	/* GRP_B0DS: D0-D7 */
+	.word	0x53FA871c, DQVAL	/* GRP_B1SD: D8-D15 */
+	.word	0x53FA8720, CTLDS_VAL	/* GRP_CTLDS:  CS0-1, SDCKE0-1, SDWE*/
+	.word	0x53FA8724, IOMUXC_DDR_TYPE	/* GRP_DDR_TYPE: A0-A15,CAS,CS0-1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCKE0-1,SDCLK_0-1,SDODT0-1,SDQS0-3,SDWE */
+	.word	0x53FA8728, DQVAL	/* GRP_B2DS: D16-D23 */
+	.word	0x53FA872c, DQVAL	/* GRP_B3DS: D24-D31 */
 #if 1
 //uart1 rxd:PATA_DMACK, txd:PATA_DIOW
 	.word	0x53FA8274, 3		//Mux: PATA_DMACK - UART1_RXD
@@ -289,76 +659,29 @@ plugin:			.word 0x0
 	.word	0
 	.endm
 
-	.macro esd_dcd_data
-#ifdef REV1
-#ifdef DDR2_DIV
-	.word	0x63FD907c, 0x01080104	/* DGCTRL0 */
-	.word	0x63FD9080, 0x01080109	/* DGCTRL1 */
-	.word	0x63FD9088, 0x40434346	/* RDDLCTL */
-	.word	0x63FD9090, 0x413f3e3f	/* WRDLCTL */
-#else
-	.word	0x63FD907c, 0x013a013c	/* DGCTRL0 */
-	.word	0x63FD9080, 0x013a0145	/* DGCTRL1 */
-	.word	0x63FD9088, 0x34313634	/* RDDLCTL */
-	.word	0x63FD9090, 0x433e3e3e	/* WRDLCTL */
-#endif
-#else
-	.word	0x63FD907c, 0x01790133	/* DGCTRL0 */
-	.word	0x63FD9080, 0x013b017d	/* DGCTRL1 */
-	.word	0x63FD9088, 0x272a2930	/* RDDLCTL */
-	.word	0x63FD9090, 0x57514a49	/* WRDLCTL */
-#endif
-	.word	0x63FD9098, 0x00000f00	/* SDCTRL */
-	.word	0x63FD90f8, 0x00000800	/* MUR */
-	.word	0x63FD9018, 0x000016d0	/* ESDMISC, (0)8 banks, (2)DDR2 */
-
-#ifdef USE_CSD1
-//	.word	0x63FD9000, 0xc4110000	/* ESDCTL, (4)15 rows, (1)10 columns (0)BL 4,  (1)32 bit width*/
-	.word	0x63FD9000, 0xc3110000	/* ESDCTL, (3)14 rows, (1)10 columns (0)BL 4,  (1)32 bit width*/
-#else
-//	.word	0x63FD9000, 0x84110000	/* ESDCTL, (4)15 rows, (1)10 columns (0)BL 4,  (1)32 bit width */
-	.word	0x63FD9000, 0x83110000	/* ESDCTL, (3)14 rows, (1)10 columns (0)BL 4,  (1)32 bit width */
-#endif
-	.word	0x63FD900c, 0x4d5122d2	/* ESDCFG0 */
-	.word	0x63FD9010, 0x92d18a22	/* ESDCFG1 */
-	.word	0x63FD9014, 0x00c70092	/* ESDCFG2 */
-	.word	0x63FD902c, 0x000026d2	/* ESDRWD */
-	.word	0x63FD9030, 0x009f000e	/* ESDOR */
-	.word	0x63FD9008, 0x12272000	/* ESDOTC */
-	.word	0x63FD9004, 0x00030012	/* ESDPDC */
-
-	.word	0x63FD901c, 0x04008010	/* ESDSCR */
-	.word	0x63FD901c, 0x00008032	/* ESDSCR */
-	.word	0x63FD901c, 0x00008033	/* ESDSCR */
-	.word	0x63FD901c, 0x00008031	/* ESDSCR */
-	.word	0x63FD901c, 0x0b5280b0	/* ESDSCR DLL_RST0 */
-	.word	0x63FD901c, 0x04008010	/* ESDSCR */ //PRECHARGE ALL CS0
-	.word	0x63FD901c, 0x00008020	/* ESDSCR */
-	.word	0x63FD901c, 0x00008020	/* ESDSCR */
-	.word	0x63FD901c, 0x0a528030	/* ESDSCR */
-	.word	0x63FD901c, 0x03c68031	/* ESDSCR */
-	.word	0x63FD901c, 0x00468031	/* ESDSCR */
-
-#ifdef USE_CSD1
-	.word	0x63FD901c, 0x04008018	/* ESDSCR */
-	.word	0x63FD901c, 0x0000803a	/* ESDSCR */
-	.word	0x63FD901c, 0x0000803b	/* ESDSCR */
-	.word	0x63FD901c, 0x00008039	/* ESDSCR */
-	.word	0x63FD901c, 0x0b528138	/* ESDSCR DLL_RST1 */
-	.word	0x63FD901c, 0x04008018	/* ESDSCR */ //PRECHARGE ALL CS1
-	.word	0x63FD901c, 0x00008028	/* ESDSCR */
-	.word	0x63FD901c, 0x00008028	/* ESDSCR */
-	.word	0x63FD901c, 0x0a528038	/* ESDSCR */
-	.word	0x63FD901c, 0x03c68039	/* ESDSCR */
-	.word	0x63FD901c, 0x00468039	/* ESDSCR */
-#endif
-
-//	.word	0x63FD9020, 0x00005800	/* ESDREF, (1)32k refresh cycle rate, (3) 4 refreshes/cycle */
-	.word	0x63FD9020, 0x00004800	/* ESDREF, (1)32k refresh cycle rate, (1) 2 refreshes/cycle */
-	.word	0x63FD9058, 0x00033337	/* ODTCTRL */
-	.word	0x63FD901c, 0x00000000	/* ESDSCR: AXI address readies normal operation */
+	.macro ddr_single_iomux_dcd_data
+	/* Enable pull down */
+	.word	0x53FA857c, DQVAL | 0x40 | 0x80	/* SDQS0: pue=1 PKE=1 */
+	.word	0x53FA8590, DQVAL | 0x40 | 0x80	/* SDQS1: pue=1 PKE=1 */
+	.word	0x53FA8568, DQVAL | 0x40 | 0x80	/* SDQS2: pue=1 PKE=1 */
+	.word	0x53FA8558, DQVAL | 0x40 | 0x80	/* SDQS3: pue=1 PKE=1 */
 	.word	0
 	.endm
+
+	.macro ddr_differential_iomux_dcd_data
+	/* Disable pull down */
+	.word	0x53FA857c, DQVAL | 0x40	/* SDQS0: pue=1 but PKE=0 */
+	.word	0x53FA8590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
+	.word	0x53FA8568, DQVAL | 0x40	/* SDQS2: pue=1 but PKE=0 */
+	.word	0x53FA8558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
+	.word	0
+	.endm
+
+
+	.macro esd_dcd_data
+	.word	0
+	.endm
+
 
 	.macro config_uart_clocks
 #if 0
@@ -392,15 +715,12 @@ plugin:			.word 0x0
 	BigMov	r1,CCM_BASE
 	ldr	r0,[r1, #CCM_CBCDR]
 	bl	print_hex
-#endif
-
-#ifdef DDR2_DIV
 	BigMov	r1,CCM_BASE
-	ldr	r0,[r1, #CCM_CBCDR]
-	orr	r0, r0, #(DDR2_DIV << 16)		//slow ddr2
-	str	r0,[r1, #CCM_CBCDR]
 #endif
 
+        /* Disable IPU and HSC handshake */
+	mov r0, #0x00060000
+	str r0, [r1, #CCM_CCDR]
 #if 0
 	BigMov	r0, ('R') | (':' << 8)
 	bl	TransmitX
@@ -431,15 +751,29 @@ plugin:			.word 0x0
 	beq	91b
 	.endm
 
-	.macro Turn_off_CS1
+	.macro	esd_zqcalibrate
 	BigMov	r3, ESD_BASE
-	BigMov	r1, 0x00008000		//CON_REQ
-	str	r1, [r3, #ESD_SCR]
-91:	ldr	r1, [r3, #ESD_SCR]
-	tst	r1, #1<<14
-	beq	91b
+//	esd_con_req
+#ifdef TO2
+	BigMov	r1, 0x04b80003
+	str	r1, [r3, #ESD_ZQHWCTRL]
+	BigMov	r1, 0x00194005
+	str	r1, [r3, #0x04]
+//91:	ldr	r1, [r3, #ESD_ZQHWCTRL]
+//  	tst	r1, #1<<16
+//  	bne	91b
+//  	BigMov	r1, (1<<13)|(31<<7)|(30<<2)
+//	BigMov	r1, (1<<13)|(28<<7)|(6<<2)
+//	str	r1, [r3, #ESD_ZQSWCTRL]
+#endif
+//	mov	r1, #0		//normal operations again
+//	str	r1, [r3, #ESD_SCR]
+	.endm
+
+	.macro Turn_off_CS1
+	esd_con_req
 #if 1
-	BigMov	r1, 0x000016d2		/* ESDMISC, (0)8 banks, (2)DDR2 */
+	BigMov	r1, 0x000016d2 | (((DDR2_BANK_BITS - 1) & 1) << 5)	/* ESD_MISC, (0)8 banks, (2)DDR2 */
 	str	r1, [r3, #ESD_MISC]	// soft reset
 	bic	r1, r1, #2
 	mov	r0,#0x1
@@ -491,24 +825,6 @@ plugin:			.word 0x0
 	.word	0x53FA812c, ALT5 | SION	//Mux: EIM_D21, SCL of i2c1
 	.word	0x53FA8474, PULL | PKE_ENABLE | DSE_HIGH | R100K_PU | HYS_ENABLE
 	.word	0x53FA8814, 1		//Select EIM_D21
-	.word	0
-	.endm
-
-	.macro ddr_single_iomux_dcd_data
-	/* Enable pull down */
-	.word	0x53FA857c, 0x003800c0	/* SDQS0: pue=1 PKE=1, dse 7 */
-	.word	0x53FA8590, 0x003800c0	/* SDQS1: pue=1 PKE=1, dse 7 */
-	.word	0x53FA8568, 0x003800c0	/* SDQS2: pue=1 PKE=1, dse 7 */
-	.word	0x53FA8558, 0x003800c0	/* SDQS3: pue=1 PKE=1, dse 7 */
-	.word	0
-	.endm
-
-	.macro ddr_differential_iomux_dcd_data
-	/* Disable pull down */
-	.word	0x53FA857c, 0x00380040	/* SDQS0: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8590, 0x00380040	/* SDQS1: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8568, 0x00380040	/* SDQS2: pue=1 but PKE=0, dse 7 */
-	.word	0x53FA8558, 0x00380040	/* SDQS3: pue=1 but PKE=0, dse 7 */
 	.word	0
 	.endm
 
