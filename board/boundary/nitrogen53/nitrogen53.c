@@ -70,7 +70,8 @@ static enum boot_device boot_dev;
 
 #define GPIO_DIR 4
 #define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
-unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR};
+unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR,
+		GPIO5_BASE_ADDR, GPIO6_BASE_ADDR, GPIO7_BASE_ADDR};
 inline void Set_GPIO_output_val(unsigned gp, unsigned val)
 {
 	unsigned base = gp_base[gp >> 5];
@@ -569,7 +570,10 @@ int fec_get_mac_addr(unsigned char *mac)
 
 static void setup_fec(void)
 {
-	volatile unsigned int reg;
+	/* gp7[13] - low active reset pin*/
+	Set_GPIO_output_val(MAKE_GP(7, 13), 0);
+	mxc_request_iomux(MX53_PIN_GPIO_18, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_GPIO_18, 0x0);
 
 	/* FEC TX_CLK, input */
 	mxc_request_iomux(MX53_PIN_FEC_REF_CLK, IOMUX_CONFIG_ALT0);
@@ -645,23 +649,8 @@ static void setup_fec(void)
 	mxc_iomux_set_input(MUX_IN_FEC_FEC_MDI_SELECT_INPUT, 0x1);
 
 
-#if 0
-	/* phy reset: gpio7-6 */
-	mxc_request_iomux(MX53_PIN_ATA_DA_0, IOMUX_CONFIG_ALT1);
-	reg = readl(GPIO7_BASE_ADDR + 0x0);
-	reg &= ~0x40;				//low
-	writel(reg, GPIO7_BASE_ADDR + 0x0);
-
-	reg = readl(GPIO7_BASE_ADDR + 0x4);
-	reg |= 0x40;				//output
-	writel(reg, GPIO7_BASE_ADDR + 0x4);
-
-	udelay(500);
-
-	reg = readl(GPIO7_BASE_ADDR + 0x0);
-	reg |= 0x40;				//high
-	writel(reg, GPIO7_BASE_ADDR + 0x0);
-#endif
+	udelay(50);
+	Set_GPIO_output_val(MAKE_GP(7, 13), 1);
 }
 #endif
 
