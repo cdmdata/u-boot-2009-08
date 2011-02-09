@@ -69,3 +69,5 @@ u-boot-no-padding.bin
 *.bin
 *.omx5*
 custom.h
+*bootscript*
+*.no-padding
