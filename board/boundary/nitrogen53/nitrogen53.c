@@ -151,7 +151,21 @@ u32 get_board_rev(void)
 
 static inline void setup_soc_rev(void)
 {
-	system_rev = 0x53000 | CHIP_REV_1_0;
+	int reg;
+
+	/* Si rev is obtained from ROM */
+	reg = __REG(ROM_SI_REV);
+
+	switch (reg) {
+	case 0x10:
+		system_rev = 0x53000 | CHIP_REV_1_0;
+		break;
+	case 0x20:
+		system_rev = 0x53000 | CHIP_REV_2_0;
+		break;
+	default:
+		system_rev = 0x53000 | CHIP_REV_2_0;
+	}
 }
 
 inline int is_soc_rev(int rev)
