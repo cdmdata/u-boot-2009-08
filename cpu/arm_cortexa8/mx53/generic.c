@@ -24,6 +24,7 @@
 #include <asm/arch/mx53.h>
 #include <asm/errno.h>
 #include <asm/io.h>
+#include <asm/cache.h>
 #include "crm_regs.h"
 #ifdef CONFIG_CMD_CLOCK
 #include <asm/clock.h>
