@@ -25,6 +25,7 @@ void set_pixel_clock(int which, unsigned hz);
 #define IPU_DISP_GEN		(IPU_CM_REG_BASE + 0x0C4)
 #define IPU_MEM_RST 		(IPU_CM_REG_BASE + 0x0DC)
 #define IPU_INT_STAT1		(IPU_CM_REG_BASE + 0x200)
+#define IPU_INT_STAT3		(IPU_CM_REG_BASE + 0x208)
 
 #define IDMAC_CONF		(IPU_IDMAC_BASE + 0x000)
 #define IDMAC_CH_EN_1		(IPU_IDMAC_BASE + 0x004)
@@ -40,7 +41,7 @@ void set_pixel_clock(int which, unsigned hz);
 #define DI1_GENERAL		(IPU_DI1_BASE + 0x000)
 #define DI1_BS_CLKGEN0		(IPU_DI1_BASE + 0x004)
 
-#define IPU_INT_STAT1_D0	0x00800000
+#define IPU_INT_STAT3_D1	0x10000000
 
 #define DI0_DMACHAN	23
 #define DI0_ENABLEBIT	6	/* bit in IPU_CONF */
@@ -1127,4 +1128,32 @@ char const *fixupPanelBootArg(char const *cmdline)
 
 	return cmdline ;
 }
+
+int
+do_timevsync(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+ {
+	unsigned long long start ;
+	unsigned long elapsed ;
+	__REG(IPU_INT_STAT3) = IPU_INT_STAT3_D1 ;
+	
+	/* wait for one sync first */
+	do {
+	} while ( 0 == (__REG(IPU_INT_STAT3)&IPU_INT_STAT3_D1) );
+
+	/* once more to measure things */
+        reset_timer();
+        start = get_timer(0);
+	__REG(IPU_INT_STAT3) = IPU_INT_STAT3_D1 ;
+	do {
+	} while ( 0 == (__REG(IPU_INT_STAT3)&IPU_INT_STAT3_D1) );
+
+	elapsed = (unsigned long)(get_timer(0)-start);
+	printf( "%lu ticks: %lu Hz\n", elapsed, CONFIG_SYS_HZ/(elapsed?elapsed:1));
+}
+
+U_BOOT_CMD(
+	timevsync, 1, 0,	do_timevsync,
+	"timevsync - time vsync\n",
+	""
+);
 
