@@ -44,6 +44,14 @@ int do_clkops(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			clk_info(DDR_CLK);
 		else if (strcmp(argv[1], "nfc") == 0)
 			clk_info(NFC_CLK);
+#ifdef CONFIG_MX53
+		else if (strcmp(argv[1], "ldb0") == 0)
+			clk_info(LDB0_CLK);
+		else if (strcmp(argv[1], "ldb1") == 0)
+			clk_info(LDB1_CLK);
+		else if (strcmp(argv[1], "pll4") == 0)
+			clk_info(PLL4);
+#endif
 		else
 			printf("Unsupported clock type!\n");
 		break;
@@ -57,7 +65,14 @@ int do_clkops(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			clk_config(CONFIG_REF_CLK_FREQ, freq, DDR_CLK);
 		else if (strcmp(argv[1], "nfc") == 0)
 			clk_config(CONFIG_REF_CLK_FREQ, freq, NFC_CLK);
-		else
+#ifdef CONFIG_MX53
+		else if (strcmp(argv[1], "ldb0") == 0)
+			clk_config(CONFIG_REF_CLK_FREQ, freq, LDB0_CLK);
+		else if (strcmp(argv[1], "ldb1") == 0)
+			clk_config(CONFIG_REF_CLK_FREQ, freq, LDB1_CLK);
+		else if (strcmp(argv[1], "pll4") == 0)
+			clk_config(CONFIG_REF_CLK_FREQ, freq, PLL4);
+#endif		else
 			printf("Unsupported clock type!\n");
 		break;
 	default:
