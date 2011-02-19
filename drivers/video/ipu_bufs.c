@@ -19,12 +19,9 @@
 
 #include <common.h>
 #include <asm/io.h>
-#include <asm/arch/mx51.h>
 #include <asm/errno.h>
 
 DECLARE_GLOBAL_DATA_PTR;
-
-#define IPU_CPMEM_REG_BASE	0x5F000000
 
 struct ipu_ch_param_word {
 	unsigned data[5];
@@ -34,8 +31,6 @@ struct ipu_ch_param_word {
 struct ipu_ch_param {
 	struct ipu_ch_param_word word[2];
 };
-
-#define IPU_CM_REG_BASE		0x5E000000
 
 static unsigned const buf_offsets[] = {
     0x268
