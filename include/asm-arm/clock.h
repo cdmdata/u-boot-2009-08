@@ -35,6 +35,11 @@ enum {
 	CSPI_CLK,
 	DDR_CLK,
 	NFC_CLK,
+	LDB0_CLK,
+	LDB1_CLK,
+	IPU_DI0_CLK,
+	IPU_DI1_CLK,
+	PLL4,
 	ALL_CLK,
 };
 
