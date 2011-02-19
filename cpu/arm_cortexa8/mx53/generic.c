@@ -167,6 +167,40 @@ static u32 __get_ipu_clk(void)
 	return -1U ;
 }
 
+static u32 __get_ldb_clk(int which){
+	u32 reg = __REG(MXC_CCM_CSCMR2);
+	u32 div = 0 != (reg & (MXC_CCM_CSCMR2_LBD_DI0_IPU_DIV<<which));
+	u32 sel = 0 != (reg & (MXC_CCM_CSCMR2_LBD_DI0_CLK_SEL<<which));
+        u32 freq ;
+	freq = __decode_pll(sel ? PLL4_CLK : PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+	freq = (((div^1)+1) * freq) / 7 ;
+	return freq ;
+}
+
+static u32 __get_ipu_di_clk(int which)
+{
+	u32 reg = __REG(MXC_CCM_CSCMR2);
+	u32 sel = (reg >> MXC_CCM_CSCMR2_DI_CLK_SEL_OFFSET(which))&7;
+	u32 parent_freq, div ;
+	switch (sel) {
+		case 0b000: //  derive clock from divided pll3. (Default)
+			parent_freq = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+			reg = __REG(MXC_CCM_CDCDR) & MXC_CCM_CDCDR_DI1_CLK_PRED_MASK;
+			div = (reg >> MXC_CCM_CDCDR_DI1_CLK_PRED_OFFSET) + 1;
+			return parent_freq / div;
+		case 0b001: //  derive clock from oscillator
+			return CONFIG_MX53_HCLK_FREQ;
+		case 0b101: // derive clock from ldb_di1_clk
+			return __get_ldb_clk(which);
+		case 0b010: //  derive clock from ckih camp1 clock.
+		case 0b011: //  derive clock from tve_di_clock - in this case tve will supply the di clock.
+		case 0b100: //  derive clock from ipp_di1_clk - clock source will be generated from the IOMUX.
+		default:
+			printf("%s: Unsupported clock selector %x\n", __func__, sel );
+			return 0 ;
+	}
+}
+
 static u32 __get_ipg_per_clk(void)
 {
 	u32 pred1, pred2, podf;
@@ -188,11 +222,13 @@ static u32 __get_ipg_per_clk(void)
 #define DI1_BS_CLKGEN0            (IPU_DI1_BASE + 0x004)
 
 unsigned get_pixel_clock(unsigned which) {
-	unsigned ipu_clock = __get_ipu_clk();
-	unsigned divisorReg = (0 != which) 
-				? __REG(DI1_BS_CLKGEN0) 
-				: __REG(DI0_BS_CLKGEN0);
+	unsigned external  = (__REG(which ? IPU_DI1_BASE : IPU_DI0_BASE) >> 20)&1 ;
+	unsigned divisorReg = __REG(which ? DI1_BS_CLKGEN0 : DI0_BS_CLKGEN0);
+	unsigned ipu_clock = external 
+				? __get_ipu_di_clk(which)
+				: __get_ipu_clk();
 	unsigned divisor = divisorReg&0xffff ;
+printf("%s: external(%d), ipu_clk %d, divisor %d\n", __func__, external, ipu_clock, divisor);
 	if (0 == divisor) {
 		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
 		divisor = 0x10 ;
@@ -201,13 +237,13 @@ unsigned get_pixel_clock(unsigned which) {
 	return (ipu_clock*16)/divisor ;
 }
 
-void set_pixel_clock(int which, unsigned hz)
+void set_pixel_clock(int which, unsigned hz, int lvds)
 {
 	unsigned ipu_clock = __get_ipu_clk();
 	unsigned divisorReg = (0 != which) 
 				? DI1_BS_CLKGEN0
 				: DI0_BS_CLKGEN0 ;
-	unsigned divisor = hz ? (ipu_clock*16)/hz : 0;
+	unsigned divisor = lvds ? 0x10 : (hz ? (ipu_clock*16)/hz : 0);
 	if (0 == divisor) {
 		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
 		divisor = 0x10 ;
@@ -535,8 +571,16 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return __get_ahb_clk();
 	case MXC_IPU_CLK:
 		return __get_ipu_clk();
+	case MXC_IPU_DI0_CLK:
+		return __get_ipu_di_clk(0);
+	case MXC_IPU_DI1_CLK:
+		return __get_ipu_di_clk(1);
 	case MXC_NFC_CLK:
-	  return __get_nfc_clk();
+		return __get_nfc_clk();
+	case MXC_LDB0_CLK:
+		return __get_ldb_clk(0);
+	case MXC_LDB1_CLK:
+		return __get_ldb_clk(1);
 	default:
 		break;
 	}
@@ -552,10 +596,14 @@ void mxc_dump_clocks(void)
 	printf("mx53 pll2: %dMHz\n", freq / 1000000);
 	freq = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
 	printf("mx53 pll3: %dMHz\n", freq / 1000000);
+	freq = __decode_pll(PLL4_CLK, CONFIG_MX53_HCLK_FREQ);
+	printf("mx53 pll4: %dMHz\n", freq / 1000000);
+	printf("ipu clock     : %dHz\n", mxc_get_clock(MXC_IPU_CLK));
 	printf("ipg clock     : %dHz\n", mxc_get_clock(MXC_IPG_CLK));
 	printf("ipg per clock : %dHz\n", mxc_get_clock(MXC_IPG_PERCLK));
 	printf("uart clock    : %dHz\n", mxc_get_clock(MXC_UART_CLK));
 	printf("cspi clock    : %dHz\n", mxc_get_clock(MXC_CSPI_CLK));
+	printf("periph clock  : %dHz\n", __get_periph_clk());
 	printf("ahb clock     : %dHz\n", mxc_get_clock(MXC_AHB_CLK));
 	printf("axi_a clock   : %dHz\n", mxc_get_clock(MXC_AXI_A_CLK));
 	printf("axi_b clock   : %dHz\n", mxc_get_clock(MXC_AXI_B_CLK));
@@ -566,7 +614,14 @@ void mxc_dump_clocks(void)
 	printf("esdhc3 clock  : %dHz\n", mxc_get_clock(MXC_ESDHC3_CLK));
 	printf("esdhc4 clock  : %dHz\n", mxc_get_clock(MXC_ESDHC4_CLK));
 	printf("nfc clock     : %dHz\n", mxc_get_clock(MXC_NFC_CLK));
+	printf("ldb0 clock    : %dHz\n", mxc_get_clock(MXC_LDB0_CLK));
+	printf("ldb1 clock    : %dHz\n", mxc_get_clock(MXC_LDB1_CLK));
+	printf("ipu di0 clock : %dHz\n", mxc_get_clock(MXC_IPU_DI0_CLK));
+	printf("ipu di1 clock : %dHz\n", mxc_get_clock(MXC_IPU_DI1_CLK));
+	printf("pixel clock 0 : %dHz\n", get_pixel_clock(0));
+	printf("pixel clock 1 : %dHz\n", get_pixel_clock(1));
 }
+
 
 #ifdef CONFIG_CMD_CLOCK
 /* precondition: m>0 and n>0.  Let g=gcd(m,n). */
@@ -704,6 +759,18 @@ int clk_info(u32 clk_type)
 	case NFC_CLK:
 		printf("NFC Clock: %dHz\n",
 			 mxc_get_clock(MXC_NFC_CLK));
+		break;
+	case LDB0_CLK:
+		printf("LDB0 Clock: %dHz\n",
+			 mxc_get_clock(MXC_LDB0_CLK));
+		break;
+	case LDB1_CLK:
+		printf("LDB1 Clock: %dHz\n",
+			 mxc_get_clock(MXC_LDB1_CLK));
+		break;
+	case PLL4:
+		printf("PLL4 Clock: %dHz\n", __decode_pll(PLL4_CLK, CONFIG_MX53_HCLK_FREQ));
+		break;
 	case ALL_CLK:
 		printf("cpu clock: %dMHz\n",
 			mxc_get_clock(MXC_ARM_CLK) / SZ_DEC_1M);
@@ -850,6 +917,22 @@ static int config_core_clk(u32 ref, u32 freq)
 	return config_pll_clk(PLL1_CLK, &pll_param);
 }
 
+static int config_pll4_clk(u32 ref, u32 freq)
+{
+	int ret = 0;
+	struct pll_param pll_param = { 0 };
+
+	/* The case that periph uses PLL1 is not considered here */
+	ret = calc_pll_params(ref, freq, &pll_param);
+	if (ret != 0) {
+		printf("Can't find pll parameters: %d\n", ret);
+		return ret;
+	}
+
+        ret = config_pll_clk(PLL4_CLK, &pll_param);
+	return ret ;
+}
+
 static int config_nfc_clk(u32 nfc_clk)
 {
 	u32 reg;
@@ -870,6 +953,17 @@ static int config_nfc_clk(u32 nfc_clk)
 		;
 	return 0;
 }
+
+static int config_ldb_clk(u32 ref, u32 freq, int which)
+{
+	u32 reg = __REG(MXC_CCM_CSCMR2) & ~MXC_CCM_CSCMR2_DI_CLK_SEL_MASK(which);
+	config_pll4_clk(ref,freq*7);
+	if (0 != freq) {
+		reg |= 5 << MXC_CCM_CSCMR2_DI_CLK_SEL_OFFSET(which);
+		__REG(MXC_CCM_CSCMR2) = reg ;
+	}
+}
+
 static int config_periph_clk(u32 ref, u32 freq)
 {
 	int ret = 0;
@@ -986,6 +1080,12 @@ static int config_ddr_clk(u32 emi_clk)
 	return 0;
 }
 
+static int config_di_clk(u32 ref, u32 freq, int which)
+{
+	printf ("%s(%d): %u -> %u\n", __func__, which, ref, freq );
+	return 0 ;
+}
+
 /*!
  * This function assumes the expected core clock has to be changed by
  * modifying the PLL. This is NOT true always but for most of the times,
@@ -1013,7 +1113,8 @@ static int config_ddr_clk(u32 emi_clk)
  */
 int clk_config(u32 ref, u32 freq, u32 clk_type)
 {
-	freq *= SZ_DEC_1M;
+	if ((LDB0_CLK != clk_type) && (LDB1_CLK != clk_type))
+		freq *= SZ_DEC_1M;
 
 	switch (clk_type) {
 	case CPU_CLK:
@@ -1030,6 +1131,26 @@ int clk_config(u32 ref, u32 freq, u32 clk_type)
 		break;
 	case NFC_CLK:
 		if (config_nfc_clk(freq))
+			return -1;
+		break;
+	case LDB0_CLK:
+		if (config_ldb_clk(ref,freq,0))
+			return -1;
+		break;
+	case LDB1_CLK:
+		if (config_ldb_clk(ref,freq,1))
+			return -1;
+		break;
+	case IPU_DI0_CLK:
+		if (config_di_clk(ref,freq,0))
+			return -1;
+		break;
+	case IPU_DI1_CLK:
+		if (config_di_clk(ref,freq,1))
+			return -1;
+		break;
+	case PLL4:
+		if (config_pll4_clk(ref,freq))
 			return -1;
 		break;
 	default:
