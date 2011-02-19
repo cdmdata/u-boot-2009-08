@@ -406,78 +406,90 @@ static void setup_i2c(unsigned int module_base)
 }
 #endif
 
+static int const di0_prgb_pins[] = {
+	MX53_PIN_DISP0_DAT0,
+	MX53_PIN_DISP0_DAT1,
+	MX53_PIN_DISP0_DAT2,
+	MX53_PIN_DISP0_DAT3,
+	MX53_PIN_DISP0_DAT4,
+	MX53_PIN_DISP0_DAT5,
+	MX53_PIN_DISP0_DAT6,
+	MX53_PIN_DISP0_DAT7,
+	MX53_PIN_DISP0_DAT8,
+	MX53_PIN_DISP0_DAT9,
+	MX53_PIN_DISP0_DAT10,
+	MX53_PIN_DISP0_DAT11,
+	MX53_PIN_DISP0_DAT12,
+	MX53_PIN_DISP0_DAT13,
+	MX53_PIN_DISP0_DAT14,
+	MX53_PIN_DISP0_DAT15,
+	MX53_PIN_DISP0_DAT16,
+	MX53_PIN_DISP0_DAT17,
+	MX53_PIN_DISP0_DAT18,
+	MX53_PIN_DISP0_DAT19,
+	MX53_PIN_DISP0_DAT20,
+	MX53_PIN_DISP0_DAT21,
+	MX53_PIN_DISP0_DAT22,
+	MX53_PIN_DISP0_DAT23,
+	MX53_PIN_DI0_PIN2,
+	MX53_PIN_DI0_PIN3,
+	MX53_PIN_DI0_DISP_CLK,
+	MX53_PIN_DI0_PIN15,
+	0
+};
+
 void init_display_pins(void)
 {
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
-	mxc_request_iomux(MX53_PIN_DISP0_DAT0,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT0,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT1,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT1,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT2,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT2,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT3,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT3,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT4,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT4,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT5,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT5,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT6,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT6,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT7,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT7,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT8,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT8,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT9,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT9,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT10,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT10,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT11,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT11,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT12,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT12,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT13,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT13,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT14,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT14,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT15,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT15,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT16,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT16,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT17,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT17,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT18,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT18,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT19,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT19,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT20,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT20,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT21,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT21,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT22,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT22,pad);
-	mxc_request_iomux(MX53_PIN_DISP0_DAT23,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DISP0_DAT23,pad);
-
-	mxc_request_iomux(MX53_PIN_DI0_PIN2,IOMUX_CONFIG_ALT0);	//Hsync
-	mxc_iomux_set_pad(MX53_PIN_DI0_PIN2,pad);
-	mxc_request_iomux(MX53_PIN_DI0_PIN3,IOMUX_CONFIG_ALT0);	//Vsync
-	mxc_iomux_set_pad(MX53_PIN_DI0_PIN3,pad);
-	mxc_request_iomux(MX53_PIN_DI0_DISP_CLK,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DI0_DISP_CLK,pad);		//PCLK
-	mxc_request_iomux(MX53_PIN_DI0_PIN15,IOMUX_CONFIG_ALT0);
-	mxc_iomux_set_pad(MX53_PIN_DI0_PIN15,pad);		//DRDY - (DE) or (OE) 
-
-//	mxc_request_iomux(MX53_PIN_DI0_PIN11,IOMUX_CONFIG_ALT1);
-//	mxc_request_iomux(MX53_PIN_DI0_PIN12,IOMUX_CONFIG_ALT1);
-//	mxc_request_iomux(MX53_PIN_DI0_PIN13,IOMUX_CONFIG_ALT1);
-//	mxc_request_iomux(MX53_PIN_DI0_D0_CS,IOMUX_CONFIG_ALT1);
-//	mxc_request_iomux(MX53_PIN_DI0_D1_CS,IOMUX_CONFIG_ALT4);
-//	mxc_request_iomux(MX53_PIN_DI_GP4,IOMUX_CONFIG_ALT4);
+	int const *pins = di0_prgb_pins ;
+	while (*pins) {
+		mxc_request_iomux(*pins,IOMUX_CONFIG_ALT0);
+		mxc_iomux_set_pad(*pins,pad);
+		pins++ ;
+	}
 
 	Set_GPIO_output_val(MAKE_GP(3, 5), 0);
 	mxc_request_iomux(MX53_PIN_EIM_DA5, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA5, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
+}
 
+static int const di0_lvds_pins[] = {
+	MX53_PIN_LVDS0_TX3_P,
+	MX53_PIN_LVDS0_CLK_P,
+	MX53_PIN_LVDS0_TX2_P,
+	MX53_PIN_LVDS0_TX1_P,
+	MX53_PIN_LVDS0_TX0_P,
+	0
+};
+
+static int const di1_lvds_pins[] = {
+	MX53_PIN_LVDS1_TX3_P,
+	MX53_PIN_LVDS1_TX2_P,
+	MX53_PIN_LVDS1_CLK_P,
+	MX53_PIN_LVDS1_TX1_P,
+	MX53_PIN_LVDS1_TX0_P,
+	0
+};
+
+static int const *const lvds_pins[] = {
+	di0_lvds_pins,
+	di1_lvds_pins
+};
+
+void init_lvds_pins(int ch,int lvds)
+{
+	int const *pins = lvds_pins[ch&1];
+	while (*pins) {
+		mxc_request_iomux(*pins,0 != lvds ? IOMUX_CONFIG_ALT1 : IOMUX_CONFIG_ALT1);
+		pins++ ;
+	}
+	if ((0 == ch) && (0 != lvds)){
+		pins = di0_prgb_pins ;
+		while (*pins) {
+			mxc_request_iomux(*pins,IOMUX_CONFIG_ALT1); /* GPIO */
+			pins++ ;
+		}
+	}
 }
 
 void setup_core_voltages(void)
