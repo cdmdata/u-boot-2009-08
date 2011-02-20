@@ -506,6 +506,8 @@ extern unsigned int mxc_get_clock(enum mxc_clock clk);
 extern unsigned int get_board_rev(void);
 extern int is_soc_rev(int rev);
 extern enum boot_device get_boot_device(void);
+extern void set_pixel_clock(int which, unsigned hz,int lvds);
+unsigned get_pixel_clock(unsigned which);
 
 #endif /* __ASSEMBLER__*/
 
