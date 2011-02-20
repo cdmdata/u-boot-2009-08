@@ -479,8 +479,9 @@ static int const *const lvds_pins[] = {
 void init_lvds_pins(int ch,int lvds)
 {
 	int const *pins = lvds_pins[ch&1];
+	int const alt = 0 != lvds ? IOMUX_CONFIG_ALT1 : IOMUX_CONFIG_ALT0 ;
 	while (*pins) {
-		mxc_request_iomux(*pins,0 != lvds ? IOMUX_CONFIG_ALT1 : IOMUX_CONFIG_ALT1);
+		mxc_request_iomux(*pins,alt);
 		pins++ ;
 	}
 	if ((0 == ch) && (0 != lvds)){
