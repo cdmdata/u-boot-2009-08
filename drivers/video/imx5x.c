@@ -9,8 +9,8 @@
 #include <asm/io.h>
 #include <asm/arch/iomux.h>
 #include <malloc.h>
+#include <asm/clock.h>
 unsigned get_pixel_clock(unsigned which);
-void set_pixel_clock(int which, unsigned hz);
 
 #define CCDR			(CCM_BASE_ADDR + 0x004)
 #define CBCMR			(CCM_BASE_ADDR + 0x018)
@@ -41,19 +41,22 @@ void set_pixel_clock(int which, unsigned hz);
 #define DI1_GENERAL		(IPU_DI1_BASE + 0x000)
 #define DI1_BS_CLKGEN0		(IPU_DI1_BASE + 0x004)
 
-#define IPU_INT_STAT3_D1	0x10000000
-
 #define DI0_DMACHAN	23
 #define DI0_ENABLEBIT	6	/* bit in IPU_CONF */
 
 #define DI1_DMACHAN	28
 #define DI1_ENABLEBIT	7	/* bit in IPU_CONF */
 
+#define IPU_INT_STAT3_MASK	((1<<DI0_DMACHAN)|(1<<DI1_DMACHAN))
+
 DECLARE_GLOBAL_DATA_PTR;
 #define DEBUG(arg...)
 
 static unsigned end_of_ram = 0 ;
-
+#ifdef CONFIG_MX53
+static unsigned lvds[2] = {0,0};
+#define IOMUXC_GPR2	((IOMUXC_BASE_ADDR)+8)
+#endif
 
 struct display_channel_t {
 	char const *name ;
@@ -381,7 +384,7 @@ static unsigned long const late_dc_mappings[] = {
 	IPU_DC_TEMPLATE_BASE + 0x014, 0x00000380,
 	IPU_DC_TEMPLATE_BASE + 0x018, 0x00020845,
 	IPU_DC_TEMPLATE_BASE + 0x01c, 0x00000380,
-	IPU_DC_TEMPLATE_BASE + 0x020, 0x00020805,
+	IPU_DC_TEMPLATE_BASE + 0x020, 0x00010805,
 	IPU_DC_TEMPLATE_BASE + 0x024, 0x00000380,
 };
 
@@ -409,6 +412,7 @@ static void check_regs(char const *which, unsigned long const *regs, unsigned ar
 
 static void enable_ipu_clock(void)
 {
+
 	/* from mach-mx5/clock.c ipu_clk */
 
 	/* from _clk_ipu_set_parent:
@@ -453,6 +457,7 @@ static void disable_ipu_clock(void)
 }
 
 void init_display_pins(void);
+void init_lvds_pins(int ch,int lvds);
 
 void setup_display(void)
 {
@@ -475,8 +480,13 @@ DEBUG( "%s\n", __func__ );
 	write_regs(late_dc_mappings,ARRAY_SIZE(late_dc_mappings));
 	check_regs("late_dc",late_dc_mappings,ARRAY_SIZE(late_dc_mappings));
 
+#ifdef CONFIG_MX53
+	set_pixel_clock(0,0,0);
+	set_pixel_clock(1,0,0);
+#else
 	set_pixel_clock(0,0);
 	set_pixel_clock(1,0);
+#endif	
 	disable_ipu_clock();
 
 	end_of_ram = gd->bd->bi_dram[0].start+gd->bd->bi_dram[0].size;
@@ -744,21 +754,70 @@ static void drawchar16(struct lcd_t *lcd,unsigned char const *src, unsigned w, u
 	}
 }
 
+#ifdef CONFIG_MX53
+static void init_lvds(void)
+{
+	char *lvds_str ;
+
+	lvds[0] = lvds[1] = 0 ;
+
+        lvds_str=getenv("lvds");
+	if (0 != lvds_str) {
+                char *flag ;
+		lvds_str = strdup(lvds_str);
+		flag = strtok(lvds_str,",");
+		if (flag) {
+			lvds[0] = simple_strtoul(flag,0,0);
+
+			flag = strtok(0,",");
+			if (flag)
+                                lvds[1] = simple_strtoul(flag,0,0);
+			else
+				lvds[1] = 0 ;
+		}
+		free(lvds_str);
+	}
+	printf ("%s: lvds=%d,%d\n",__func__,lvds[0],lvds[1]);
+	init_lvds_pins(0,lvds[0]);
+	init_lvds_pins(1,lvds[1]);
+}
+#endif
+
 static void init_display
 	( struct lcd_t *lcd,
           struct display_channel_t const *channel )
 {
-	u32 div = mxc_get_clock(MXC_IPU_CLK) / lcd->info.pixclock ;
-	u16 mask = div-1 ;
-	u32 wgen = (mask << DI_DW_GEN_ACCESS_SIZE_OFFSET) 
-		 | (mask << DI_DW_GEN_COMPONENT_SIZE_OFFSET)
-	         | 3 << 8 ;
+	u32 div ;
+	u16 mask ;
+	u32 wgen ;
 	unsigned disp = (IPU_DI0_BASE != (channel->di_base_addr));
 	u32 h_total, v_total ;
 	void *params ;
 	u32 screen_size = lcd->info.xres*lcd->info.yres*2 ;
 	u32 address ;
 
+#ifdef CONFIG_MX53
+	init_lvds();
+
+	mask = 3<<(2*disp); // Route LVDS 1:1
+	printf("%s: mask %x/%x\n", __func__, mask, ((lvds[disp]?3:0)<<(2*disp)));
+	__REG(IOMUXC_GPR2) = (__REG(IOMUXC_GPR2) & ~mask) | ((lvds[disp]?3:0)<<(2*disp));
+	printf("%s: GPR2(0x%08x) == %lx\n", __func__, IOMUXC_GPR2, __REG(IOMUXC_GPR2));
+	if (lvds[disp]) {
+		clk_config(CONFIG_MX53_HCLK_FREQ, lcd->info.pixclock, LDB0_CLK+disp);
+		div = 1 ;
+                printf ("%s: lvds clock %u, div %u\n", __func__, clk_info(LDB0_CLK+disp), div );
+	} else 
+#endif	
+	{
+                div = mxc_get_clock(MXC_IPU_CLK) / lcd->info.pixclock ;
+                printf ("%s: !lvds clock %u, div %u\n", __func__, clk_info(LDB0_CLK+disp), div );
+	}
+	mask = div-1 ;
+	wgen = (mask << DI_DW_GEN_ACCESS_SIZE_OFFSET) 
+		 | (mask << DI_DW_GEN_COMPONENT_SIZE_OFFSET)
+	         | 3 << 8 ;
+printf("mask == %x, wgen == %x\n", mask, wgen);
 	lcd->fbAddr = 0 ;
 	lcd->fbMemSize = screen_size ;
 	lcd->stride = (2*lcd->info.xres);
@@ -771,8 +830,11 @@ static void init_display
 	lcd->drawchar = drawchar16 ;
 
 	enable_ipu_clock();
+#ifdef CONFIG_MX53
+	set_pixel_clock(disp,lcd->info.pixclock,lvds[disp]);
+#else
 	set_pixel_clock(disp,lcd->info.pixclock);
-
+#endif
 	h_total = lcd->info.xres + lcd->info.hsync_len + lcd->info.left_margin + lcd->info.right_margin;
 	v_total = lcd->info.yres + lcd->info.vsync_len + lcd->info.upper_margin + lcd->info.lower_margin;
 
@@ -873,7 +935,15 @@ static void init_display
 
 	__REG(channel->di_base_addr) = DI_GEN_DI_PIXCLK_ACTH*(0 != lcd->info.pclk_redg)
 					| DI_GEN_POLARITY_2*(0 != lcd->info.hsyn_acth)
-					| DI_GEN_POLARITY_3*(0 != lcd->info.vsyn_acth);
+					| DI_GEN_POLARITY_3*(0 != lcd->info.vsyn_acth)
+					| (1<<20)*
+#ifdef CONFIG_MX53
+					  lvds[disp]
+#else
+					  0
+#endif
+;
+
 	__REG(channel->di_base_addr+0x0054) = ((DI_SYNC_VSYNC-1) << DI_VSYNC_SEL_OFFSET) | 0x00000002 ; // DI_SYNC_AS_GEN
 	__REG(channel->di_base_addr+0x0164) &= ~(DI_POL_DRDY_DATA_POLARITY );	// DI_POL
 	/*
@@ -1077,12 +1147,24 @@ char const *fixupPanelBootArg(char const *cmdline)
 {
 	unsigned i ;
 	char tempbuf[512];
+	char *modestr=getenv("panelmodes");
+	unsigned panelmodes[2] = {0,0};
 	char *nextOut ;
 	int di1_primary = 0 ;
 
 	if (0 != strstr(cmdline,"video=")) {
 		printf( "Don't override specified bootarg in %s\n", cmdline );
 		return cmdline ;
+	}
+
+	if (0 != modestr) {
+		char *m = strtok(modestr,",");
+		if (m) {
+			panelmodes[0] = simple_strtoul(m,0,0);
+			m = strtok(0,",");
+			if (m)
+                                panelmodes[1] = simple_strtoul(m,0,0);
+		}
 	}
 
 	if (0 == getPanelCount())
@@ -1103,7 +1185,10 @@ char const *fixupPanelBootArg(char const *cmdline)
 		build_panel_name(nextOut,&lcd->info);
 		nextOut += strlen(nextOut);
 		*nextOut++ = ',' ;
-		strcpy(nextOut,channels[di]->kernel_suffix);
+		if (panelmodes[di]) {
+			sprintf(nextOut,"%d",panelmodes[di]);
+		} else
+                        strcpy(nextOut,channels[di]->kernel_suffix);
 		nextOut += strlen(nextOut);
 		*nextOut++ = ' ' ;
 		*nextOut = '\0' ;
@@ -1134,21 +1219,22 @@ do_timevsync(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
  {
 	unsigned long long start ;
 	unsigned long elapsed ;
-	__REG(IPU_INT_STAT3) = IPU_INT_STAT3_D1 ;
+	__REG(IPU_INT_STAT3) = IPU_INT_STAT3_MASK ;
 	
 	/* wait for one sync first */
 	do {
-	} while ( 0 == (__REG(IPU_INT_STAT3)&IPU_INT_STAT3_D1) );
+	} while ( 0 == (__REG(IPU_INT_STAT3)&IPU_INT_STAT3_MASK) );
 
 	/* once more to measure things */
         reset_timer();
         start = get_timer(0);
-	__REG(IPU_INT_STAT3) = IPU_INT_STAT3_D1 ;
+	__REG(IPU_INT_STAT3) = IPU_INT_STAT3_MASK ;
 	do {
-	} while ( 0 == (__REG(IPU_INT_STAT3)&IPU_INT_STAT3_D1) );
+	} while ( 0 == (__REG(IPU_INT_STAT3)&IPU_INT_STAT3_MASK) );
 
 	elapsed = (unsigned long)(get_timer(0)-start);
 	printf( "%lu ticks: %lu Hz\n", elapsed, CONFIG_SYS_HZ/(elapsed?elapsed:1));
+	return 0 ;
 }
 
 U_BOOT_CMD(
