@@ -376,6 +376,12 @@
 #define DP_CTL_RESTART	0x10
 #define DP_CTL_BRMO	0x02
 
+//(5/12 + 10) * 96 / 1 = 1000
+#define DP_OP_1000	MAKE_OP(10, 1)
+#define DP_MFN_1000	5
+#define DP_MFD_1000	(12 - 1)
+#define DP_CTL_1000	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
+
 //(41/48 + 8) * 96 / 1 = 850
 #define DP_OP_850	MAKE_OP(8, 1)
 #define DP_MFN_850	41

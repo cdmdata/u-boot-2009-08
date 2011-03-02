@@ -86,7 +86,7 @@
 	mov r1, #0x4
 	str r1, [r0, #CLKCTL_CCSR]
 
-	setup_pll PLL1_BASE_ADDR, 800
+	setup_pll PLL1_BASE_ADDR, CONFIG_SYS_PLL1_FREQ
 
         setup_pll PLL3_BASE_ADDR, 400
 
@@ -210,6 +210,10 @@ CCM_VAL_0x0001615c:     .word 0x00016154
 CCM_VAL_0x00808145:     .word 0x00808145
 CCM_VAL_0x0001515c:     .word 0x0001515c
 CCM_VAL_0x02888945:     .word 0x02888945
+W_DP_OP_1000:		.word DP_OP_1000
+W_DP_MFD_1000:		.word DP_MFD_1000
+W_DP_MFN_1000:		.word DP_MFN_1000
+
 W_DP_OP_800:           	.word DP_OP_800
 W_DP_MFD_800:           .word DP_MFD_800
 W_DP_MFN_800:           .word DP_MFN_800
