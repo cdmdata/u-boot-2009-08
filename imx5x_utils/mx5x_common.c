@@ -223,6 +223,7 @@ const unsigned char reg_data[] = {
 		0x33, 0, 0x33, 0x4d,		/* 0.9V to LDO2 */
 		0x2e, 0, 0x2e, 0x75,		/* 1.8V to VBUCKCORE */
 		0x30, 0, 0x30, 0x63,		/* 1.8V to VBUCKMEM */
+		0x39, 0, 0x39, 0x6c,		/* 3.3V to LDO8 */
 };
 
 int power_up_ddr(unsigned i2c_base, unsigned chip)
