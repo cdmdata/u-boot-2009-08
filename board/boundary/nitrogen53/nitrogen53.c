@@ -448,9 +448,9 @@ void init_display_pins(void)
 		pins++ ;
 	}
 
-	Set_GPIO_output_val(MAKE_GP(3, 5), 0);
-	mxc_request_iomux(MX53_PIN_EIM_DA5, IOMUX_CONFIG_ALT1);
-	mxc_iomux_set_pad(MX53_PIN_EIM_DA5, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
+	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410 i2c sel
+	mxc_request_iomux(MX53_PIN_EIM_EB1, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_EB1, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
 }
 
 static int const di0_lvds_pins[] = {
