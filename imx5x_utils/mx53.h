@@ -6,7 +6,7 @@
 //#define DDR_TYPE	H5PS2G83AFR_S6			//1GB
 //#define DDR_TYPE	H5PS2G83AFR_S5			//1GB
 //#define DDR_TYPE	MT47H64M8CF_25E			//256MB
-//#define PMIC_DA9053_ADDR 0x48
+#define PMIC_DA9053_ADDR 0x48
 //#define USE_CSD1 1
 #define TO2
 #define MT47H128M8CF_3		1	//512MB, 333 MHz
@@ -205,8 +205,8 @@
 	//MT47H128M8CF_3  DDR2-667(333MHz), tck=3ns(333Mhz), CL=5 wr=15 ns, rcd=15 ns, rp=15 ns 
 	//512MB = 3 bank bits(8 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
-//	ddr_type	MT47H128M8CF_3,        1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0127012b, 0x0127012c, 0x282a2c2c, 0x42403b3b	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
+	ddr_type	MT47H128M8CF_3,        1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0127012b, 0x0127012c, 0x282a2c2c, 0x42403b3b	//v
 	ddr_type	MT47H128M8CF_3_REV1,   1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0165021a, 0x0154015b, 0x27292930, 0x5a4b615c
 
 	//MT47H128M8CF_25E tck=2.5ns(400Mhz), CL=5, wr=15 ns, rcd=12.5 ns, rp=12.5 ns
