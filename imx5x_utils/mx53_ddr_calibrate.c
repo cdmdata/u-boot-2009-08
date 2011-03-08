@@ -95,7 +95,7 @@ unsigned check_memory_pattern(unsigned *p, unsigned * p_middle, unsigned *p_end,
 		sum |= (val[1] ^ expected);
 		expected = ((unsigned)p) ^ 0xaaaaaaaa;
 		sum |= (val[2] ^ expected);
-		expected = ((unsigned)p) ^ 0x55555555; 
+		expected = ((unsigned)p) ^ 0x55555555;
 		sum |= (val[3] ^ expected);
 
 		p_end -= 4;
@@ -109,7 +109,7 @@ unsigned check_memory_pattern(unsigned *p, unsigned * p_middle, unsigned *p_end,
 		sum |= (val[1] ^ expected);
 		expected = ((unsigned)p_end) ^ 0xaaaaaaaa;
 		sum |= (val[2] ^ expected);
-		expected = ((unsigned)p_end) ^ 0x55555555; 
+		expected = ((unsigned)p_end) ^ 0x55555555;
 		sum |= (val[3] ^ expected);
 		if (sum == 0xffffffff)
 			break;
@@ -237,7 +237,7 @@ void cache_flush(void)
 		"mcr        p15, 2, r10, c0, c0, 0;"
 		/* @ isb to sych the new cssr&csidr */
 		"mcr        p15, 0, r10, c7, c5, 4;"
-		"ldmfd 	    sp!, {r0-r5, r7, r9-r11};"
+		"ldmfd	    sp!, {r0-r5, r7, r9-r11};"
 		"666:" /* iflush:" */
 		"mov        r0, #0x0;"
 		/* @ invalidate I+BTB */
@@ -420,8 +420,8 @@ void load_reg(unsigned esd_base, unsigned *vals, unsigned reg, unsigned short *m
 			unsigned cycle;
 			if (i & 1)
 				field >>= 16;
-			cycle = (field & 0x7f) | ((field & 0xf00) >> 1); 
-			vals[i] = cycle_to_delay(cycle, map, cdelay); 
+			cycle = (field & 0x7f) | ((field & 0xf00) >> 1);
+			vals[i] = cycle_to_delay(cycle, map, cdelay);
 		}
 		my_printf("load DGCTRL0 = %x DGCTRL1 = %x\n", t[0], t[1]);
 	} else {
@@ -488,7 +488,7 @@ void map_delays(unsigned esd_base, unsigned short *map, unsigned cdelay)
 		cycle += 2;
 		if (cycle >= 0x80)
 			break;
-		
+
 	}
 	add_mappings(map, prev_c, prev_delay, (cdelay >> 1));
 	t = (cdelay >> 1);
@@ -650,6 +650,7 @@ unsigned _find_window(struct check_outside_in *p, unsigned low, unsigned high)
 					p->high_bound[i] = bound;
 			}
 		}
+		hw_watchdog_reset();
 		if (sum == 0xffffffff) {
 			//all boundaries found in this direction
 			if (down)
@@ -675,7 +676,7 @@ unsigned _find_window(struct check_outside_in *p, unsigned low, unsigned high)
 	s = p->upd_rtn(p, 0, 0);
 	my_printf("Range checked: %x - %x, valid mask=%x, update mask=%x\n", low, high, sum, s);
 	if (sum) for (i = 0; i < 32; i++) {
-		int width = p->high_bound[i] - p->low_bound[i] + 1; 
+		int width = p->high_bound[i] - p->low_bound[i] + 1;
 		if (width <= 0) {
 			my_printf("DQ%2x invalid\n", i);
 		} else {
@@ -715,7 +716,7 @@ unsigned update_rtn(struct check_outside_in *p, unsigned cur, unsigned cur_mask)
 	int i;
 	unsigned ret = 0;
 	unsigned vals[4];
-	
+
 	for (i = 0; i < 32; i += 8) {
 		unsigned ave;
 		if (cur_mask & 0xff) {
@@ -761,16 +762,52 @@ unsigned update_rtn_rewrite(struct check_outside_in *p, unsigned cur, unsigned s
 void get_limits(struct check_outside_in *p, unsigned *limits)
 {
 	int i;
-	unsigned high = 0;
-	unsigned low = 0xffffffff;
-	for (i = 0; i < 32; i++) {
-		if (low > p->low_bound[i])
-			low = p->low_bound[i];
-		if (high < p->high_bound[i])
-			high = p->high_bound[i];
+	unsigned limit_high = 0;
+	unsigned limit_low = 0xffffffff;
+	for (i = 0; i < 32; i += 8) {
+		int j;
+		int max = i + 8;
+		unsigned low = p->low_limit;
+		unsigned llow = 0xffffffff;
+		unsigned high = p->high_limit;
+		unsigned hhigh = 0;
+		//find smallest range for group
+		for (j = i; j < max; j++) {
+			unsigned l = p->low_bound[j];
+			unsigned h = p->high_bound[j];
+			if (l > h) {
+				unsigned tmp = l;
+				l = h;
+				h = tmp;
+			}
+			if (llow > l)
+				llow = l;
+			if (low < l)
+				low = l;
+			if (hhigh < h)
+				hhigh = h;
+			if (high > h)
+				high = h;
+		}
+		if (low > high) {
+			unsigned tmp = low;
+			low = high;
+			high = tmp;
+		}
+		if (llow > hhigh) {
+			unsigned tmp = llow;
+			llow = hhigh;
+			hhigh = tmp;
+		}
+		low = ((llow + 8) < low) ? (low - 8) : llow;
+		high = (hhigh > (high + 8)) ? (high + 8) : hhigh;
+		if (limit_low > low)
+			limit_low = low;
+		if (limit_high < high)
+			limit_high = high;
 	}
-	limits[0] = low;
-	limits[1] = high;
+	limits[0] = limit_low;
+	limits[1] = limit_high;
 }
 
 int calibrate_delay(unsigned esd_base, unsigned *ram_base, unsigned *ram_end, int differential)
@@ -982,7 +1019,7 @@ void hw_calibrate(unsigned esd_base, unsigned *ram_base)
 		my_printf("dgctrl0: %x\n", dgctrl0);
 	}
 	reset_fifo(esd_base);
-	
+
 	print_dg(esd_base);
 //2. DQS write level calibration (ddr3)
 //3. DQS delay line calibration
@@ -1034,7 +1071,7 @@ void hw_calibrate(unsigned esd_base, unsigned *ram_base)
 	my_printf("WRDLHWCTL: %x\n", IO_READ(esd_base, ESD_WRDLHWCTL));
 	my_printf("WRDLHWST0-1: %x %x\n",
 			IO_READ(esd_base, ESD_WRDLHWST0), IO_READ(esd_base, ESD_WRDLHWST1));
-	
+
 	my_printf("mem: %x %x %x %x   %x %x %x %x\n",
 			ram0_base[0], ram0_base[1], ram0_base[2], ram0_base[3],
 			ram0_base[4], ram0_base[5], ram0_base[6], ram0_base[7]);
