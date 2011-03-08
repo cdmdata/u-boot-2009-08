@@ -36,14 +36,20 @@
 #define UART2_BASE	0x53fc0000
 #define UART3_BASE	0x5000c000
 #define UART_BASE	UART2_BASE
+#define IPU_CM_REG_BASE		0x1E000000
+#define IPU_IDMAC_BASE		0x1E008000
 
 #define PLL1_BASE_ADDR		(0x63F80000)
 #define PLL2_BASE_ADDR		(0x63F84000)
 #define PLL3_BASE_ADDR		(0x63F88000)
 #define PLL4_BASE_ADDR		(0x63F8C000)
+#define M4IF_BASE		(0x63FD8000)
 
 
+#define GPIO1_BASE	0x53f84000
+#define GPIO2_BASE	0x53f88000
 #define GPIO3_BASE	0x53f8c000
+#define GPIO4_BASE	0x53f90000
 #define WDOG_BASE	0x53f98000
 #define CCM_BASE	0x53fd4000
 #define I2C1_BASE_ADDR  0x63fc8000
@@ -200,6 +206,7 @@
 	//512MB = 3 bank bits(8 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
 	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
+//	ddr_type	MT47H128M8CF_3,        1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0127012b, 0x0127012c, 0x282a2c2c, 0x42403b3b	//v
 	ddr_type	MT47H128M8CF_3_REV1,   1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0165021a, 0x0154015b, 0x27292930, 0x5a4b615c
 
 	//MT47H128M8CF_25E tck=2.5ns(400Mhz), CL=5, wr=15 ns, rcd=12.5 ns, rp=12.5 ns
@@ -271,7 +278,15 @@
 	tst r0, #0x1
 	beq 1b
 	.endm
-	
+
+	.macro esd_con_req rESD
+	BigMov	r0, 0x00008000		//CON_REQ
+	str	r0, [\rESD, #ESD_SCR]
+91:	ldr	r0, [\rESD, #ESD_SCR]
+	tst	r0, #1<<14
+	beq	91b
+	.endm
+
 #ifdef USE_CSD1
 #define CS_ENABLES (3 << 30)
 #else
@@ -291,11 +306,50 @@
 	ldr		r1, [r2], #4
 	ddr_find_data	r1, r2, r3
 
-	BigMov		r2,PLL2_BASE_ADDR
+//Disable SDRAM autogating
+	BigMov	r1, M4IF_BASE
+	ldr	r0, [r1, #M4IF_CNTL_REG0]
+	orr	r0, r0, #4
+	str	r0, [r1, #M4IF_CNTL_REG0]
+
+//disable PLL auto-restart
+	BigMov	r2,PLL2_BASE_ADDR
+	BigMov	r1,CCM_BASE
+	mov	r0, #0
+	str	r0, [r2, #PLL_DP_CONFIG]
+
+//Gate IPU clocks
+	ldr	r0, [r1, #CCM_CCGR6]
+	bic	r0, r0, #(0xF << (5*2))		//Disable IPU di0/di1 clocks
+	str	r0, [r1, #CCM_CCGR6]
+
+	ldr	r0, [r1, #CCM_CCGR5]
+	bic	r0, r0, #(0x3 << (5*2))		//Disable IPU clock
+	str	r0, [r1, #CCM_CCGR5]
+//Disable HSC clocks
+	ldr	r0, [r1, #CCM_CCGR4]
+	bic	r0, r0, #(0x0f << (1*2))	//Disable sim (index 1,2)
+	bic	r0, r0, #(0xff << (3*2))	//Disable HSC (index 3-6)
+	bic	r0, r0, #(0xff << (9*2))	//Disable ecspi1/2 (index 9-12)
+	str	r0, [r1, #CCM_CCGR4]
+
+// Disable CCM-HSC/IPU handshake on clock mux switching
+	mov	r0, #0x00060000
+	str	r0, [r1, #CCM_CCDR]
+#if 1
+	ldr	r0, [r1, #CCM_CLPCR]
+	orr	r0, r0, #(1 << 18)	//Bypass IPU handshake
+	str	r0, [r1, #CCM_CLPCR]
+#endif
+
+//	debug_ch 'a'
+	BigMov	r4, ESD_BASE
+	esd_con_req r4
+//	debug_ch 'b'
+
 	ddr_pll		r2, r3
 	ddr_start_pll	r2, r3
 
-	BigMov	r4, ESD_BASE
 	ldr	r5, [r3, #ddr_type_offs]
 
 	ldr	r0, [r3, #ddr_dgctrl0_offs]
@@ -346,7 +400,7 @@
 	str	r1, [r4, #ESD_PDC]
 
 	ldr	r1, =0x04008010
-	str	r1, [r4, #ESD_SCR]
+	str	r1, [r4, #ESD_SCR]	//if not lcdp -, hangs here
 	BigMov	r1, 0x00008032
 	str	r1, [r4, #ESD_SCR]
 	orr	r1, r1, #1		//0x8033
@@ -656,6 +710,9 @@ get_ddr_type_addr:
 	.word	0x53FA8880, 3		//Select: UART2_IPP_UART_RXD_MUX_SELECT_INPUT
 	.word	0x53FA8278, 3		//MUX: PATA_DMARQ - UART1_TXD
 	.word	0x53FA85F8, 0x1e4	//CTL: PATA_DMARQ UART1_TXD
+
+	.word	0x53FA8198, 1		//EIM_EB1: mux gpio2[29]
+	.word	0x53FA84e8, 0x104
 	.word	0
 	.endm
 
@@ -674,11 +731,6 @@ get_ddr_type_addr:
 	.word	0x53FA8590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
 	.word	0x53FA8568, DQVAL | 0x40	/* SDQS2: pue=1 but PKE=0 */
 	.word	0x53FA8558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
-	.word	0
-	.endm
-
-
-	.macro esd_dcd_data
 	.word	0
 	.endm
 
@@ -715,12 +767,13 @@ get_ddr_type_addr:
 	BigMov	r1,CCM_BASE
 	ldr	r0,[r1, #CCM_CBCDR]
 	bl	print_hex
-	BigMov	r1,CCM_BASE
 #endif
-
+#if 0
+	BigMov	r1,CCM_BASE
         /* Disable IPU and HSC handshake */
 	mov r0, #0x00060000
 	str r0, [r1, #CCM_CCDR]
+#endif
 #if 0
 	BigMov	r0, ('R') | (':' << 8)
 	bl	TransmitX
@@ -742,23 +795,17 @@ get_ddr_type_addr:
 	tst	r0,#(1 << 31)	//sdcs0
 	.endm
 
-	.macro esd_con_req
-	BigMov	r3, ESD_BASE
-	BigMov	r1, 0x00008000		//CON_REQ
-	str	r1, [r3, #ESD_SCR]
-91:	ldr	r1, [r3, #ESD_SCR]
-	tst	r1, #1<<14
-	beq	91b
-	.endm
 
 	.macro	esd_zqcalibrate
 	BigMov	r3, ESD_BASE
-//	esd_con_req
+//	esd_con_req r3
 #ifdef TO2
 	BigMov	r1, 0x04b80003
 	str	r1, [r3, #ESD_ZQHWCTRL]
-	BigMov	r1, 0x00194005
-	str	r1, [r3, #0x04]
+	BigMov	r0, 0x00194005	//PLL1P2_VREG (bits 16-12 of reg) from 0x10 (1.2V) to 0x14 (1.3V)
+	BigMov	r1, IOMUXC_BASE_ADDR
+#define IOMUXC_GPR1 0x04
+	str	r0, [r1, #IOMUXC_GPR1]
 //91:	ldr	r1, [r3, #ESD_ZQHWCTRL]
 //  	tst	r1, #1<<16
 //  	bne	91b
@@ -771,7 +818,8 @@ get_ddr_type_addr:
 	.endm
 
 	.macro Turn_off_CS1
-	esd_con_req
+	BigMov	r3, ESD_BASE
+	esd_con_req r3
 #if 1
 	BigMov	r1, 0x000016d2 | (((DDR2_BANK_BITS - 1) & 1) << 5)	/* ESD_MISC, (0)8 banks, (2)DDR2 */
 	str	r1, [r3, #ESD_MISC]	// soft reset
@@ -836,6 +884,18 @@ get_ddr_type_addr:
 	.macro miso_ecspi_iomux_dcd_data
 	.word	0x53fa811c, 4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
 	.word	0
+	.endm
+
+	.macro init_gps
+	BigMov	r1, GPIO2_BASE
+	ldr	r0, [r1, #GPIO_DR]
+// make sure gp2[29] is high, i2c_sel for tfp410
+	orr	r0, r0, #(1 << 29)
+	str	r0, [r1, #GPIO_DR]
+
+	ldr	r0, [r1, #GPIO_DIR]
+	orr	r0, r0, #(1 << 29)
+	str	r0, [r1, #GPIO_DIR]
 	.endm
 
 #define GP3_MISO_BIT	17

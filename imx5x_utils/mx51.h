@@ -17,11 +17,15 @@
 #define UART2_BASE	0x73fc0000
 #define UART3_BASE	0x7000c000
 #define UART_BASE	UART1_BASE
+#define IPU_CM_REG_BASE		0x5E000000
+#define IPU_IDMAC_BASE		0x5E008000
 
 #define GPIO1_BASE	0x73f84000
 #define GPIO4_BASE	0x73f90000
 #define WDOG_BASE	0x73f98000
 #define CCM_BASE	0x73fd4000
+#define M4IF_BASE	0x83FD8000
+
 #define I2C1_BASE_ADDR  0x83fc8000
 #define I2C_BASE	I2C1_BASE_ADDR
 #define ESD_BASE	0x83fd9000
@@ -352,12 +356,11 @@ dcd:		.word	0xb17219e9	//0x1c
 	tst	r0,#(1 << 31)	//sdcs0
 	.endm
 
-	.macro esd_con_req
-	BigMov	r3, ESD_BASE
-	BigMov	r1, 0x00008000		//CON_REQ
-	str	r1, [r3, #ESD_SCR]
-91:	ldr	r1, [r3, #ESD_SCR]
-	tst	r1, #1<<14
+	.macro esd_con_req rESD
+	BigMov	r0, 0x00008000		//CON_REQ
+	str	r0, [\rESD, #ESD_SCR]
+91:	ldr	r0, [\rESD, #ESD_SCR]
+	tst	r0, #1<<14
 	beq	91b
 	.endm
 
@@ -489,6 +492,9 @@ dcd:		.word	0xb17219e9	//0x1c
 	.macro miso_ecspi_iomux_dcd_data
 	.word	0x73fa8214, 0		//SW_MUX_CTL_PAD_CSPI1_MISO, gpio4[23], alt 3
 	.word	0
+	.endm
+
+	.macro init_gps
 	.endm
 
 #define GP4_MISO_BIT	23

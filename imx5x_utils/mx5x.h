@@ -66,9 +66,16 @@
 	.equiv	CCM_CBCDR, 0x14
 	.equiv	CCM_CSCMR1, 0x1c
 	.equiv	CCM_CSCDR1, 0x24
+	.equiv	CCM_CLPCR, 0x054
 	.equiv	CCM_CGPR, 0x64
 	.equiv	CCM_CCGR1, 0x6c
+	.equiv	CCM_CCGR2, 0x70
+	.equiv	CCM_CCGR3, 0x74
 	.equiv	CCM_CCGR4, 0x78
+	.equiv	CCM_CCGR5, 0x7c
+	.equiv	CCM_CCGR6, 0x80
+
+	.equiv	M4IF_CNTL_REG0, 0x08c
 
 	.macro ecspi_clk_setup, ccm_base
 	BigMov	r1,\ccm_base
@@ -232,4 +239,39 @@
 	bne 1b
 	.endm
 
+#define IPU_CONF		0x000
+#define IPU_DISP_GEN		0x0C4
+#define IPU_CH_DB_MODE_SEL0	0x150
+#define IPU_CH_DB_MODE_SEL1	0x154
+#define IPU_CH_TRB_MODE_SEL0	0x178
+#define IPU_CH_TRB_MODE_SEL1	0x17c
+
+#define IDMAC_CONF		0x000
+#define IDMAC_CH_EN_1		0x004
+#define IDMAC_CH_EN_2		0x008
+#define IDMAC_WM_EN_1		0x01C
+#define IDMAC_WM_EN_2		0x020
+
+
+.macro init_disable_ipu ipu_cm_reg_base, ipu_idmac_base
+	mov	r1,#\ipu_cm_reg_base
+	ldr	r0,[r1, #IPU_DISP_GEN]
+	bic	r0, r0, #(3 << 24)	//clear DI0/DI1 counter release
+	str	r0,[r1, #IPU_DISP_GEN]
+
+	mov	r0, #0
+	str	r0,[r1, #IPU_CONF]	//disable DI0/DI1
+#if 0
+	add	r2, r1, #\ipu_idmac_base - \ipu_cm_reg_base
+	str	r0, [r2, #IDMAC_CH_EN_1]
+	str	r0, [r2, #IDMAC_CH_EN_2]
+	str	r0, [r2, #IDMAC_WM_EN_1]
+	str	r0, [r2, #IDMAC_WM_EN_2]
+
+	str	r0, [r1, #IPU_CH_DB_MODE_SEL0]
+	str	r0, [r1, #IPU_CH_DB_MODE_SEL1]
+	str	r0, [r1, #IPU_CH_TRB_MODE_SEL0]
+	str	r0, [r1, #IPU_CH_TRB_MODE_SEL1]
+#endif
+.endm
 #endif

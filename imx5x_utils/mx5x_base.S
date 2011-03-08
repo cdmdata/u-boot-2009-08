@@ -125,6 +125,8 @@ assem_start:
 	hw_init
 	bl	Basic_Init_IOMux
 //1:	b	1b
+	init_gps
+	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE
 	BigMov	rUART,UART_BASE	//0x28
 
 	config_uart_clocks
@@ -170,7 +172,9 @@ uart_init_done:
 	mov	r1, #PMIC_DA9053_ADDR
 	bl	power_up_ddr
 #endif
+#ifdef mx51
 	bl	Basic_Init_ESD
+#endif
 	ddr_init
 	mov	r0,#0x10000
 2:	subs	r0,r0,#1
@@ -237,15 +241,18 @@ uart_init_done:
 	strh	r0,[r1, #WDOG_WCR]
 3:	b	3b
 
+#ifdef mx51
 Basic_Init_ESD:
 	test_memory_active
 	movne	pc, lr
 //	test_watchdog_reset
 //	movne	pc, lr
-	esd_con_req
+	BigMov	r3, ESD_BASE
+	esd_con_req r3
 	adr	r3, ESD_TABLE
 	mov	r2,#1000
 	b	Basic_Init
+#endif
 Basic_Init_IOMux:
 	adr	r3, IOMUX_TABLE
 Basic_Init1:
@@ -274,8 +281,10 @@ Basic_Init:
 IOMUX_TABLE:
 	iomux_dcd_data
 
+#ifdef mx51
 ESD_TABLE:
 	esd_dcd_data
+#endif
 
 	.section .text.get_ram_base,"x"
 get_ram_base:
