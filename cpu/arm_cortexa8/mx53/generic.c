@@ -24,15 +24,15 @@
 #include <asm/arch/mx53.h>
 #include <asm/errno.h>
 #include <asm/io.h>
-#include <asm/cache.h>
-#include "crm_regs.h"
+#ifdef CONFIG_ARCH_CPU_INIT
+#include <asm/cache-cp15.h>
+#endif
 #ifdef CONFIG_CMD_CLOCK
 #include <asm/clock.h>
 #endif
 #include <div64.h>
-#ifdef CONFIG_ARCH_CPU_INIT
-#include <asm/cache-cp15.h>
-#endif
+#include "crm_regs.h"
+#include <asm/cache.h>
 
 enum pll_clocks {
 	PLL1_CLK = MXC_DPLL1_BASE,
