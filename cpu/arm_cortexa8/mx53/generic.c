@@ -145,6 +145,46 @@ static u32 __get_periph_clk(void)
 	return __decode_pll(PLL2_CLK, CONFIG_MX53_HCLK_FREQ);
 }
 
+static u32 __get_axi_a_clk(void)
+{
+	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
+	u32 pdf = (cbcdr & MXC_CCM_CBCDR_AXI_A_PODF_MASK) \
+			>> MXC_CCM_CBCDR_AXI_A_PODF_OFFSET;
+
+	return  __get_periph_clk() / (pdf + 1);
+}
+
+static u32 __get_axi_b_clk(void)
+{
+	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
+	u32 pdf = (cbcdr & MXC_CCM_CBCDR_AXI_B_PODF_MASK) \
+			>> MXC_CCM_CBCDR_AXI_B_PODF_OFFSET;
+
+	return  __get_periph_clk() / (pdf + 1);
+}
+
+static u32 __get_ahb_clk(void)
+{
+	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
+	u32 pdf = (cbcdr & MXC_CCM_CBCDR_AHB_PODF_MASK) \
+			>> MXC_CCM_CBCDR_AHB_PODF_OFFSET;
+
+	return  __get_periph_clk() / (pdf + 1);
+}
+
+static u32 __get_emi_slow_clk(void)
+{
+	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
+	u32 emi_clk_sel = cbcdr & MXC_CCM_CBCDR_EMI_CLK_SEL;
+	u32 pdf = (cbcdr & MXC_CCM_CBCDR_EMI_PODF_MASK) \
+			>> MXC_CCM_CBCDR_EMI_PODF_OFFSET;
+
+	if (emi_clk_sel)
+		return  __get_ahb_clk() / (pdf + 1);
+
+	return  __get_periph_clk() / (pdf + 1);
+}
+
 static u32 __get_ipg_clk(void)
 {
 	u32 ahb_podf, ipg_podf;
@@ -207,11 +247,6 @@ static u32 __get_ipg_per_clk(void)
 
 	return __get_periph_clk() / ((pred1 + 1) * (pred2 + 1) * (podf + 1));
 }
-
-static u32 __get_axi_a_clk(void);
-static u32 __get_axi_b_clk(void);
-static u32 __get_ahb_clk(void);
-static u32 __get_emi_slow_clk(void);
 
 static u32 __get_cdcmr_axi_to_ahb_clk(int bit_offset)
 {
@@ -392,47 +427,6 @@ static u32 __get_cspi_clk(void)
 	}
 
 	return ret_val;
-}
-
-static u32 __get_axi_a_clk(void)
-{
-	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
-	u32 pdf = (cbcdr & MXC_CCM_CBCDR_AXI_A_PODF_MASK) \
-			>> MXC_CCM_CBCDR_AXI_A_PODF_OFFSET;
-
-	return  __get_periph_clk() / (pdf + 1);
-}
-
-static u32 __get_axi_b_clk(void)
-{
-	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
-	u32 pdf = (cbcdr & MXC_CCM_CBCDR_AXI_B_PODF_MASK) \
-			>> MXC_CCM_CBCDR_AXI_B_PODF_OFFSET;
-
-	return  __get_periph_clk() / (pdf + 1);
-}
-
-static u32 __get_ahb_clk(void)
-{
-	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
-	u32 pdf = (cbcdr & MXC_CCM_CBCDR_AHB_PODF_MASK) \
-			>> MXC_CCM_CBCDR_AHB_PODF_OFFSET;
-
-	return  __get_periph_clk() / (pdf + 1);
-}
-
-
-static u32 __get_emi_slow_clk(void)
-{
-	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
-	u32 emi_clk_sel = cbcdr & MXC_CCM_CBCDR_EMI_CLK_SEL;
-	u32 pdf = (cbcdr & MXC_CCM_CBCDR_EMI_PODF_MASK) \
-			>> MXC_CCM_CBCDR_EMI_PODF_OFFSET;
-
-	if (emi_clk_sel)
-		return  __get_ahb_clk() / (pdf + 1);
-
-	return  __get_periph_clk() / (pdf + 1);
 }
 
 static u32 __get_nfc_clk(void)
