@@ -202,24 +202,6 @@ static u32 __get_ipg_clk(void)
 	return __get_periph_clk() / ((ahb_podf + 1) * (ipg_podf + 1));
 }
 
-/* Documentation differs from mach-mx5/clock.c on what values
- * of 2 and 3 mean in field ipu_hsp_clk_sel of register CBCMR
- */
-#define CBCMR_IPU_AHB 	   	3
-#define CBCMR_IPU_EMI_SLOW 	2
-
-static u32 __get_ipu_clk(void)
-{
-	u32 clksel = (__REG(MXC_CCM_CBCMR) & MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_MASK) 
-		     >> MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_OFFSET ;
-	if (CBCMR_IPU_AHB == clksel) {
-		return __get_ahb_clk();
-	} else {
-		printf ("%s: unsupported clock %x for IPU\n", __func__, clksel);
-	}
-	return -1U ;
-}
-
 static u32 __get_ipg_per_clk(void)
 {
 	u32 pred1, pred2, podf;
@@ -237,14 +219,11 @@ static u32 __get_ipg_per_clk(void)
 	return __get_periph_clk() / ((pred1 + 1) * (pred2 + 1) * (podf + 1));
 }
 
-static u32 __get_ddr_clk(void)
+static u32 __get_cdcmr_axi_to_ahb_clk(int bit_offset)
 {
 	u32 ret_val = 0;
-	u32 cbcmr = __REG(MXC_CCM_CBCMR);
-	u32 ddr_clk_sel = (cbcmr & MXC_CCM_CBCMR_DDR_CLK_SEL_MASK) \
-				>> MXC_CCM_CBCMR_DDR_CLK_SEL_OFFSET;
-
-	switch (ddr_clk_sel) {
+	u32 sel = (__REG(MXC_CCM_CBCMR) >> bit_offset) & 3;
+	switch (sel) {
 	case 0:
 		ret_val =  __get_axi_a_clk();
 		break;
@@ -260,8 +239,21 @@ static u32 __get_ddr_clk(void)
 	default:
 		break;
 	}
-
 	return ret_val;
+}
+
+static u32 __get_ddr_clk(void)
+{
+	return __get_cdcmr_axi_to_ahb_clk(MXC_CCM_CBCMR_DDR_CLK_SEL_OFFSET);
+}
+
+/* Documentation differs from mach-mx5/clock.c on what values
+ * of 2 and 3 mean in field ipu_hsp_clk_sel of register CBCMR
+ */
+
+static u32 __get_ipu_clk(void)
+{
+	return __get_cdcmr_axi_to_ahb_clk(MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_OFFSET);
 }
 
 /*!
