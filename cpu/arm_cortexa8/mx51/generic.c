@@ -256,6 +256,41 @@ static u32 __get_ipu_clk(void)
 	return __get_cdcmr_axi_to_ahb_clk(MXC_CCM_CBCMR_IPU_HSP_CLK_SEL_OFFSET);
 }
 
+#define DI0_BS_CLKGEN0            (IPU_DI0_BASE + 0x004)
+#define DI1_BS_CLKGEN0            (IPU_DI1_BASE + 0x004)
+
+unsigned get_pixel_clock(unsigned which) {
+	unsigned ipu_clock = __get_ipu_clk();
+	unsigned divisorReg = (0 != which)
+				? __REG(DI1_BS_CLKGEN0)
+				: __REG(DI0_BS_CLKGEN0);
+	unsigned divisor = divisorReg&0xffff ;
+	if (0 == divisor) {
+		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
+		divisor = 0x10 ;
+	}
+
+	return (ipu_clock*16)/divisor ;
+}
+
+void set_pixel_clock(int which, unsigned hz)
+{
+	unsigned ipu_clock = __get_ipu_clk();
+	unsigned divisorReg = (0 != which)
+				? DI1_BS_CLKGEN0
+				: DI0_BS_CLKGEN0 ;
+	unsigned divisor = hz ? (ipu_clock*16)/hz : 0;
+	if (0 == divisor) {
+		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
+		divisor = 0x10 ;
+	}
+	__REG(divisorReg) = divisor ;
+	divisor >>= 4 ;
+	divisor <<= 16 ;
+	__REG(divisorReg+4) = divisor ;
+        udelay(5000);
+}
+
 /*!
 + * This function returns the low power audio clock.
 + */
@@ -353,41 +388,6 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		break;
 	}
 	return -1;
-}
-
-#define DI0_BS_CLKGEN0            (IPU_DI0_BASE + 0x004)
-#define DI1_BS_CLKGEN0            (IPU_DI1_BASE + 0x004)
-
-unsigned get_pixel_clock(unsigned which) {
-	unsigned ipu_clock = __get_ipu_clk();
-	unsigned divisorReg = (0 != which) 
-				? __REG(DI1_BS_CLKGEN0) 
-				: __REG(DI0_BS_CLKGEN0);
-	unsigned divisor = divisorReg&0xffff ;
-	if (0 == divisor) {
-		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
-		divisor = 0x10 ;
-	}
-
-	return (ipu_clock*16)/divisor ;
-}
-
-void set_pixel_clock(int which, unsigned hz)
-{
-	unsigned ipu_clock = __get_ipu_clk();
-	unsigned divisorReg = (0 != which) 
-				? DI1_BS_CLKGEN0
-				: DI0_BS_CLKGEN0 ;
-	unsigned divisor = hz ? (ipu_clock*16)/hz : 0;
-	if (0 == divisor) {
-		printf ("%s: pixel clock divisor %u not set\n", __func__, which );
-		divisor = 0x10 ;
-	}
-	__REG(divisorReg) = divisor ;
-	divisor >>= 4 ;
-	divisor <<= 16 ;
-	__REG(divisorReg+4) = divisor ;
-        udelay(5000);
 }
 
 void mxc_dump_clocks(void)
