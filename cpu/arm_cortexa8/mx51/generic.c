@@ -42,15 +42,15 @@
 #include <asm/cache.h>
 
 enum pll_clocks {
-PLL1_CLK = MXC_DPLL1_BASE,
-PLL2_CLK = MXC_DPLL2_BASE,
-PLL3_CLK = MXC_DPLL3_BASE,
+	PLL1_CLK = MXC_DPLL1_BASE,
+	PLL2_CLK = MXC_DPLL2_BASE,
+	PLL3_CLK = MXC_DPLL3_BASE,
 };
 
 enum pll_sw_clocks {
-PLL1_SW_CLK,
-PLL2_SW_CLK,
-PLL3_SW_CLK,
+	PLL1_SW_CLK,
+	PLL2_SW_CLK,
+	PLL3_SW_CLK,
 };
 
 #define AHB_CLK_ROOT 133333333
@@ -207,7 +207,7 @@ static u32 __get_ipg_per_clk(void)
 	u32 pred1, pred2, podf;
 	if (__REG(MXC_CCM_CBCMR) & MXC_CCM_CBCMR_PERCLK_IPG_CLK_SEL)
 		return __get_ipg_clk();
-	/* Fixme: not handle what about lpm*/
+	/* Fixme: not handle what about lpm */
 	podf = __REG(MXC_CCM_CBCDR);
 	pred1 = (podf & MXC_CCM_CBCDR_PERCLK_PRED1_MASK) >>
 		MXC_CCM_CBCDR_PERCLK_PRED1_OFFSET;
