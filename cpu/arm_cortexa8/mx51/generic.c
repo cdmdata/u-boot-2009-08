@@ -100,20 +100,26 @@ struct pll_param {
 
 static u32 __decode_pll(enum pll_clocks pll, u32 infreq)
 {
-	u32 mfi, mfn, mfd, pd, ctl;
-	u32 clk;
+	u32 mfi, mfd, pd, ctl;
+	s32 mfn;
+	u64 rate;
+
 	mfn = __REG(pll + MXC_PLL_DP_MFN);
-	mfd = __REG(pll + MXC_PLL_DP_MFD) + 1;
+	/* Sign extend to 32-bits */
+	mfn <<= 5;
+	mfn >>= 5;
+	mfd = __REG(pll + MXC_PLL_DP_MFD) + 1;	//high 5 bits are 0
 	mfi = __REG(pll + MXC_PLL_DP_OP);
 	ctl = __REG(pll + MXC_PLL_DP_CTL);
 	pd = (mfi  & 0xF) + 1;
 	mfi = (mfi >> 4) & 0xF;
 	mfi = (mfi >= 5) ? mfi : 5;
-
-	clk = ((2 * (infreq / 1000) * (mfi * mfd + mfn)) / (mfd * pd)) * 1000;
-	if (ctl & (1 << 12))
-		clk <<= 1;
-	return clk;
+	rate = (u32)(mfi * mfd + mfn);
+	rate *= 2 * infreq;
+	do_div(rate, (mfd * pd));
+	if (ctl & MXC_PLL_DP_CTL_DPDCK0_2_EN)
+		rate <<= 1;
+	return rate;
 }
 
 static u32 __get_mcu_main_clk(void)
