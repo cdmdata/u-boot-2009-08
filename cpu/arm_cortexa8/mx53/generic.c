@@ -413,77 +413,18 @@ static u32 __get_nfc_clk(void)
 
 static u32 __get_esdhc1_clk(void)
 {
-	u32 ret_val = 0, div, pre_pdf, pdf;
-	u32 cscmr1 = __REG(MXC_CCM_CSCMR1);
-	u32 cscdr1 = __REG(MXC_CCM_CSCDR1);
-	u32 esdh1_clk_sel;
-
-	esdh1_clk_sel = (cscmr1 & MXC_CCM_CSCMR1_ESDHC1_MSHC1_CLK_SEL_MASK) \
-				>> MXC_CCM_CSCMR1_ESDHC1_MSHC1_CLK_SEL_OFFSET;
-	pre_pdf = (cscdr1 & MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PRED_MASK) \
-			>> MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PRED_OFFSET;
-	pdf = (cscdr1 & MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PODF_MASK) \
-			>> MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PODF_OFFSET ;
-
-	div = (pre_pdf + 1) * (pdf + 1);
-
-	switch (esdh1_clk_sel) {
-	case 0:
-		ret_val = __decode_pll(PLL1_CLK, __HCLK_FREQ);
-		break;
-	case 1:
-		ret_val = __decode_pll(PLL2_CLK, __HCLK_FREQ);
-		break;
-	case 2:
-		ret_val = __decode_pll(PLL3_CLK, __HCLK_FREQ);
-		break;
-	case 3:
-		ret_val = __get_lp_apm();
-		break;
-	default:
-		break;
-	}
-
-	ret_val /= div;
-
-	return ret_val;
+	return __get_clk_cscdr1_pred_podf(
+			MXC_CCM_CSCMR1_ESDHC1_MSHC1_CLK_SEL_OFFSET,
+			MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PRED_OFFSET,
+			MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PODF_OFFSET);
 }
 
 static u32 __get_esdhc3_clk(void)
 {
-	u32 ret_val = 0, div, pre_pdf, pdf;
-	u32 esdh3_clk_sel;
-	u32 cscmr1 = __REG(MXC_CCM_CSCMR1);
-	u32 cscdr1 = __REG(MXC_CCM_CSCDR1);
-	esdh3_clk_sel = (cscmr1 & MXC_CCM_CSCMR1_ESDHC3_MSHC2_CLK_SEL_MASK) \
-				>> MXC_CCM_CSCMR1_ESDHC3_MSHC2_CLK_SEL_OFFSET;
-	pre_pdf = (cscdr1 & MXC_CCM_CSCDR1_ESDHC3_MSHC2_CLK_PRED_MASK) \
-			>> MXC_CCM_CSCDR1_ESDHC3_MSHC2_CLK_PRED_OFFSET;
-	pdf = (cscdr1 & MXC_CCM_CSCDR1_ESDHC3_MSHC2_CLK_PODF_MASK) \
-			>> MXC_CCM_CSCDR1_ESDHC3_MSHC2_CLK_PODF_OFFSET ;
-
-	div = (pre_pdf + 1) * (pdf + 1);
-
-	switch (esdh3_clk_sel) {
-	case 0:
-		ret_val = __decode_pll(PLL1_CLK, __HCLK_FREQ);
-		break;
-	case 1:
-		ret_val = __decode_pll(PLL2_CLK, __HCLK_FREQ);
-		break;
-	case 2:
-		ret_val = __decode_pll(PLL3_CLK, __HCLK_FREQ);
-		break;
-	case 3:
-		ret_val = __get_lp_apm();
-		break;
-	default:
-		break;
-	}
-
-	ret_val /= div;
-
-	return ret_val;
+	return __get_clk_cscdr1_pred_podf(
+			MXC_CCM_CSCMR1_ESDHC3_MSHC2_CLK_SEL_OFFSET,
+			MXC_CCM_CSCDR1_ESDHC3_MSHC2_CLK_PRED_OFFSET,
+			MXC_CCM_CSCDR1_ESDHC3_MSHC2_CLK_PODF_OFFSET);
 }
 
 static u32 __get_esdhc2_clk(void)
