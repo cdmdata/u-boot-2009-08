@@ -33,6 +33,7 @@
 #include <div64.h>
 #include "crm_regs.h"
 #include <asm/cache.h>
+#define __HCLK_FREQ CONFIG_MX53_HCLK_FREQ
 
 enum pll_clocks {
 	PLL1_CLK = MXC_DPLL1_BASE,
@@ -71,7 +72,7 @@ struct fixed_pll_mfd {
 const struct fixed_pll_mfd fixed_mfd[4] = {
     {0,                   0},      /* reserved */
     {0,                   0},      /* reserved */
-    {CONFIG_MX53_HCLK_FREQ, 24 * 16},    /* 384 */
+    {__HCLK_FREQ, 24 * 16},    /* 384 */
     {0,                   0},      /* reserved */
 };
 
@@ -122,7 +123,7 @@ static u32 __get_mcu_main_clk(void)
 	u32 reg, freq;
 	reg = (__REG(MXC_CCM_CACRR) & MXC_CCM_CACRR_ARM_PODF_MASK) >>
 	    MXC_CCM_CACRR_ARM_PODF_OFFSET;
-	freq = __decode_pll(PLL1_CLK, CONFIG_MX53_HCLK_FREQ);
+	freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 	return freq / (reg + 1);
 }
 
@@ -135,14 +136,14 @@ static u32 __get_periph_clk(void)
 		switch ((reg & MXC_CCM_CBCMR_PERIPH_CLK_SEL_MASK) >>
 			MXC_CCM_CBCMR_PERIPH_CLK_SEL_OFFSET) {
 		case 0:
-			return __decode_pll(PLL1_CLK, CONFIG_MX53_HCLK_FREQ);
+			return __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		case 1:
-			return __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+			return __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		default:
 			return 0;
 		}
 	}
-	return __decode_pll(PLL2_CLK, CONFIG_MX53_HCLK_FREQ);
+	return __decode_pll(PLL2_CLK, __HCLK_FREQ);
 }
 
 static u32 __get_axi_a_clk(void)
@@ -202,7 +203,7 @@ static u32 __get_ldb_clk(int which){
 	u32 div = 0 != (reg & (MXC_CCM_CSCMR2_LBD_DI0_IPU_DIV<<which));
 	u32 sel = 0 != (reg & (MXC_CCM_CSCMR2_LBD_DI0_CLK_SEL<<which));
         u32 freq ;
-	freq = __decode_pll(sel ? PLL4_CLK : PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+	freq = __decode_pll(sel ? PLL4_CLK : PLL3_CLK, __HCLK_FREQ);
 	freq = (((div^1)+1) * freq) / 7 ;
 	return freq ;
 }
@@ -214,12 +215,12 @@ static u32 __get_ipu_di_clk(int which)
 	u32 parent_freq, div ;
 	switch (sel) {
 		case 0b000: //  derive clock from divided pll3. (Default)
-			parent_freq = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+			parent_freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 			reg = __REG(MXC_CCM_CDCDR) & MXC_CCM_CDCDR_DI1_CLK_PRED_MASK;
 			div = (reg >> MXC_CCM_CDCDR_DI1_CLK_PRED_OFFSET) + 1;
 			return parent_freq / div;
 		case 0b001: //  derive clock from oscillator
-			return CONFIG_MX53_HCLK_FREQ;
+			return __HCLK_FREQ;
 		case 0b101: // derive clock from ldb_di1_clk
 			return __get_ldb_clk(which);
 		case 0b010: //  derive clock from ckih camp1 clock.
@@ -331,7 +332,7 @@ static u32 __get_lp_apm(void)
 	u32 ccsr = __REG(MXC_CCM_CCSR);
 
 	if (((ccsr >> MXC_CCM_CCSR_LP_APM_SEL_OFFSET) & 1) == 0)
-		ret_val = CONFIG_MX53_HCLK_FREQ;
+		ret_val = __HCLK_FREQ;
 	else
 		ret_val = ((32768 * 1024));
 
@@ -368,13 +369,13 @@ static u32 __get_uart_clk(void)
 	switch ((reg & MXC_CCM_CSCMR1_UART_CLK_SEL_MASK) >>
 		MXC_CCM_CSCMR1_UART_CLK_SEL_OFFSET) {
 	case 0x0:
-		freq = __decode_pll(PLL1_CLK, CONFIG_MX53_HCLK_FREQ);
+		freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		break;
 	case 0x1:
-		freq = __decode_pll(PLL2_CLK, CONFIG_MX53_HCLK_FREQ);
+		freq = __decode_pll(PLL2_CLK, __HCLK_FREQ);
 		break;
 	case 0x2:
-		freq = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+		freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		break;
 	case 0x3:
 		freq = __get_lp_apm();
@@ -413,13 +414,13 @@ static u32 __get_cspi_clk(void)
 
 	switch (clk_sel) {
 	case 0:
-		ret_val = __decode_pll(PLL1_CLK, CONFIG_MX53_HCLK_FREQ) / div;
+		ret_val = __decode_pll(PLL1_CLK, __HCLK_FREQ) / div;
 		break;
 	case 1:
-		ret_val = __decode_pll(PLL2_CLK, CONFIG_MX53_HCLK_FREQ) / div;
+		ret_val = __decode_pll(PLL2_CLK, __HCLK_FREQ) / div;
 		break;
 	case 2:
-		ret_val = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ) / div;
+		ret_val = __decode_pll(PLL3_CLK, __HCLK_FREQ) / div;
 		break;
 	default:
 		ret_val = __get_lp_apm() / div;
@@ -456,13 +457,13 @@ static u32 __get_esdhc1_clk(void)
 
 	switch (esdh1_clk_sel) {
 	case 0:
-		ret_val = __decode_pll(PLL1_CLK, CONFIG_MX53_HCLK_FREQ);
+		ret_val = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		break;
 	case 1:
-		ret_val = __decode_pll(PLL2_CLK, CONFIG_MX53_HCLK_FREQ);
+		ret_val = __decode_pll(PLL2_CLK, __HCLK_FREQ);
 		break;
 	case 2:
-		ret_val = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+		ret_val = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		break;
 	case 3:
 		ret_val = __get_lp_apm();
@@ -493,13 +494,13 @@ static u32 __get_esdhc3_clk(void)
 
 	switch (esdh3_clk_sel) {
 	case 0:
-		ret_val = __decode_pll(PLL1_CLK, CONFIG_MX53_HCLK_FREQ);
+		ret_val = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		break;
 	case 1:
-		ret_val = __decode_pll(PLL2_CLK, CONFIG_MX53_HCLK_FREQ);
+		ret_val = __decode_pll(PLL2_CLK, __HCLK_FREQ);
 		break;
 	case 2:
-		ret_val = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+		ret_val = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		break;
 	case 3:
 		ret_val = __get_lp_apm();
@@ -589,13 +590,13 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 void mxc_dump_clocks(void)
 {
 	u32 freq;
-	freq = __decode_pll(PLL1_CLK, CONFIG_MX53_HCLK_FREQ);
+	freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 	printf("mx53 pll1: %dMHz\n", freq / 1000000);
-	freq = __decode_pll(PLL2_CLK, CONFIG_MX53_HCLK_FREQ);
+	freq = __decode_pll(PLL2_CLK, __HCLK_FREQ);
 	printf("mx53 pll2: %dMHz\n", freq / 1000000);
-	freq = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
+	freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 	printf("mx53 pll3: %dMHz\n", freq / 1000000);
-	freq = __decode_pll(PLL4_CLK, CONFIG_MX53_HCLK_FREQ);
+	freq = __decode_pll(PLL4_CLK, __HCLK_FREQ);
 	printf("mx53 pll4: %dMHz\n", freq / 1000000);
 	printf("ipu clock     : %dHz\n", mxc_get_clock(MXC_IPU_CLK));
 	printf("ipg clock     : %dHz\n", mxc_get_clock(MXC_IPG_CLK));
@@ -768,7 +769,7 @@ int clk_info(u32 clk_type)
 			 mxc_get_clock(MXC_LDB1_CLK));
 		break;
 	case PLL4:
-		printf("PLL4 Clock: %dHz\n", __decode_pll(PLL4_CLK, CONFIG_MX53_HCLK_FREQ));
+		printf("PLL4 Clock: %dHz\n", __decode_pll(PLL4_CLK, __HCLK_FREQ));
 		break;
 	case ALL_CLK:
 		printf("cpu clock: %dMHz\n",
