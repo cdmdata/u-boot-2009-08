@@ -291,9 +291,9 @@ void set_pixel_clock(int which, unsigned hz)
         udelay(5000);
 }
 
-/*!
-+ * This function returns the low power audio clock.
-+ */
+/*
+ * This function returns the low power audio clock.
+ */
 static u32 __get_lp_apm(void)
 {
 	u32 ret_val = 0;
