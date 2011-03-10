@@ -674,15 +674,15 @@ int clk_info(u32 clk_type)
 		break;
 	case NFC_CLK:
 		printf("NFC Clock: %dHz\n",
-			 mxc_get_clock(MXC_NFC_CLK));
+			mxc_get_clock(MXC_NFC_CLK));
 		break;
 	case LDB0_CLK:
 		printf("LDB0 Clock: %dHz\n",
-			 mxc_get_clock(MXC_LDB0_CLK));
+			mxc_get_clock(MXC_LDB0_CLK));
 		break;
 	case LDB1_CLK:
 		printf("LDB1 Clock: %dHz\n",
-			 mxc_get_clock(MXC_LDB1_CLK));
+			mxc_get_clock(MXC_LDB1_CLK));
 		break;
 	case PLL4:
 		printf("PLL4 Clock: %dHz\n", __decode_pll(PLL4_CLK, __HCLK_FREQ));
@@ -1132,17 +1132,3 @@ int arch_cpu_init(void)
 	return 0;
 }
 #endif
-
-int
-do_clocks (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
-{
-        mxc_dump_clocks();
-	return 0 ;
-}
-
-U_BOOT_CMD(
-	clocks, 1, 0,	do_clocks,
-	"clocks - show system clocks\n",
-	""
-);
-
