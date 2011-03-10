@@ -822,6 +822,10 @@ int board_init(void)
 	val &= ~0x1; /*RS bit*/
 	writel(val, OTG_BASE_ADDR + USBCMD);
 #endif
+	Set_GPIO_output_val(MAKE_GP(5, 0), 0);		//USB Hub reset, low power reset state
+	mxc_request_iomux(MX53_PIN_EIM_WAIT, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_WAIT, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
+
 	setup_boot_device();
 	setup_soc_rev();
 #ifdef CONFIG_IMX_ECSPI
@@ -841,7 +845,6 @@ int board_init(void)
 	setup_i2c(CONFIG_SYS_I2C_PORT);
 	setup_core_voltages();
 #endif
-
 	return 0;
 }
 
