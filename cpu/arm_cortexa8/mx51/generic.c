@@ -366,6 +366,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 				MXC_CCM_CSCMR1_UART_CLK_SEL_OFFSET,
 				MXC_CCM_CSCDR1_UART_CLK_PRED_OFFSET,
 				MXC_CCM_CSCDR1_UART_CLK_PODF_OFFSET);
+	case MXC_CSPI_CLK:
+		return __get_cspi_clk();
 	case MXC_AXI_A_CLK:
 		return __get_axi_a_clk();
 	case MXC_AXI_B_CLK:
@@ -374,8 +376,6 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 		return __get_emi_slow_clk();
 	case MXC_DDR_CLK:
 		return __get_ddr_clk();
-	case MXC_CSPI_CLK:
-		return __get_cspi_clk();
 	case MXC_FEC_CLK:
 		return __decode_pll(PLL1_CLK, __HCLK_FREQ);
 	case MXC_IPU_CLK:
