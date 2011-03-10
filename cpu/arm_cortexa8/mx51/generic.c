@@ -1028,11 +1028,9 @@ extern void mxc_fec_set_mac_from_env(char *mac_addr);
 int cpu_eth_init(bd_t *bis)
 {
 	int rc = -ENODEV;
-
 #if defined(CONFIG_MXC_FEC)
 	rc = mxc_fec_initialize(bis);
 #endif
-
 	return rc;
 }
 
