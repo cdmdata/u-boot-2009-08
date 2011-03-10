@@ -811,7 +811,7 @@ static void init_display
 #endif	
 	{
                 div = mxc_get_clock(MXC_IPU_CLK) / lcd->info.pixclock ;
-                printf ("%s: !lvds clock %u, div %u\n", __func__, clk_info(LDB0_CLK+disp), div );
+                printf ("%s: !lvds clock %u, div %u\n", __func__, mxc_get_clock(MXC_IPU_CLK), div );
 	}
 	mask = div-1 ;
 	wgen = (mask << DI_DW_GEN_ACCESS_SIZE_OFFSET) 
