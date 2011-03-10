@@ -322,7 +322,7 @@ void set_pixel_clock(int which, unsigned hz, int lvds)
         udelay(5000);
 }
 
-/*!
+/*
  * This function returns the low power audio clock.
  */
 static u32 __get_lp_apm(void)
@@ -376,7 +376,7 @@ static u32 __get_uart_clk(void)
 	case 0x2:
 		freq = __decode_pll(PLL3_CLK, CONFIG_MX53_HCLK_FREQ);
 		break;
-	case 0x4:
+	case 0x3:
 		freq = __get_lp_apm();
 		break;
 	default:
