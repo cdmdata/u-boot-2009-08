@@ -294,7 +294,7 @@ void set_pixel_clock(int which, unsigned hz)
 /*!
 + * This function returns the low power audio clock.
 + */
-u32 get_lp_apm(void)
+static u32 __get_lp_apm(void)
 {
 	u32 ret_val = 0;
 	u32 ccsr = __REG(MXC_CCM_CCSR);
@@ -321,7 +321,7 @@ static u32 __get_pll_from_choice(unsigned choice)
 		freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
 		break;
 	default:
-		freq = get_lp_apm();
+		freq = __get_lp_apm();
 	}
 	return freq;
 }
@@ -684,7 +684,7 @@ static u32 __get_uart_clk(void)
 	case 0x2:
 		freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
 		break;
-	case 0x4:
+	case 0x3:
 		freq = __get_lp_apm();
 		break;
 	default:
