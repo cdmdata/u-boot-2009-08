@@ -40,6 +40,7 @@
 #include <div64.h>
 #include "crm_regs.h"
 #include <asm/cache.h>
+#define __HCLK_FREQ CONFIG_MX51_HCLK_FREQ
 
 enum pll_clocks {
 	PLL1_CLK = MXC_DPLL1_BASE,
@@ -76,7 +77,7 @@ struct fixed_pll_mfd {
 const struct fixed_pll_mfd fixed_mfd[4] = {
     {0,                   0},      /* reserved */
     {0,                   0},      /* reserved */
-    {CONFIG_MX51_HCLK_FREQ, 24 * 16},    /* 384 */
+    {__HCLK_FREQ, 24 * 16},    /* 384 */
     {0,                   0},      /* reserved */
 };
 
@@ -127,7 +128,7 @@ static u32 __get_mcu_main_clk(void)
 	u32 reg, freq;
 	reg = (__REG(MXC_CCM_CACRR) & MXC_CCM_CACRR_ARM_PODF_MASK) >>
 	    MXC_CCM_CACRR_ARM_PODF_OFFSET;
-	freq = __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+	freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 	return freq / (reg + 1);
 }
 
@@ -140,14 +141,14 @@ static u32 __get_periph_clk(void)
 		switch ((reg & MXC_CCM_CBCMR_PERIPH_CLK_SEL_MASK) >>
 			MXC_CCM_CBCMR_PERIPH_CLK_SEL_OFFSET) {
 		case 0:
-			return __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+			return __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		case 1:
-			return __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
+			return __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		default:
 			return 0;
 		}
 	}
-	return __decode_pll(PLL2_CLK, CONFIG_MX51_HCLK_FREQ);
+	return __decode_pll(PLL2_CLK, __HCLK_FREQ);
 }
 
 static u32 __get_axi_a_clk(void)
@@ -300,7 +301,7 @@ static u32 __get_lp_apm(void)
 	u32 ccsr = __REG(MXC_CCM_CCSR);
 
 	if (((ccsr >> 9) & 1) == 0)
-		ret_val = CONFIG_MX51_HCLK_FREQ;
+		ret_val = __HCLK_FREQ;
 	else
 		ret_val = ((32768 * 1024));
 
@@ -314,13 +315,13 @@ static u32 __get_uart_clk(void)
 	switch ((reg & MXC_CCM_CSCMR1_UART_CLK_SEL_MASK) >>
 		MXC_CCM_CSCMR1_UART_CLK_SEL_OFFSET) {
 	case 0x0:
-		freq = __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+		freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		break;
 	case 0x1:
-		freq = __decode_pll(PLL2_CLK, CONFIG_MX51_HCLK_FREQ);
+		freq = __decode_pll(PLL2_CLK, __HCLK_FREQ);
 		break;
 	case 0x2:
-		freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
+		freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		break;
 	case 0x3:
 		freq = __get_lp_apm();
@@ -346,13 +347,13 @@ static u32 __get_pll_from_choice(unsigned choice)
 	u32 freq;
 	switch (choice) {
 	case 0x0:
-		freq = __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+		freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		break;
 	case 0x1:
-		freq = __decode_pll(PLL2_CLK, CONFIG_MX51_HCLK_FREQ);
+		freq = __decode_pll(PLL2_CLK, __HCLK_FREQ);
 		break;
 	case 0x2:
-		freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
+		freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		break;
 	default:
 		freq = __get_lp_apm();
@@ -410,7 +411,7 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 	case MXC_CSPI_CLK:
 		return __get_cspi_clk();
 	case MXC_FEC_CLK:
-		return __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+		return __decode_pll(PLL1_CLK, __HCLK_FREQ);
 	case MXC_IPU_CLK:
 		return __get_ipu_clk();
 	case MXC_ESDHC_CLK:
@@ -427,11 +428,11 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 void mxc_dump_clocks(void)
 {
 	u32 freq;
-	freq = __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+	freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 	printf("mx51 pll1: %dMHz\n", freq / 1000000);
-	freq = __decode_pll(PLL2_CLK, CONFIG_MX51_HCLK_FREQ);
+	freq = __decode_pll(PLL2_CLK, __HCLK_FREQ);
 	printf("mx51 pll2: %dMHz\n", freq / 1000000);
-	freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
+	freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 	printf("mx51 pll3: %dMHz\n", freq / 1000000);
 	printf("arm clock     : %dHz\n", mxc_get_clock(MXC_ARM_CLK));
 	printf("ahb clock     : %dHz\n", mxc_get_clock(MXC_AHB_CLK));
@@ -859,9 +860,9 @@ static int config_periph_clk(u32 ref, u32 freq)
 			return -1;
 		}
 	} else {
-		u32 pll3_freq = __decode_pll(PLL3_CLK, CONFIG_MX51_HCLK_FREQ);
+		u32 pll3_freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
 		u32 old_pll2_freq =
-			__decode_pll(PLL2_CLK, CONFIG_MX51_HCLK_FREQ);
+			__decode_pll(PLL2_CLK, __HCLK_FREQ);
 		u32 old_cbcmr = readl(CCM_BASE_ADDR + CLKCTL_CBCMR);
 		u32 new_cbcdr = calc_per_cbcdr_val(pll, old_cbcmr);
 		u32 new_cscdr1 = calc_per_cscdr1_val(pll);
@@ -937,7 +938,7 @@ static int config_ddr_clk(u32 emi_clk)
 	}
 
 	if (((cbcdr >> 30) & 0x1) == 0x1) {
-		clk_src = __decode_pll(PLL1_CLK, CONFIG_MX51_HCLK_FREQ);
+		clk_src = __decode_pll(PLL1_CLK, __HCLK_FREQ);
 		shift = 27;
 	} else {
 		clk_src = __get_periph_clk();
