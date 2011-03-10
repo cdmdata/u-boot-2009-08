@@ -348,6 +348,15 @@ static u32 __get_clk_cscdr1_pred_podf(int cscmr1_offset, int pred_offset, int po
 	return __get_pll_from_choice(clk) / ((pred + 1) * (podf + 1));
 }
 
+static u32 __get_nfc_clk(void)
+{
+	u32 cbcdr =  __REG(MXC_CCM_CBCDR);
+	u32 pdf = (cbcdr & MXC_CCM_CBCDR_NFC_PODF_MASK) \
+			>> MXC_CCM_CBCDR_NFC_PODF_OFFSET;
+
+	return  __get_emi_slow_clk() / (pdf + 1);
+}
+
 unsigned int mxc_get_clock(enum mxc_clock clk)
 {
 	switch (clk) {
@@ -385,6 +394,8 @@ unsigned int mxc_get_clock(enum mxc_clock clk)
 				MXC_CCM_CSCMR1_ESDHC1_MSHC1_CLK_SEL_OFFSET,
 				MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PRED_OFFSET,
 				MXC_CCM_CSCDR1_ESDHC1_MSHC1_CLK_PODF_OFFSET);
+	case MXC_NFC_CLK:
+		return __get_nfc_clk();
 	default:
 		break;
 	}
@@ -587,6 +598,10 @@ int clk_info(u32 clk_type)
 	case DDR_CLK:
 		printf("DDR Clock: %dHz\n",
 			mxc_get_clock(MXC_DDR_CLK));
+		break;
+	case NFC_CLK:
+		printf("NFC Clock: %dHz\n",
+			mxc_get_clock(MXC_NFC_CLK));
 		break;
 	case ALL_CLK:
 		printf("cpu clock: %dMHz\n",
@@ -1059,17 +1074,3 @@ int arch_cpu_init(void)
 	return 0;
 }
 #endif
-
-int
-do_clocks (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
-{
-        mxc_dump_clocks();
-	return 0 ;
-}
-
-U_BOOT_CMD(
-	clocks, 1, 0,	do_clocks,
-	"clocks - show system clocks\n",
-	""
-);
-

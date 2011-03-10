@@ -514,6 +514,7 @@ enum mxc_clock {
 	MXC_AXI_B_CLK,
 	MXC_EMI_SLOW_CLK,
 	MXC_DDR_CLK,
+	MXC_NFC_CLK,
 	MXC_IPU_CLK,
 };
 
