@@ -396,38 +396,44 @@ static u32 __get_uart_clk(void)
 	return freq;
 }
 
+static u32 __get_pll_from_choice(unsigned choice)
+{
+	u32 freq;
+	switch (choice) {
+	case 0x0:
+		freq = __decode_pll(PLL1_CLK, __HCLK_FREQ);
+		break;
+	case 0x1:
+		freq = __decode_pll(PLL2_CLK, __HCLK_FREQ);
+		break;
+	case 0x2:
+		freq = __decode_pll(PLL3_CLK, __HCLK_FREQ);
+		break;
+	default:
+		freq = __get_lp_apm();
+	}
+	return freq;
+}
 
 static u32 __get_cspi_clk(void)
 {
-	u32 ret_val = 0, pdf, pre_pdf, clk_sel, div;
-	u32 cscmr1 = __REG(MXC_CCM_CSCMR1);
+	u32 clk = (__REG(MXC_CCM_CSCMR1) & MXC_CCM_CSCMR1_CSPI_CLK_SEL_MASK)
+		>> MXC_CCM_CSCMR1_CSPI_CLK_SEL_OFFSET;
 	u32 cscdr2 = __REG(MXC_CCM_CSCDR2);
-
-	pre_pdf = (cscdr2 & MXC_CCM_CSCDR2_CSPI_CLK_PRED_MASK) \
+	u32 pred = (cscdr2 & MXC_CCM_CSCDR2_CSPI_CLK_PRED_MASK) \
 			>> MXC_CCM_CSCDR2_CSPI_CLK_PRED_OFFSET;
-	pdf = (cscdr2 & MXC_CCM_CSCDR2_CSPI_CLK_PODF_MASK) \
+	u32 podf = (cscdr2 & MXC_CCM_CSCDR2_CSPI_CLK_PODF_MASK) \
 			>> MXC_CCM_CSCDR2_CSPI_CLK_PODF_OFFSET;
-	clk_sel = (cscmr1 & MXC_CCM_CSCMR1_CSPI_CLK_SEL_MASK) \
-			>> MXC_CCM_CSCMR1_CSPI_CLK_SEL_OFFSET;
+	return __get_pll_from_choice(clk) / ((pred + 1) * (podf + 1));
+}
 
-	div = (pre_pdf + 1) * (pdf + 1);
-
-	switch (clk_sel) {
-	case 0:
-		ret_val = __decode_pll(PLL1_CLK, __HCLK_FREQ) / div;
-		break;
-	case 1:
-		ret_val = __decode_pll(PLL2_CLK, __HCLK_FREQ) / div;
-		break;
-	case 2:
-		ret_val = __decode_pll(PLL3_CLK, __HCLK_FREQ) / div;
-		break;
-	default:
-		ret_val = __get_lp_apm() / div;
-		break;
-	}
-
-	return ret_val;
+static u32 __get_clk_cscdr1_pred_podf(int cscmr1_offset, int pred_offset, int podf_offset)
+{
+	u32 clk = (__REG(MXC_CCM_CSCMR1) >> cscmr1_offset) & 0x3;
+	u32 cscdr1 = __REG(MXC_CCM_CSCDR1);
+	u32 pred = (cscdr1 >> pred_offset) & 0x7;
+	u32 podf = (cscdr1 >> podf_offset) & 0x7;
+	return __get_pll_from_choice(clk) / ((pred + 1) * (podf + 1));
 }
 
 static u32 __get_nfc_clk(void)
