@@ -448,9 +448,23 @@ void init_display_pins(void)
 		pins++ ;
 	}
 
-	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410 i2c sel
-	mxc_request_iomux(MX53_PIN_EIM_EB1, IOMUX_CONFIG_ALT1);
+	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
+	Set_GPIO_input(MAKE_GP(4,15));			//tfp410, interrupt
+	mxc_request_iomux(MX53_PIN_EIM_EB1, IOMUX_CONFIG_ALT1);		//i2c_mode
 	mxc_iomux_set_pad(MX53_PIN_EIM_EB1, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
+	mxc_request_iomux(MX53_PIN_KEY_ROW4, IOMUX_CONFIG_ALT1);	//interrupt pin
+	mxc_iomux_set_pad(MX53_PIN_KEY_ROW4, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
+	udelay(100);
+	{
+		unsigned char buf[4];
+		/* Init tfp410 */
+		buf[0] = 0xbd;
+		if (i2c_write(0x38, 0x8, 1, buf, 1)) {
+			printf("tfp410 init failed\n");
+			Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
+		}
+	}
 }
 
 static int const di0_lvds_pins[] = {
@@ -694,7 +708,6 @@ int setup_mxc_kpd(void)
 	mxc_request_iomux(MX53_PIN_KEY_ROW1, IOMUX_CONFIG_ALT0);
 	mxc_request_iomux(MX53_PIN_KEY_ROW2, IOMUX_CONFIG_ALT0);
 	mxc_request_iomux(MX53_PIN_KEY_ROW3, IOMUX_CONFIG_ALT0);
-	mxc_request_iomux(MX53_PIN_KEY_ROW4, IOMUX_CONFIG_ALT0);
 
 	return 0;
 }
