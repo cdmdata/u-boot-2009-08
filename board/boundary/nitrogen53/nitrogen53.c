@@ -355,6 +355,9 @@ static void setup_uart(void)
 #ifdef CONFIG_I2C_MXC
 static void setup_i2c(unsigned int module_base)
 {
+	unsigned pad_ctl = PAD_CTL_HYS_ENABLE |
+			PAD_CTL_100K_PU | PAD_CTL_ODE_OPENDRAIN_ENABLE |
+			PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST;
 	switch (module_base) {
 	case I2C1_BASE_ADDR:
 		/* i2c1 SDA */
@@ -362,19 +365,13 @@ static void setup_i2c(unsigned int module_base)
 				IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_input(MUX_IN_I2C1_IPP_SDA_IN_SELECT_INPUT,
 				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_EIM_D28,
-				PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+		mxc_iomux_set_pad(MX53_PIN_EIM_D28, pad_ctl);
 		/* i2c1 SCL */
 		mxc_request_iomux(MX53_PIN_EIM_D21,
 				IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_input(MUX_IN_I2C1_IPP_SCL_IN_SELECT_INPUT,
 				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_EIM_D21,
-				PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+		mxc_iomux_set_pad(MX53_PIN_EIM_D21, pad_ctl);
 		break;
 	case I2C2_BASE_ADDR:
 		/* No device is connected via I2C2  */
@@ -385,19 +382,13 @@ static void setup_i2c(unsigned int module_base)
 				IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_input(MUX_IN_I2C3_IPP_SCL_IN_SELECT_INPUT,
 				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_GPIO_3,
-				PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+		mxc_iomux_set_pad(MX53_PIN_GPIO_3, pad_ctl);
 		/* GPIO_6 for I2C3_SDA */
 		mxc_request_iomux(MX53_PIN_GPIO_6,
 				IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION);
 		mxc_iomux_set_input(MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT,
 				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_GPIO_6,
-				PAD_CTL_PUE_PULL | PAD_CTL_PKE_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_100K_PU |
-				PAD_CTL_HYS_ENABLE);
+		mxc_iomux_set_pad(MX53_PIN_GPIO_6, pad_ctl);
 		break;
 	default:
 		printf("Invalid I2C base: 0x%x\n", module_base);
