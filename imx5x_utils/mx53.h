@@ -628,6 +628,7 @@ get_ddr_type_addr:
 #define ALT5	0x5
 #define SION	0x10	//0x10 means force input path of BGA contact
 
+#define SRE_FAST	(0x1 << 0)
 #define DSE_LOW		(0x0 << 1)
 #define DSE_MEDIUM	(0x1 << 1)
 #define DSE_HIGH	(0x2 << 1)
@@ -868,10 +869,10 @@ get_ddr_type_addr:
 
 	.macro i2c1_iomux_dcd_data
 	.word	0x53FA814c, ALT5 | SION	//Mux: EIM_D28, SDA of i2c1
-	.word	0x53FA8494, PULL | PKE_ENABLE | DSE_HIGH | R100K_PU | HYS_ENABLE
+	.word	0x53FA8494, HYS_ENABLE | R100K_PU | OPENDRAIN_ENABLE | DSE_HIGH | SRE_FAST
 	.word	0x53FA8818, 1		//Select EIM_D28
 	.word	0x53FA812c, ALT5 | SION	//Mux: EIM_D21, SCL of i2c1
-	.word	0x53FA8474, PULL | PKE_ENABLE | DSE_HIGH | R100K_PU | HYS_ENABLE
+	.word	0x53FA8474, HYS_ENABLE | R100K_PU | OPENDRAIN_ENABLE | DSE_HIGH | SRE_FAST
 	.word	0x53FA8814, 1		//Select EIM_D21
 	.word	0
 	.endm
