@@ -374,7 +374,18 @@ static void setup_i2c(unsigned int module_base)
 		mxc_iomux_set_pad(MX53_PIN_EIM_D21, pad_ctl);
 		break;
 	case I2C2_BASE_ADDR:
-		/* No device is connected via I2C2  */
+		/* i2c2 SDA */
+		mxc_request_iomux(MX53_PIN_KEY_ROW3,
+				IOMUX_CONFIG_ALT4 | IOMUX_CONFIG_SION);
+		mxc_iomux_set_input(MUX_IN_I2C2_IPP_SDA_IN_SELECT_INPUT,
+				INPUT_CTL_PATH0);
+		mxc_iomux_set_pad(MX53_PIN_KEY_ROW3, pad_ctl);
+		/* i2c2 SCL */
+		mxc_request_iomux(MX53_PIN_EIM_EB2,
+				IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION);
+		mxc_iomux_set_input(MUX_IN_I2C2_IPP_SCL_IN_SELECT_INPUT,
+				INPUT_CTL_PATH1);
+		mxc_iomux_set_pad(MX53_PIN_EIM_EB2, pad_ctl);
 		break;
 	case I2C3_BASE_ADDR:
 		/* GPIO_3 for I2C3_SCL */
@@ -431,30 +442,54 @@ static int const di0_prgb_pins[] = {
 
 void init_display_pins(void)
 {
+	unsigned char buf[4];
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
 	int const *pins = di0_prgb_pins ;
+	unsigned pwm_base = PWM2_BASE_ADDR;
 	while (*pins) {
 		mxc_request_iomux(*pins,IOMUX_CONFIG_ALT0);
 		mxc_iomux_set_pad(*pins,pad);
 		pins++ ;
 	}
 
-	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
+	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410, i2c_mode
 	Set_GPIO_input(MAKE_GP(4,15));			//tfp410, interrupt
-	mxc_request_iomux(MX53_PIN_EIM_EB1, IOMUX_CONFIG_ALT1);		//i2c_mode
+	mxc_request_iomux(MX53_PIN_EIM_EB1, IOMUX_CONFIG_ALT1);		//gpio2[29] - i2c_mode
 	mxc_iomux_set_pad(MX53_PIN_EIM_EB1, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
-	mxc_request_iomux(MX53_PIN_KEY_ROW4, IOMUX_CONFIG_ALT1);	//interrupt pin
+	mxc_request_iomux(MX53_PIN_KEY_ROW4, IOMUX_CONFIG_ALT1);	//gpio4[15] - interrupt pin
 	mxc_iomux_set_pad(MX53_PIN_KEY_ROW4, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+
+	/* PWM backlight */
+	mxc_request_iomux(MX53_PIN_GPIO_1, IOMUX_CONFIG_ALT4);
+	mxc_iomux_set_pad(MX53_PIN_GPIO_1, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+
+#define PWMCR	0x0
+#define PWMSR	0x4
+#define PWMIR	0x8
+#define PWMSAR	0x0c
+#define PWMPR	0x10
+#define PWMCNR	0x14
+	writel(0x03c20000, pwm_base + PWMCR);
+	writel(0, pwm_base + PWMIR);
+	writel(0xc8, pwm_base + PWMSAR);
+	writel(0x0190, pwm_base + PWMPR);
+	writel(0x03c20001, pwm_base + PWMCR);
+
+	/* Power up LDO10 of DA9053 for tfp410 */
+	buf[0] = 0x6a;
+	if (i2c_write(0x48, 0x3b, 1, buf, 1))
+		printf("LDO10 reg of DA9053 failed\n");
+	udelay(500);
+
+	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
+	udelay(5);
 	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
-	udelay(100);
-	{
-		unsigned char buf[4];
-		/* Init tfp410 */
-		buf[0] = 0xbd;
-		if (i2c_write(0x38, 0x8, 1, buf, 1)) {
-			printf("tfp410 init failed\n");
-			Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
-		}
+
+	/* Init tfp410 */
+	buf[0] = 0xbd;
+	if (i2c_write(0x38, 0x8, 1, buf, 1)) {
+		printf("tfp410 init failed\n");
+		Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
 	}
 }
 
