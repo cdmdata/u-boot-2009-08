@@ -17,10 +17,6 @@ unsigned get_pixel_clock(unsigned which);
 #define CLPCR			(CCM_BASE_ADDR + 0x054)
 #define CCGR5			(CCM_BASE_ADDR + 0x07C)
 
-#define M4IF_CNTL_REG0		(M4IF_BASE_ADDR + 0x08c)
-#define M4IF_CNTL_REG1		(M4IF_BASE_ADDR + 0x090)
-
-
 #define IPU_CONF		(IPU_CM_REG_BASE + 0x000)
 #define IPU_DISP_GEN		(IPU_CM_REG_BASE + 0x0C4)
 #define IPU_MEM_RST 		(IPU_CM_REG_BASE + 0x0DC)
@@ -427,25 +423,10 @@ static void enable_ipu_clock(void)
 	/* from _clk_ipu_enable: Handshake with IPU... */
 	__REG(CCDR) &= ~CCDR_IPU_HS_MASK ;
 	__REG(CLPCR) &= ~CLPCR_BYPASS_IPU_LPM_HS ;
-
-	/* from sdram_autogating.c::enable(). Registers not documented */
-	
-	/* Set the Fast arbitration Power saving timer */
-	__REG(M4IF_CNTL_REG1) = (__REG(M4IF_CNTL_REG1) & ~0xff) | 0x09 ;
-	
-	/*Allow for automatic gating of the EMI internal clock.
-	 * If this is done, emi_intr CCGR bits should be set to 11.
-	 */
-	__REG(M4IF_CNTL_REG0) &= ~5 ;
 }
 
 static void disable_ipu_clock(void)
 {
-	/*
-	 * Disable SDRAM autogating
-	 */
-	__REG(M4IF_CNTL_REG0) |= 4 ;
-
         /* from .enable_reg and .enable_shift */
 	__REG(CCGR5) = (__REG(CCGR5) & ~(3 << CCGR5_CG5_OFFSET));
 
