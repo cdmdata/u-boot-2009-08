@@ -48,9 +48,9 @@ unsigned get_pixel_clock(unsigned which);
 DECLARE_GLOBAL_DATA_PTR;
 #define DEBUG(arg...)
 
-static unsigned end_of_ram = 0 ;
+static unsigned end_of_ram;
 #ifdef CONFIG_MX53
-static unsigned lvds[2] = {0,0};
+static unsigned lvds[2];
 #define IOMUXC_GPR2	((IOMUXC_BASE_ADDR)+8)
 #endif
 
@@ -500,6 +500,7 @@ void disable_lcd_panel(void)
 #define DI_GEN_POLARITY_6	0x00000020
 #define DI_GEN_POLARITY_7	0x00000040
 #define DI_GEN_POLARITY_8	0x00000080
+#define DI_GEN_DI_CLK_EXT	(1 << 20)
 
 #define DI_VSYNC_SEL_OFFSET		13
 #define DI_POL_DRDY_DATA_POLARITY	0x00000080
@@ -781,8 +782,8 @@ static void init_display
 	init_lvds();
 
 	mask = 3<<(2*disp); // Route LVDS 1:1
-	printf("%s: mask %x/%x\n", __func__, mask, ((lvds[disp]?3:0)<<(2*disp)));
-	__REG(IOMUXC_GPR2) = (__REG(IOMUXC_GPR2) & ~mask) | ((lvds[disp]?3:0)<<(2*disp));
+	printf("%s: mask %x/%x\n", __func__, mask, ((lvds[disp] ? (disp ? 3 : 1) : 0)<<(2*disp)));
+	__REG(IOMUXC_GPR2) = (__REG(IOMUXC_GPR2) & ~mask) | ((lvds[disp] ? (disp ? 3 : 1) : 0)<<(2*disp));
 	printf("%s: GPR2(0x%08x) == %lx\n", __func__, IOMUXC_GPR2, __REG(IOMUXC_GPR2));
 	if (lvds[disp]) {
 		clk_config(CONFIG_MX53_HCLK_FREQ, lcd->info.pixclock, LDB0_CLK+disp);
@@ -917,9 +918,9 @@ printf("mask == %x, wgen == %x\n", mask, wgen);
 	__REG(channel->di_base_addr) = DI_GEN_DI_PIXCLK_ACTH*(0 != lcd->info.pclk_redg)
 					| DI_GEN_POLARITY_2*(0 != lcd->info.hsyn_acth)
 					| DI_GEN_POLARITY_3*(0 != lcd->info.vsyn_acth)
-					| (1<<20)*
+					|
 #ifdef CONFIG_MX53
-					  lvds[disp]
+					(lvds[disp] ? DI_GEN_DI_CLK_EXT : 0)
 #else
 					  0
 #endif
