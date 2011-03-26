@@ -16,6 +16,7 @@ unsigned get_pixel_clock(unsigned which);
 #define CBCMR			(CCM_BASE_ADDR + 0x018)
 #define CLPCR			(CCM_BASE_ADDR + 0x054)
 #define CCGR5			(CCM_BASE_ADDR + 0x07C)
+#define CCGR6			(CCM_BASE_ADDR + 0x080)
 
 #define IPU_CONF		(IPU_CM_REG_BASE + 0x000)
 #define IPU_DISP_GEN		(IPU_CM_REG_BASE + 0x0C4)
@@ -418,7 +419,7 @@ static void enable_ipu_clock(void)
 	__REG(CBCMR) = (__REG(CBCMR) & ~CBCMR_IPU_MASK) | (3<<CBCMR_IPU_SHIFT);
 
         /* from .enable_reg and .enable_shift */
-	__REG(CCGR5) |= 3 << CCGR5_CG5_OFFSET ;
+	__REG(CCGR5) |= 3 << CCGR5_CG5_OFFSET ;	/* ipu clocks */
 
 	/* from _clk_ipu_enable: Handshake with IPU... */
 	__REG(CCDR) &= ~CCDR_IPU_HS_MASK ;
@@ -429,6 +430,7 @@ static void disable_ipu_clock(void)
 {
         /* from .enable_reg and .enable_shift */
 	__REG(CCGR5) = (__REG(CCGR5) & ~(3 << CCGR5_CG5_OFFSET));
+	__REG(CCGR6) &= ~((0x0f << (5*2)) | (0x0f << (14*2)));		/* ipu DI0/1, ldb DI0/1 */
 
 	/* No handshake with IPU whe dividers are changed
 	 * as its not enabled. 
@@ -455,6 +457,9 @@ DEBUG( "%s\n", __func__ );
 	writel(0x807FFFFF, IPU_MEM_RST);
 	while (readl(IPU_MEM_RST) & 0x80000000) ;
 
+#ifdef CONFIG_MX53
+	__REG(IOMUXC_GPR2) &= ~0x0f;
+#endif
 	write_regs(init_dc_mappings,ARRAY_SIZE(init_dc_mappings));
 	check_regs("dcmap",init_dc_mappings,ARRAY_SIZE(init_dc_mappings));
 
@@ -478,6 +483,9 @@ DEBUG( "%s\n", __func__ );
 void disable_lcd_panel(void)
 {
 	DEBUG ("%s: disable both displays here\n", __func__ );
+#ifdef CONFIG_MX53
+	__REG(IOMUXC_GPR2) &= ~0x0f;
+#endif
 	__REG(IPU_DISP_GEN) &= ~(3 << 24);	// stop DI0/DI1
 	__REG(IDMAC_WM_EN_1)  &= ~(3<<23);	// No watermarking
 	__REG(IDMAC_CH_EN_1)  &= ~(3<<23); 	// Disable DMA channel
@@ -777,18 +785,16 @@ static void init_display
 	void *params ;
 	u32 screen_size = lcd->info.xres*lcd->info.yres*2 ;
 	u32 address ;
+	unsigned ext_clk = 0;
 
 #ifdef CONFIG_MX53
 	init_lvds();
 
-	mask = 3<<(2*disp); // Route LVDS 1:1
-	printf("%s: mask %x/%x\n", __func__, mask, ((lvds[disp] ? (disp ? 3 : 1) : 0)<<(2*disp)));
-	__REG(IOMUXC_GPR2) = (__REG(IOMUXC_GPR2) & ~mask) | ((lvds[disp] ? (disp ? 3 : 1) : 0)<<(2*disp));
-	printf("%s: GPR2(0x%08x) == %lx\n", __func__, IOMUXC_GPR2, __REG(IOMUXC_GPR2));
 	if (lvds[disp]) {
 		clk_config(CONFIG_MX53_HCLK_FREQ, lcd->info.pixclock, LDB0_CLK+disp);
 		div = 1 ;
                 printf ("%s: lvds clock %u, div %u\n", __func__, clk_info(LDB0_CLK+disp), div );
+		ext_clk = DI_GEN_DI_CLK_EXT;
 	} else 
 #endif	
 	{
@@ -918,13 +924,7 @@ printf("mask == %x, wgen == %x\n", mask, wgen);
 	__REG(channel->di_base_addr) = DI_GEN_DI_PIXCLK_ACTH*(0 != lcd->info.pclk_redg)
 					| DI_GEN_POLARITY_2*(0 != lcd->info.hsyn_acth)
 					| DI_GEN_POLARITY_3*(0 != lcd->info.vsyn_acth)
-					|
-#ifdef CONFIG_MX53
-					(lvds[disp] ? DI_GEN_DI_CLK_EXT : 0)
-#else
-					  0
-#endif
-;
+					| ext_clk;
 
 	__REG(channel->di_base_addr+0x0054) = ((DI_SYNC_VSYNC-1) << DI_VSYNC_SEL_OFFSET) | 0x00000002 ; // DI_SYNC_AS_GEN
 	__REG(channel->di_base_addr+0x0164) &= ~(DI_POL_DRDY_DATA_POLARITY );	// DI_POL
@@ -970,6 +970,15 @@ printf("mask == %x, wgen == %x\n", mask, wgen);
 	__REG(IPU_DISP_GEN) |= 1 << (disp+24);
 	__REG(IPU_CONF) |= 0x620 + (1<<(6+disp));
 	memset((void *)address, 0xff, screen_size);
+
+#ifdef CONFIG_MX53
+	__REG(CCGR6) |= (0x0f << (5*2)) | (0x0f << (14*2));		/* ipu DI0/1, ldb DI0/1 */
+
+	mask = 3<<(2*disp); // Route LVDS 1:1
+	printf("%s: mask %x/%x\n", __func__, mask, ((lvds[disp] ? (disp ? 3 : 1) : 0)<<(2*disp)));
+	__REG(IOMUXC_GPR2) = (__REG(IOMUXC_GPR2) & ~mask) | ((lvds[disp] ? (disp ? 3 : 1) : 0)<<(2*disp));
+	printf("%s: GPR2(0x%08x) == %x\n", __func__, IOMUXC_GPR2, __REG(IOMUXC_GPR2));
+#endif
 }
 
 static void init_imx_crt( struct lcd_t *lcd )
