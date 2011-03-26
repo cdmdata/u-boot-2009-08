@@ -524,10 +524,12 @@ void init_lvds_pins(int ch,int lvds)
 		mxc_request_iomux(*pins,alt);
 		pins++ ;
 	}
-	if ((0 == ch) && (0 != lvds)){
+	//don't do below, allow both lvds and hdmi to work simultaneously
+	if (0) if (!ch) {
+		unsigned req_alt = (lvds) ? IOMUX_CONFIG_ALT1 : IOMUX_CONFIG_ALT0;
 		pins = di0_prgb_pins ;
 		while (*pins) {
-			mxc_request_iomux(*pins,IOMUX_CONFIG_ALT1); /* GPIO */
+			mxc_request_iomux(*pins, req_alt); /* GPIO, or display */
 			pins++ ;
 		}
 	}
