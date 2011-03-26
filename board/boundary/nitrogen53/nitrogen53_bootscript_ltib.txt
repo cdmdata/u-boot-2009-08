@@ -45,7 +45,7 @@ else
      lecho "No U-Boot image found on SD card" ;
 fi
 
-if fatload mmc 0 72000000 uImag* ; then
+if fatload mmc 0 72000000 uImage53* ; then
 	set bootargs "$bootargs rootwait consoleblank=0 root=/dev/mmcblk0p2" ;
 	bootm 72000000
 else
