@@ -360,6 +360,10 @@ static void setup_i2c(unsigned int module_base)
 			PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST;
 	switch (module_base) {
 	case I2C1_BASE_ADDR:
+		pad_ctl = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE |
+				PAD_CTL_PUE_PULL | PAD_CTL_22K_PU |
+				PAD_CTL_ODE_OPENDRAIN_ENABLE |
+				PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST;
 		/* i2c1 SDA */
 		mxc_request_iomux(MX53_PIN_EIM_D28,
 				IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION);
