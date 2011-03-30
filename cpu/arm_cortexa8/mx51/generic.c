@@ -564,55 +564,39 @@ static int calc_pll_params(u32 ref, u32 target, struct pll_param *pll)
 	return 0;
 }
 
+struct map_clks_st
+{
+	const char *name;
+	const unsigned mxc_clk;
+};
+
+const struct map_clks_st map_clks[] = {
+	[CPU_CLK] = {"CPU", MXC_ARM_CLK},
+	[PERIPH_CLK] = {"Peripheral", MXC_PER_CLK},
+	[AHB_CLK] = {"AHB", MXC_AHB_CLK},
+	[IPG_CLK] = {"IPG", MXC_IPG_CLK},
+	[IPG_PERCLK] = {"IPG_PER", MXC_IPG_PERCLK},
+	[UART_CLK] = {"UART", MXC_UART_CLK},
+	[CSPI_CLK] = {"CSPI", MXC_CSPI_CLK},
+	[DDR_CLK] = {"DDR", MXC_DDR_CLK},
+	[NFC_CLK] = {"NFC", MXC_NFC_CLK},
+};
+
 int clk_info(u32 clk_type)
 {
-	switch (clk_type) {
-	case CPU_CLK:
-		printf("CPU Clock: %dHz\n",
-			mxc_get_clock(MXC_ARM_CLK));
-		break;
-	case PERIPH_CLK:
-		printf("Peripheral Clock: %dHz\n",
-			mxc_get_clock(MXC_PER_CLK));
-		break;
-	case AHB_CLK:
-		printf("AHB Clock: %dHz\n",
-			mxc_get_clock(MXC_AHB_CLK));
-		break;
-	case IPG_CLK:
-		printf("IPG Clock: %dHz\n",
-			mxc_get_clock(MXC_IPG_CLK));
-		break;
-	case IPG_PERCLK:
-		printf("IPG_PER Clock: %dHz\n",
-			mxc_get_clock(MXC_IPG_PERCLK));
-		break;
-	case UART_CLK:
-		printf("UART Clock: %dHz\n",
-			mxc_get_clock(MXC_UART_CLK));
-		break;
-	case CSPI_CLK:
-		printf("CSPI Clock: %dHz\n",
-			mxc_get_clock(MXC_CSPI_CLK));
-		break;
-	case DDR_CLK:
-		printf("DDR Clock: %dHz\n",
-			mxc_get_clock(MXC_DDR_CLK));
-		break;
-	case NFC_CLK:
-		printf("NFC Clock: %dHz\n",
-			mxc_get_clock(MXC_NFC_CLK));
-		break;
-	case ALL_CLK:
+	int freq = -1;
+	if (clk_type < ARRAY_SIZE(map_clks)) {
+		freq = mxc_get_clock(map_clks[clk_type].mxc_clk);
+		printf("%s Clock: %dHz\n", map_clks[clk_type].name, freq);
+	} else if (clk_type == ALL_CLK) {
 		printf("cpu clock: %dMHz\n",
 			mxc_get_clock(MXC_ARM_CLK) / SZ_DEC_1M);
 		mxc_dump_clocks();
-		break;
-	default:
+		freq = 0;
+	} else {
 		printf("Unsupported clock type! :(\n");
 	}
-
-	return 0;
+	return freq;
 }
 
 #define calc_div(target_clk, src_clk, limit) ({	\
@@ -711,22 +695,19 @@ static u32 calc_per_cscdr1_val(u32 per_clk)
 	return cscdr1;
 }
 
-#define CHANGE_PLL_SETTINGS(base, pd, mfi, mfn, mfd) \
-	{	\
-		writel(0x1232, base + PLL_DP_CTL); \
-		writel(0x2, base + PLL_DP_CONFIG);    \
-		writel(((pd - 1) << 0) | (mfi << 4),	\
-			base + PLL_DP_OP);	\
-		writel(mfn, base + PLL_DP_MFN);	\
-		writel(mfd - 1, base + PLL_DP_MFD);	\
-		writel(((pd - 1) << 0) | (mfi << 4),	\
-			base + PLL_DP_HFS_OP);	\
-		writel(mfn, base + PLL_DP_HFS_MFN);	\
-		writel(mfd - 1, base + PLL_DP_HFS_MFD);	\
-		writel(0x1232, base + PLL_DP_CTL); \
-		while (!readl(base + PLL_DP_CTL) & 0x1)  \
-			; \
-	}
+void change_pll_settings(enum pll_clocks base, struct pll_param *p)
+{
+	writel(0x0, base + PLL_DP_CONFIG);
+	writel(((p->pd - 1) << 0) | (p->mfi << 4), base + PLL_DP_OP);
+	writel(((p->pd - 1) << 0) | (p->mfi << 4), base + PLL_DP_HFS_OP);
+	writel(p->mfd - 1, base + PLL_DP_MFD);
+	writel(p->mfd - 1, base + PLL_DP_HFS_MFD);
+	writel(p->mfn, base + PLL_DP_MFN);
+	writel(p->mfn, base + PLL_DP_HFS_MFN);
+	writel(0x1232, base + PLL_DP_CTL);
+	while (!readl(base + PLL_DP_CTL) & 0x1)
+		;
+}
 
 static int config_pll_clk(enum pll_clocks pll, struct pll_param *pll_param)
 {
@@ -749,9 +730,7 @@ static int config_pll_clk(enum pll_clocks pll, struct pll_param *pll_param)
 		/* Switch ARM to step clock */
 		writel(ccsr | 0x4, CCM_BASE_ADDR + CLKCTL_CCSR);
 
-		CHANGE_PLL_SETTINGS(pll_base, pll_param->pd,
-					pll_param->mfi, pll_param->mfn,
-					pll_param->mfd);
+		change_pll_settings(pll_base, pll_param);
 		/* Switch back */
 		writel(ccsr & ~0x4, CCM_BASE_ADDR + CLKCTL_CCSR);
 
@@ -770,18 +749,14 @@ static int config_pll_clk(enum pll_clocks pll, struct pll_param *pll_param)
 	case PLL2_CLK:
 		/* Switch to pll2 bypass clock */
 		writel(ccsr | 0x2, CCM_BASE_ADDR + CLKCTL_CCSR);
-		CHANGE_PLL_SETTINGS(pll_base, pll_param->pd,
-					pll_param->mfi, pll_param->mfn,
-					pll_param->mfd);
+		change_pll_settings(pll_base, pll_param);
 		/* Switch back */
 		writel(ccsr & ~0x2, CCM_BASE_ADDR + CLKCTL_CCSR);
 		break;
 	case PLL3_CLK:
 		/* Switch to pll3 bypass clock */
 		writel(ccsr | 0x1, CCM_BASE_ADDR + CLKCTL_CCSR);
-		CHANGE_PLL_SETTINGS(pll_base, pll_param->pd,
-					pll_param->mfi, pll_param->mfn,
-					pll_param->mfd);
+		change_pll_settings(pll_base, pll_param);
 		/* Switch back */
 		writel(ccsr & ~0x1, CCM_BASE_ADDR + CLKCTL_CCSR);
 		break;
