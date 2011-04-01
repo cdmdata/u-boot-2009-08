@@ -33,6 +33,8 @@
 
 #if CONFIG_I2C_MXC
 #include <i2c.h>
+void bus_i2c_init(unsigned base, int speed, int unused);
+int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
 #endif
 
 #ifdef CONFIG_CMD_MMC
@@ -446,6 +448,8 @@ static int const di0_prgb_pins[] = {
 
 void init_display_pins(void)
 {
+	unsigned machid = 0;
+	unsigned tfp410_bus = I2C2_BASE_ADDR;
 	unsigned char buf[4];
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
 	int const *pins = di0_prgb_pins ;
@@ -481,7 +485,7 @@ void init_display_pins(void)
 
 	/* Power up LDO10 of DA9053 for tfp410 */
 	buf[0] = 0x6a;
-	if (i2c_write(0x48, 0x3b, 1, buf, 1))
+	if (bus_i2c_write(I2C1_BASE_ADDR, 0x48, 0x3b, 1, buf, 1))
 		printf("LDO10 reg of DA9053 failed\n");
 	udelay(500);
 
@@ -489,10 +493,19 @@ void init_display_pins(void)
 	udelay(5);
 	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
 
+	{
+		char *s = getenv ("machid");
+		if (s) {
+			unsigned machid = simple_strtoul (s, NULL, 16);
+			if (machid == MACH_TYPE_MX53_NITROGEN_V1)
+				tfp410_bus = I2C1_BASE_ADDR;
+		}
+	}
+
 	/* Init tfp410 */
 	buf[0] = 0xbd;
-	if (i2c_write(0x38, 0x8, 1, buf, 1)) {
-		printf("tfp410 init failed\n");
+	if (bus_i2c_write(tfp410_bus, 0x38, 0x8, 1, buf, 1)) {
+		printf("tfp410 init failed, machid = %x\n", machid);
 		Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
 	}
 }
@@ -541,28 +554,7 @@ void init_lvds_pins(int ch,int lvds)
 
 void setup_core_voltages(void)
 {
-	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
-
-#ifdef CONFIG_I2C_PMIC_ADDRESS
-	{
-		unsigned char buf[4] = { 0 };
-		/* Set core voltage VDDGP to 1.05V for 800MHZ */
-		buf[0] = 0x45;
-		buf[1] = 0x4a;
-		buf[2] = 0x52;
-		if (i2c_write(CONFIG_I2C_PMIC_ADDRESS, 24, 1, buf, 3))
-			return;
-
-		/* Set DDR voltage VDDA to 1.25V */
-		buf[0] = 0;
-		buf[1] = 0x63;
-		buf[2] = 0x1a;
-		if (i2c_write(CONFIG_I2C_PMIC_ADDRESS, 26, 1, buf, 3))
-			return;
-	}
-#endif
-
-	/* Raise the core frequency to 800MHz */
+	/* Raise the core frequency to highest */
 	writel(0x0, CCM_BASE_ADDR + CLKCTL_CACRR);
 }
 
@@ -887,7 +879,12 @@ int board_init(void)
 #endif
 
 #ifdef CONFIG_I2C_MXC
-	setup_i2c(CONFIG_SYS_I2C_PORT);
+	setup_i2c(I2C1_BASE_ADDR);
+	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	setup_i2c(I2C2_BASE_ADDR);
+	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	setup_i2c(I2C2_BASE_ADDR);
+	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_core_voltages();
 #endif
 	return 0;
