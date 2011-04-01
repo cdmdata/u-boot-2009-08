@@ -45,7 +45,7 @@ else
      lecho "No U-Boot image found on SD card" ;
 fi
 
-if fatload mmc 0 72000000 uImag* ; then
+if fatload mmc 0 72000000 uImage53* ; then
 	if fatload mmc 0 72400000 initrd*.u-boot ; then
 		bootm 72000000 72400000 ;
 	else
