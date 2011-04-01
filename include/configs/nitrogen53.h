@@ -163,11 +163,9 @@
 #ifdef CONFIG_CMD_I2C
 	#define CONFIG_HARD_I2C         1
 	#define CONFIG_I2C_MXC          1
-	#define CONFIG_SYS_I2C_PORT             I2C1_BASE_ADDR
 	#define CONFIG_SYS_I2C_SPEED            400000
 	#define CONFIG_SYS_I2C_SLAVE            0xfe
-//	#define CONFIG_I2C_PMIC_ADDRESS		0x08
-//	#define CONFIG_I2C_LTC2495_ADDRESS	0x14
+	#define CONFIG_I2C_MULTI_BUS
 #endif
 
 /*
