@@ -245,20 +245,22 @@ void board_mmu_init(void)
 }
 #endif
 
-#define ESDCTL 0x63FD9000
-#define ESDMISC 0x63FD9018
+#define ESD_BASE	0x63FD9000
+#define ESD_ZQHWCTRL	0x040
+#define ESD_CTL		0x00
+#define ESD_MISC	0x18
 
 int dram_init(void)
 {
 ///	.word	0x63FD9000, 0x83110000	/* ESDCTL, (3)14 rows, (1)10 columns (0)BL 4,  (1)32 bit width */
-
+	unsigned base = ESD_BASE;
 	unsigned shift;
-	unsigned esdctl = readl(ESDCTL); 
+	unsigned esdctl = readl(base + ESD_CTL);
 	shift = (esdctl >> 30) & 1;		//0 = cs1 bit
 	shift += ((esdctl >> 24) & 7) + 11;	//3+11 = 14 rows
 	shift += ((esdctl >> 20) & 7) + 9;	//1+9 = 10 columns
 	shift += ((esdctl >> 16) & 1) + 1;	//1+1 = 2 memory width (32 bit wide)
-	shift += (((readl(ESDMISC) >> 5) & 1) ^ 1) + 2;	//1+2 = 3 bank bits
+	shift += (((readl(base + ESD_MISC) >> 5) & 1) ^ 1) + 2;	//1+2 = 3 bank bits
 	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
 	gd->bd->bi_dram[0].size = 1 << shift;
 	return 0;
@@ -1068,7 +1070,10 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	printf("Board: MX53-Nitrogen");
+	unsigned base = ESD_BASE;
+	unsigned tapeout = (readl(base + ESD_ZQHWCTRL) >> 31) + 1;
+	unsigned srev = readl(0x63f98024);
+	printf("Board: MX53-Nitrogen, TO%d SREV=%x ", tapeout, srev);
 	printf("Boot Reason: [");
 
 	switch (__REG(SRC_BASE_ADDR + 0x8)) {
