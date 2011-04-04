@@ -264,7 +264,7 @@ int i2c_get_bus_num(void)
 
 int i2c_set_bus_num(unsigned bus_idx)
 {
-	if (bus_idx > 2)
+	if (bus_idx >= ARRAY_SIZE(i2c_bases))
 		return -1;
 	i2c_bus = bus_idx;
 	return 0;
