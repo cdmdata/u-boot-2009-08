@@ -249,7 +249,13 @@ int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, in
 }
 
 int i2c_bus;
-const unsigned i2c_bases[] = {I2C1_BASE_ADDR, I2C2_BASE_ADDR, I2C3_BASE_ADDR};
+const unsigned i2c_bases[] = {
+	I2C1_BASE_ADDR, 
+	I2C2_BASE_ADDR, 
+#ifdef CONFIG_MX53
+	I2C3_BASE_ADDR
+#endif
+};
 
 int i2c_get_bus_num(void)
 {
