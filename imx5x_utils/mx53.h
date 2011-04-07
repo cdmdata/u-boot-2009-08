@@ -206,18 +206,29 @@
 	//512MB = 3 bank bits(8 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
 //	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014a014a, 0x0148014c, 0x2a282a28, 0x4e4a5047	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014b014f, 0x01520134, 0x29292929, 0x524d5248	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0141013d, 0x01460149, 0x2a282a2a, 0x4d475143	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0148014c, 0x014c0130, 0x2a2a2c28, 0x514b5249	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014f014f, 0x01520132, 0x29292929, 0x524d5248	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014e0151, 0x01510133, 0x28282828, 0x514c5348	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0141013f, 0x01480149, 0x2a262a2a, 0x4f475345	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x01450145, 0x01480145, 0x2c2a2c28, 0x4f4b5245	//v
+	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014c0132, 0x015a0156, 0x29292929, 0x514b5349	//v
 	ddr_type	MT47H128M8CF_3,        1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0127012b, 0x0127012c, 0x282a2c2c, 0x42403b3b	//v
 	ddr_type	MT47H128M8CF_3_REV1,   1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0165021a, 0x0154015b, 0x27292930, 0x5a4b615c
 
 	//MT47H128M8CF_25E tck=2.5ns(400Mhz), CL=5, wr=15 ns, rcd=12.5 ns, rp=12.5 ns
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01730205, 0x020a020a, 0x201e1e20, 0x57525f4d //v
+//	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01730205, 0x020a020a, 0x201e1e20, 0x57525f4d //v
+	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x016c016a, 0x013e013e, 0x23252523, 0x534e554a //v
 	ddr_type	MT47H128M8CF_25E,      1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01780131, 0x0139017d, 0x27292930, 0x57504949
 	ddr_type	MT47H128M8CF_25E_REV1, 1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x013a013c, 0x013a0145, 0x34313634, 0x433e3e3e
 
 	//MT47H128M8CF_5 tck=5ns(200Mhz), CL=3, wr=15 ns, rcd=15 ns, rp=15 ns
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
+//	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
+	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01100111, 0x01140113, 0x34343434, 0x4b484c46	//v
 	ddr_type	MT47H128M8CF_5,        1, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
 
 	//H5PS2G83AFR_S6  DDR2-800(400Mhz), RL=6, WR=15ns, tRCD=6, tRP=6
@@ -650,7 +661,8 @@ get_ddr_type_addr:
 #define TO2_DQVAL 0x00200000	/* dse 4 - 75 NA 60 NA ohm drive strength*/
 
 #define TO1_DDR_TYPE 0x06000000		/* 3=20 ohms */
-#define TO2_DDR_TYPE 0x02000000		/* 1=37.5, 33, 30 ohms */
+//#define TO2_DDR_TYPE 0x02000000	/* 1=37.5, 33, 30 ohms */
+#define TO2_DDR_TYPE 0x06000000		/* 3=20  ohms */
 
 #ifdef TO2
 #define DQVAL TO2_DQVAL
@@ -801,7 +813,9 @@ get_ddr_type_addr:
 	BigMov	r3, ESD_BASE
 //	esd_con_req r3
 #ifdef TO2
-	BigMov	r1, 0x04b80003
+	ldr	r1, [r3, #ESD_ZQHWCTRL]
+	and	r1, r1, #0xf8000000
+	BigOrr2	r1, 0x04b80003	//0x04b80003
 	str	r1, [r3, #ESD_ZQHWCTRL]
 	BigMov	r0, 0x00194005	//PLL1P2_VREG (bits 16-12 of reg) from 0x10 (1.2V) to 0x14 (1.3V)
 	BigMov	r1, IOMUXC_BASE_ADDR
