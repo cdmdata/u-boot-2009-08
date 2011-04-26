@@ -473,6 +473,11 @@ void init_display_pins(void)
 	mxc_request_iomux(MX53_PIN_GPIO_1, IOMUX_CONFIG_ALT4);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_1, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
+	/* Some boards enable backlight power supply with this */
+	Set_GPIO_output_val(MAKE_GP(2, 16), 1);
+	mxc_request_iomux(MX53_PIN_EIM_A22, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_A22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+
 #define PWMCR	0x0
 #define PWMSR	0x4
 #define PWMIR	0x8
