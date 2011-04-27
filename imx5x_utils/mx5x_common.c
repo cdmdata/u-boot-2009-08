@@ -235,7 +235,8 @@ const unsigned char reg_data[] = {
 		0x36, 0x0,		/* off, LDO5, sata(40:1.2V) */
 		0x37, 0x40,		/* on,  LDO6 (40:1.2V) */
 		0x38, 0x5e,		/* on,  LDO7, 2.75V (5e:2.70V) */
-		0x39, 0x0c,		/* off, LDO8, camera db(4c:1.8V) */
+/* LDO8 - leave on 1.8V, serial port messed up otherwise on newest board */
+//		0x39, 0x0c,		/* off, LDO8, camera db(4c:1.8V) */
 		0x3a, 0x1f,		/* off, LDO9, 2.8V camera(5f:2.75V) */
 };
 
