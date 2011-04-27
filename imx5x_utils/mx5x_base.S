@@ -172,9 +172,6 @@ uart_init_done:
 	mov	r1, #PMIC_DA9053_ADDR
 	bl	power_up_ddr
 #endif
-#ifdef mx51
-	bl	Basic_Init_ESD
-#endif
 	ddr_init
 	mov	r0,#0x10000
 2:	subs	r0,r0,#1

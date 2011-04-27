@@ -49,6 +49,12 @@
 
 #ifdef ASM
 	.macro ddr_init
+	BigMov  r1,CCM_BASE
+	ldr     r0,[r1, #CCM_CBCDR]
+	bic	r0,r0,#(7 << 27)	//clear ddr podf
+	orr	r0,r0,#(1 << 30) | ((4 - 1) << 27)	//ddr podf div to 4, select pll1
+	str     r0,[r1, #CCM_CBCDR]
+	bl	Basic_Init_ESD
 	.endm
 
 	.macro ddr_get_size
@@ -327,7 +333,12 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x83fd9008, 0xb2a20000	//ESDCTL1, ...
 #endif
 	.word	0x83fd9010, 0x000ad6d0	//ESDMISC
-	.word	0x83fd9034, 0x90000000	//ESDGPR DQS delays
+	.word	0x83fd9000 + ESD_DLY1, 0x00f48c00	// D0-D7 read delay
+	.word	0x83fd9000 + ESD_DLY2, 0x00f48c00	// D8-D15 read delay
+	.word	0x83fd9000 + ESD_DLY3, 0x00f48c00	// D16-D23 read delay
+	.word	0x83fd9000 + ESD_DLY4, 0x00f48c00	// D24-D31 read delay
+	.word	0x83fd9000 + ESD_DLY5, 0x00f49100	// D0-D31 write delay
+	.word	0x83fd9000 + ESD_GPR, 0x90000000	// DQS gating delays
 	.word	0x83fd9014, 0x00000000	//ESDSCR, AXI address readies normal operation
 	.word	0
 //CSD0 DDR - 0x90000000 (256M), CSD1 DDR - 0xa0000000 (256M)
