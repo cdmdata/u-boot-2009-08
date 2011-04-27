@@ -230,8 +230,8 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x73fa88a0, 0x00000200	//SW_PAD_CTL_GRP_INMODE1, ddr2 input type
 	.word	0x73fa850c, 0x000020c5	//SW_PAD_CTL_PAD_EIM_SDODT1, 100K Pull Down, high drive strength
 	.word	0x73fa8510, 0x000020c5	//SW_PAD_CTL_PAD_EIM_SDODT0, 100K Pull Down, high drive strength
-	.word	0x73fa883c, 0x00000002	//SW_PAD_CTL_GRP_DDR_A0, Medium drive strength
-	.word	0x73fa8848, 0x00000002	//SW_PAD_CTL_GRP_DDR_A1, Medium drive strength
+	.word	0x73fa883c, 0x00000002	//SW_PAD_CTL_GRP_DDR_A0, (a0-a7)Medium drive strength
+	.word	0x73fa8848, 0x00000002	//SW_PAD_CTL_GRP_DDR_A1, (a8-a14,ba0-ba2)Medium drive strength
 	.word	0x73fa84b8, 0x000000e7	//SW_PAD_CTL_PAD_DRAM_SDCLK1, Max drive strength
 	.word	0x73fa84bc, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
 	.word	0x73fa84c0, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
@@ -246,10 +246,10 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x73fa84cc, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_SDCKE1, Medium Drive Strength
 	.word	0x73fa84d0, 0x000000e2	//SW_PAD_CTL_PAD_DRAM_CS0, Medium Drive Strength, slow slew rate
 //serial downloader doesn't have the next 4
-	.word	0x73fa882c, 0x00000006	//SW_PAD_CTL_GRP_DRAM_B4 (D24-D31), max drive strength
-	.word	0x73fa88a4, 0x00000006	//SW_PAD_CTL_GRP_DRAM_B0 (D0-D7), max drive strength
-	.word	0x73fa88ac, 0x00000006	//SW_PAD_CTL_GRP_DRAM_B1 (D8-D15, max drive strength
-	.word	0x73fa88b8, 0x00000006	//SW_PAD_CTL_GRP_DRAM_B2 (D16-D23), max drive strength
+	.word	0x73fa882c, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B4 (D24-D31), high drive strength
+	.word	0x73fa88a4, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B0 (D0-D7), high drive strength
+	.word	0x73fa88ac, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B1 (D8-D15, high drive strength
+	.word	0x73fa88b8, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B2 (D16-D23), high drive strength
 
 	.word	0x73fa8228, 0		//SW_MUX_CTL_PAD_UART1_RXD
 	.word	0x73fa822c, 0		//SW_MUX_CTL_PAD_UART1_TXD
@@ -266,12 +266,23 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x83fd9008, 0x82a20000	//ESDCTL1
 #endif
 	.word	0x83fd9010, 0x000ad0d0	//ESDMISC, ddr2, 3 bank bits (13+10+3+2) = 28 bits = 256M
-	.word	0x83fd9004, 0x333574aa	//ESDCFG0 vs 333584ab
-//bit 3-0 ACTIVE to ACTIVE, same bank, command delay : us 1010 - 11 clocks,   them 1011 - 12 clocks
-//bit 15-12 Active to precharge Command : us 0111 8 clocks, them 1000 9 clocks
+	.word	0x83fd9004, 0x333584ab	//ESDCFG0 0x333574aa vs 333584ab
+//Samsung K4T1G164Q[E/F]-BCE6000 - E6 means DDR2-667, tCK, CL=3 : 5 - 8 ns
+//					K4T1G164QF-BCE6000
+//tRFC(refresh to any command)		127.5 ns (26 clocks)	Bits 31-28: 3 = 26 clocks (130 ns)(ESDCTL0[23] is double tRFC)
+//tXSR(exit self refresh)		137.5 ns (28 clocks)	Bits 27-24: 3 = 28 clocks (140 ns)
+//tXP (exit power down to command)	2 clocks		Bits 23-21: 1 = 2 clocks (10 ns)
+//tWTR(write to read command)		7.5 ns (2 clocks)	Bits 20:    1 = 2 clocks (10 ns)
+//tRP (row precharge)			15 ns (3 clocks)	Bits 19-18: 1 = 3 clocks (15 ns)
+//tMRD(load mode register)		2 clocks		Bits 17-16: 1 = 2 clocks (10 ns)
+//tRAS(Active to precharge Command)	45 ns (9 clocks)	Bits 15-12: 8 = 9 clocks (45 ns), was 7 = 8 clocks (40ns)
+//tRRD(Active Bank A to Active B)	10 ns (2 clocks)	Bits 11-10: 1 = 2 clocks (10 ns)
+//tWR (write to precharge)		15 ns (3 clocks)	Bits 7:     1 = 3 clocks (15 ns)
+//tRCD(row to columnn delay)		15 ns (3 clocks)	Bits 6-4:   2 = 3 clocks (15 ns)
+//tRC(ACTIVE to ACTIVE, same bank)	60 ns (12 clocks)	Bits 3-0:   0xb - 12 clocks(60ns), was 0xa = 11 clocks (55 ns)
 
 #ifdef USE_CSD1
-	.word	0x83fd900c, 0x333574aa	//ESDCFG1
+	.word	0x83fd900c, 0x333584ab	//ESDCFG1
 #endif
 //CSD0 always used
 	.word	0x83fd9014, 0x04008008	//ESDSCR, CSD0
