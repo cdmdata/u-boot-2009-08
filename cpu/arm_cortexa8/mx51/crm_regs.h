@@ -150,6 +150,10 @@
 /* Define the bits in register CBCDR */
 #define MXC_CCM_CBCDR_EMI_CLK_SEL			(0x1 << 26)
 #define MXC_CCM_CBCDR_PERIPH_CLK_SEL			(0x1 << 25)
+#define MXC_CCM_CBCDR_DDR_HF_SEL_OFFSET		(30)
+#define MXC_CCM_CBCDR_DDR_HF_SEL			(0x1 << 30)
+#define MXC_CCM_CBCDR_DDR_PODF_OFFSET		(27)
+#define MXC_CCM_CBCDR_DDR_PODF_MASK			(0x7 << 27)
 #define MXC_CCM_CBCDR_EMI_PODF_OFFSET		(22)
 #define MXC_CCM_CBCDR_EMI_PODF_MASK			(0x7 << 22)
 #define MXC_CCM_CBCDR_AXI_B_PODF_OFFSET		(19)

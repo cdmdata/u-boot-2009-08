@@ -245,6 +245,11 @@ static u32 __get_cdcmr_axi_to_ahb_clk(int bit_offset)
 
 static u32 __get_ddr_clk(void)
 {
+	unsigned cbcdr = __REG(MXC_CCM_CBCDR);
+	if (cbcdr & MXC_CCM_CBCDR_DDR_HF_SEL) {
+		unsigned div = ((cbcdr >> MXC_CCM_CBCDR_DDR_PODF_OFFSET) & 7) + 1;
+		return __decode_pll(PLL1_CLK, __HCLK_FREQ) / div;
+	}
 	return __get_cdcmr_axi_to_ahb_clk(MXC_CCM_CBCMR_DDR_CLK_SEL_OFFSET);
 }
 
