@@ -141,12 +141,12 @@
 /* (4 bits) ddr type
  * (1 bit)tapeout - 1 or 2
  * ddr_freq - 200, 336 (more efficient than 333), 400
- * (1 bit)banks_bits - 2 (4 banks), or 3 (8 banks) 
+ * (1 bit)banks_bits - 2 (4 banks), or 3 (8 banks)
  * (3 bits)row_bits - 11-16
- * (2 bits)column_bits  - 9, 10, 11 
- * (2 bits)rl - CAS read  latency 3-6 
- * (2 bits)wl - CAS write latency 2-5 
- * (3 bits)wr - write recovery for autoprecharge 1-6,  ddr2-400(2-3), ddr2-533(2-4), ddr2-667(2-5), ddr2-800(2-6) 
+ * (2 bits)column_bits  - 9, 10, 11
+ * (2 bits)rl - CAS read  latency 3-6
+ * (2 bits)wl - CAS write latency 2-5
+ * (3 bits)wr - write recovery for autoprecharge 1-6,  ddr2-400(2-3), ddr2-533(2-4), ddr2-667(2-5), ddr2-800(2-6)
  * (3 bits)rcd - 1-6
  * (3 bits)rp - 1-6
  * dgctrl0, dgctrl1, rddlctl, wrdlctl
@@ -205,9 +205,9 @@
 	.macro ddr_rp rResult, result_bit, rfields, fadd
 	ddr_field \rResult, \result_bit, \rfields, 21, 3, (1 + \fadd)
 	.endm
-	
+
 	.macro ddr_data
-	//MT47H128M8CF_3  DDR2-667(333MHz), tck=3ns(333Mhz), CL=5 wr=15 ns, rcd=15 ns, rp=15 ns 
+	//MT47H128M8CF_3  DDR2-667(333MHz), tck=3ns(333Mhz), CL=5 wr=15 ns, rcd=15 ns, rp=15 ns
 	//512MB = 3 bank bits(8 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
 //	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
@@ -257,7 +257,7 @@
 	ddr_type	MT47H64M8CF_25E,       2, 400, 2, 14, 10, 5, 4, 6, 5, 5, 0x01460204, 0x0146014a, 0x1f1c211f, 0x4f485646
 	.word		0
 	.endm
-	
+
 	.macro ddr_find_data rFind, rSearch, rResult
 	BigMov	r0, ESD_BASE
 	ldr	r0, [r0, #ESD_ZQHWCTRL]
@@ -283,11 +283,11 @@
 	str r0, [\r_pll, #PLL_DP_OP]
 	str r0, [\r_pll, #PLL_DP_HFS_OP]
 
- 	ldrb r0, [\r_ddr, #ddr_dp_mfd_offs]
+	ldrb r0, [\r_ddr, #ddr_dp_mfd_offs]
 	str r0, [\r_pll, #PLL_DP_MFD]
 	str r0, [\r_pll, #PLL_DP_HFS_MFD]
 
-  	ldrb r0, [\r_ddr, #ddr_dp_mfn_offs]
+	ldrb r0, [\r_ddr, #ddr_dp_mfn_offs]
 	str r0, [\r_pll, #PLL_DP_MFN]
 	str r0, [\r_pll, #PLL_DP_HFS_MFN]
 	.endm
@@ -315,8 +315,35 @@
 #endif
 #define RALAT 4	//was 3
 
+	.macro ddr2_lmr_init	sdcs, dll_rst
+	ldr	r1, =(\sdcs | 0x04008010)
+	str	r1, [r4, #ESD_SCR]
+	BigMov	r1, (\sdcs | 0x00008032)
+	str	r1, [r4, #ESD_SCR]
+	orr	r1, r1, #1		//0x8033/0x803b
+	str	r1, [r4, #ESD_SCR]
+	bic	r1, r1, #2		//0x8031/0x8039
+	str	r1, [r4, #ESD_SCR]
+	ldr	r2, =(\sdcs | 0x00028030)
+	ddr_wr	r2, 25, r5, -1
+	ddr_rl	r2, 20, r5, 0
+	BigOrr	r0, r2, ((MRS_DLL_RESET << 16) | \dll_rst)
+	str	r0, [r4, #ESD_SCR]
+	ldr	r1, =(\sdcs | 0x04008010)	//PRECHARGE ALL CS0
+	str	r1, [r4, #ESD_SCR]
+	BigMov	r1, (\sdcs | 0x00008020)
+	str	r1, [r4, #ESD_SCR]
+	str	r1, [r4, #ESD_SCR]
+	str	r2, [r4, #ESD_SCR]
+
+	ldr	r1, =(\sdcs | SCR_EMRS1_DEFAULT)
+	orr	r0, r1, #0x03800000
+	str	r0, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Calibration */
+	str	r1, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Cal exit */
+	.endm
+
 	.macro ddr_init
- 	bl	get_ddr_type_addr	//r2 gets address
+	bl	get_ddr_type_addr	//r2 gets address
 	ldr		r1, [r2], #4
 	ddr_find_data	r1, r2, r3
 
@@ -413,56 +440,9 @@
 	BigMov	r1, 0x00030012
 	str	r1, [r4, #ESD_PDC]
 
-	ldr	r1, =0x04008010
-	str	r1, [r4, #ESD_SCR]	//if not lcdp -, hangs here
-	BigMov	r1, 0x00008032
-	str	r1, [r4, #ESD_SCR]
-	orr	r1, r1, #1		//0x8033
-	str	r1, [r4, #ESD_SCR]
-	bic	r1, r1, #2		//0x8031
-	str	r1, [r4, #ESD_SCR]
-	ldr	r2, =0x00028030
-	ddr_wr	r2, 25, r5, -1
-	ddr_rl	r2, 20, r5, 0
-	BigOrr	r0, r2, ((MRS_DLL_RESET << 16) | DLL_RST0)
-	str	r0, [r4, #ESD_SCR]
-	ldr	r1, =0x04008010		//PRECHARGE ALL CS0
-	str	r1, [r4, #ESD_SCR]
-	BigMov	r1, 0x00008020
-	str	r1, [r4, #ESD_SCR]
-	str	r1, [r4, #ESD_SCR]
-	str	r2, [r4, #ESD_SCR]
-
-	ldr	r1, =SCR_EMRS1_DEFAULT
-	orr	r0, r1, #0x03800000
-	str	r0, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Calibration */
-	str	r1, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Cal exit */
-
+	ddr2_lmr_init	SDCS0, DLL_RST0
 #ifdef USE_CSD1
-	ldr	r1, =0x04008018
-	str	r1, [r4, #ESD_SCR]
-	BigMov	r1, 0x0000803a
-	str	r1, [r4, #ESD_SCR]
-	orr	r1, r1, #1		//0x803b
-	str	r1, [r4, #ESD_SCR]
-	bic	r1, r1, #2		//0x8039
-	str	r1, [r4, #ESD_SCR]
-	ldr	r2, =0x00028038
-	ddr_wr	r2, 25, r5, -1
-	ddr_rl	r2, 20, r5, 0
-	BigOrr	r0, r2, ((MRS_DLL_RESET << 16) | DLL_RST1)
-	str	r0, [r4, #ESD_SCR]
-	ldr	r1, =0x04008018		//PRECHARGE ALL CS0
-	str	r1, [r4, #ESD_SCR]
-	BigMov	r1, 0x00008028
-	str	r1, [r4, #ESD_SCR]
-	str	r1, [r4, #ESD_SCR]
-	str	r2, [r4, #ESD_SCR]
-
-	ldr	r1, =(SDCS1 | SCR_EMRS1_DEFAULT)
-	orr	r0, r1, #0x03800000
-	str	r0, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Calibration */
-	str	r1, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Cal exit */
+	ddr2_lmr_init	SDCS1, DLL_RST1
 #endif
 
 	mov	r1, #0
@@ -822,9 +802,9 @@ get_ddr_type_addr:
 #define IOMUXC_GPR1 0x04
 	str	r0, [r1, #IOMUXC_GPR1]
 //91:	ldr	r1, [r3, #ESD_ZQHWCTRL]
-//  	tst	r1, #1<<16
-//  	bne	91b
-//  	BigMov	r1, (1<<13)|(31<<7)|(30<<2)
+// 	tst	r1, #1<<16
+// 	bne	91b
+// 	BigMov	r1, (1<<13)|(31<<7)|(30<<2)
 //	BigMov	r1, (1<<13)|(28<<7)|(6<<2)
 //	str	r1, [r3, #ESD_ZQSWCTRL]
 #endif
