@@ -16,6 +16,19 @@
 #define AIPSREG_OPACR3_OFFSET	0x004C
 #define AIPSREG_OPACR4_OFFSET	0x0050
 
+//MRS defines
+#define MRS_DLL_RESET (1 << 8)
+
+//EMRS(1) defines
+#define EMRS1_DRIVE_STRENGTH_FULL	(0 << 1)	//A1-0 full strength
+#define EMRS1_DRIVE_STRENGTH_REDUCED	(1 << 1)	//A1-1 reduced strength
+#define EMRS1_ODT_TERM_OHM_50		((1 << 6) | (1 << 2))	//A2,A6
+#define EMRS1_ODT_TERM_OHM_75		(1 << 2)
+#define EMRS1_ODT_TERM_OHM_150		(1 << 6)
+#define EMRS1_ODT_TERM_DISABLED		(0)
+
+#define EMRS1_DQS_SINGLE_BIT	10
+
 #ifdef ASM
 	.equiv	URXD,	0x0000
 	.equiv	UTXD,	0x0040

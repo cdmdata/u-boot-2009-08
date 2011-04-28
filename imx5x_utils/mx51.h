@@ -46,6 +46,10 @@
 #define CSP_BASE_REG_PA_AIPS1	0x73F00000
 #define CSP_BASE_REG_PA_AIPS2	0x83F00000
 
+#define EMRS1_DRIVE_STRENGTH		EMRS1_DRIVE_STRENGTH_REDUCED
+#define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_50
+#define SCR_EMRS1_DEFAULT		(((EMRS1_DRIVE_STRENGTH | EMRS1_ODT_TERM) << 16) | 0x8019)
+//emrs(1) - buffers enabled, RDQS disable, DQS enable, 0 latency, DLL enable
 
 #ifdef ASM
 	.macro ddr_init

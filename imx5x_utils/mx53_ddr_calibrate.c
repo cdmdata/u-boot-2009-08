@@ -1,4 +1,5 @@
 #include "mx5x_common.h"
+#include "mx5x.h"
 #include "mx53.h"
 
 #define FAST_COUNT (1 << 10)		//test 4K of low memory, 4K high mem
@@ -929,7 +930,7 @@ void iomuxc_ddr_single(void);
 void switch_to_mode(unsigned esd_base, unsigned mode)
 {
 	unsigned ctl;
-	unsigned addr =  ODT_TERM | (mode << 10);
+	unsigned addr =  EMRS1_DRIVE_STRENGTH | EMRS1_ODT_TERM | (mode << EMRS1_DQS_SINGLE_BIT);
 	ctl = IO_READ(esd_base, ESD_CTL);
 
 	enter_config_mode(esd_base);

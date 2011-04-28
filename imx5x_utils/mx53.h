@@ -126,12 +126,17 @@
 #define CSP_BASE_REG_PA_AIPS1	0x53F00000
 #define CSP_BASE_REG_PA_AIPS2	0x63F00000
 
-#define ODT_TERM_OHM_50		((1 << 6) | (1 << 2))
-#define ODT_TERM_OHM_75		(1 << 2)
-#define ODT_TERM_OHM_150	(1 << 6)
-#define ODT_TERM_DISABLED	(0)
+#define EMRS1_DRIVE_STRENGTH		EMRS1_DRIVE_STRENGTH_REDUCED
+#define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_75
+#define SCR_EMRS1_DEFAULT		(((EMRS1_DRIVE_STRENGTH | EMRS1_ODT_TERM) << 16) | 0x8031)
+//emrs(1) - buffers enabled, RDQS disable, DQS enable, 0 latency, DLL enable
 
-#define ODT_TERM	ODT_TERM_OHM_75
+//ESD_SCR bits
+#define DLL_RST0  (1 << 7)
+#define DLL_RST1  (1 << 8)
+#define SDCS0	0
+#define SDCS1	8
+
 #ifdef ASM
 /* (4 bits) ddr type
  * (1 bit)tapeout - 1 or 2
@@ -310,13 +315,6 @@
 #endif
 #define RALAT 4	//was 3
 
-#define DRIVE_STRENGTH_FULL	(0 << 17)	//A1-0 full strength  
-#define DRIVE_STRENGTH_REDUCED  (1 << 17)	//A1-1 reduced strength
-#ifdef TO2
-#define DRIVE_STRENGTH DRIVE_STRENGTH_FULL
-#else
-#define DRIVE_STRENGTH DRIVE_STRENGTH_REDUCED
-#endif
 	.macro ddr_init
  	bl	get_ddr_type_addr	//r2 gets address
 	ldr		r1, [r2], #4
@@ -423,13 +421,10 @@
 	str	r1, [r4, #ESD_SCR]
 	bic	r1, r1, #2		//0x8031
 	str	r1, [r4, #ESD_SCR]
-#define DLL_RESET (1 << (8 + 16))
-#define DLL_RST0  (1 << 7)
-#define DLL_RST1  (1 << 8)
 	ldr	r2, =0x00028030
 	ddr_wr	r2, 25, r5, -1
 	ddr_rl	r2, 20, r5, 0
-	BigOrr	r0, r2, (DLL_RESET | DLL_RST0)
+	BigOrr	r0, r2, ((MRS_DLL_RESET << 16) | DLL_RST0)
 	str	r0, [r4, #ESD_SCR]
 	ldr	r1, =0x04008010		//PRECHARGE ALL CS0
 	str	r1, [r4, #ESD_SCR]
@@ -438,7 +433,7 @@
 	str	r1, [r4, #ESD_SCR]
 	str	r2, [r4, #ESD_SCR]
 
-	ldr	r1, =0x00008031 | (ODT_TERM << 16) | DRIVE_STRENGTH
+	ldr	r1, =SCR_EMRS1_DEFAULT
 	orr	r0, r1, #0x03800000
 	str	r0, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Calibration */
 	str	r1, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Cal exit */
@@ -455,7 +450,7 @@
 	ldr	r2, =0x00028038
 	ddr_wr	r2, 25, r5, -1
 	ddr_rl	r2, 20, r5, 0
-	BigOrr	r0, r2, (DLL_RESET | DLL_RST1)
+	BigOrr	r0, r2, ((MRS_DLL_RESET << 16) | DLL_RST1)
 	str	r0, [r4, #ESD_SCR]
 	ldr	r1, =0x04008018		//PRECHARGE ALL CS0
 	str	r1, [r4, #ESD_SCR]
@@ -464,7 +459,7 @@
 	str	r1, [r4, #ESD_SCR]
 	str	r2, [r4, #ESD_SCR]
 
-	ldr	r1, =0x00008039 | (ODT_TERM << 16) | DRIVE_STRENGTH
+	ldr	r1, =(SDCS1 | SCR_EMRS1_DEFAULT)
 	orr	r0, r1, #0x03800000
 	str	r0, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Calibration */
 	str	r1, [r4, #ESD_SCR]	/* ESD_SCR, EMR1: OCD Cal exit */

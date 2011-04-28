@@ -1,8 +1,9 @@
 #include "mx5x_common.h"
+#include "mx5x.h"
 #include "mx51.h"
 
 #define FAST_INDEX (1 << 10)		//test 4K of memory
-#define AGGRESSIVE_INDEX (1 << 14)
+#define AGGRESSIVE_INDEX (1 << 16)
 /*
   Perform calibration for write and read delay parameters.
   Read: DQS to DQ timing is relative to the i.MX51 internally.
@@ -85,7 +86,7 @@ DLY_ABS_OFFSET : default value of 128 is 1/4 cycle
 		"444:" /* skip: */	\
 		/*@ increment cache number */	\
 		"add        r10, r10, #2;"	\
-		"cmp        r3, r10;" 	\
+		"cmp        r3, r10;"	\
 		"bgt        111b;" /* loop1; */	\
 		"555:" /* "finished:" */	\
 		/* @ swith back to cache level 0 */	\
@@ -93,12 +94,12 @@ DLY_ABS_OFFSET : default value of 128 is 1/4 cycle
 		/* @ select current cache level in cssr */	\
 		"mcr        p15, 2, r10, c0, c0, 0;"	\
 		/* @ isb to sych the new cssr&csidr */	\
-		"mcr        p15, 0, r10, c7, c5, 4;" 	\
-		"ldmfd 	    sp!, {r0-r5, r7, r9-r11};"	\
+		"mcr        p15, 0, r10, c7, c5, 4;"	\
+		"ldmfd	    sp!, {r0-r5, r7, r9-r11};"	\
 		"666:" /* iflush:" */	\
 		"mov        r0, #0x0;"	\
 		/* @ invalidate I+BTB */	\
-		"mcr        p15, 0, r0, c7, c5, 0;" 	\
+		"mcr        p15, 0, r0, c7, c5, 0;"	\
 		/* @ drain WB */	\
 		"mcr        p15, 0, r0, c7, c10, 4;"	\
 		:	\
@@ -116,7 +117,7 @@ void enter_config_mode(unsigned esd_base)
 		if (val == 0xc000)
 			break;
 	}
-	
+
 }
 
 void exit_config_mode(unsigned esd_base)
@@ -160,14 +161,14 @@ unsigned update_and_wait_for_measure(unsigned esd_base, unsigned reg_index, unsi
  * Then
  *  y1 = ((measure * x1) / 512) - 12
  *  y2 = ((measure * x2) / 512) - 12
- * 
+ *
  * or
  * measure = ((y1 + 12) * 512)/x1
  * x2 =  ((y2 + 12) * 512)/measure
  * x2 = ((y2 + 12) * 512)/(((y1 + 12) * 512)/x1)
  * x2 = x1 * ((y2 + 12) * 512) / ((y1 + 12) * 512)
  * x2 = x1 * (y2 + 12) / (y1 + 12)
- * 
+ *
  * Now to find zero point, set y2 = 0;
  * p0 = 12(x1) / (y1 + 12)
  * Or Find one point set y2 = 1;
@@ -232,7 +233,7 @@ void write_memory_pattern(unsigned *p, unsigned *p_end)
 {
 	asm volatile (
 	"	mov	r0, %0;"
-	"	ldr	r9, =0x55555555;"	
+	"	ldr	r9, =0x55555555;"
 	"	b	2f;"
 	"1:	mvn	r2,r0;"
 	"	eor	r3,r2,r9;"
@@ -277,7 +278,7 @@ unsigned check_memory_pattern(unsigned *p, unsigned *p_end, unsigned mask)
 		sum |= (val[1] ^ expected);
 		expected = ((unsigned)p) ^ 0xaaaaaaaa;
 		sum |= (val[2] ^ expected);
-		expected = ((unsigned)p) ^ 0x55555555; 
+		expected = ((unsigned)p) ^ 0x55555555;
 		sum |= (val[3] ^ expected);
 		if (sum & mask)
 			break;
@@ -295,7 +296,7 @@ unsigned check_memory_pattern(unsigned *p, unsigned *p_end, unsigned mask)
 	unsigned sum = 0;
 	cache_flush();
 	asm volatile (
-	"	ldr	r9, =0x55555555;"	
+	"	ldr	r9, =0x55555555;"
 	"	b	3f;"
 	"1:	ldm	%0,{r5-r8};"
 	"	mvn	r2,%0;"
@@ -310,7 +311,7 @@ unsigned check_memory_pattern(unsigned *p, unsigned *p_end, unsigned mask)
 	"	eor	r8,r4,r8;"
 	"	orr	%2,%2,r7;"
 	"	orrs	%2,%2,r8;"
-	"	beq	2f;"	
+	"	beq	2f;"
 	"	tst	%2, %3;"
 	"	bne	4f;"
 	"	tst	%2,#0x000000ff;"
@@ -385,7 +386,7 @@ unsigned scan_delay(struct check_params *p)
 		} else {
 			if (len) {
 				if (dly >= p->max)
-					dly = p->max; 
+					dly = p->max;
 				if (!p->find_any)
 					my_printf("%x\n", dly - 1);
 			}
@@ -600,7 +601,7 @@ int calibrate_dqs_enable(unsigned esd_base, unsigned *ram_base, unsigned * pgpr)
 	return 0;
 }
 
-#define MODE_SINGLE (1 << 10)
+#define MODE_SINGLE 1
 #define MODE_DIFFERENTIAL 0
 #define DIFF_DQS_EN (1 << 15)
 
@@ -610,12 +611,13 @@ void iomuxc_ddr_single(void);
 void switch_to_mode(unsigned esd_base, unsigned mode)
 {
 	unsigned ctl1;
+	unsigned addr =  EMRS1_DRIVE_STRENGTH | EMRS1_ODT_TERM | (mode << EMRS1_DQS_SINGLE_BIT);
 	enter_config_mode(esd_base);
 	ctl1 = IO_READ(esd_base, ESD_CTL1);
 	//DQS# disable (single-ended)/ enable (differential), 50 ohms
-	IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, mode | (1 << 6) | (1 << 2), 0));	//cs0
+	IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, addr, 0));	//cs0
 	if (ctl1 & (1 << 31))
-		IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, mode | (1 << 6) | (1 << 2), 1));	//cs1
+		IO_WRITE(esd_base, ESD_SCR, MAKE_CMD(EMR, addr, 1));	//cs1
 
 	IO_MOD(esd_base, ESD_MISC, DIFF_DQS_EN, (mode == MODE_DIFFERENTIAL) ? DIFF_DQS_EN : 0);
 
@@ -683,9 +685,9 @@ int main(void)
 	}
 
 	if (!mask) {
-		switch_to_mode(esd_base, MODE_SINGLE);
-		ret = calibrate_write_delay(esd_base, ram_base);
-		switch_to_mode(esd_base, MODE_DIFFERENTIAL);
+//		switch_to_mode(esd_base, MODE_SINGLE);
+//		ret = calibrate_write_delay(esd_base, ram_base);
+//		switch_to_mode(esd_base, MODE_DIFFERENTIAL);
 		if (!ret) {
 			ret = calibrate_dqs_enable(esd_base, ram_base, &gpr);
 			if (!ret)
