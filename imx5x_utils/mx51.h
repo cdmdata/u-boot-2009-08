@@ -50,6 +50,7 @@
 #define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_50
 #define SCR_EMRS1_DEFAULT		(((EMRS1_DRIVE_STRENGTH | EMRS1_ODT_TERM) << 16) | 0x8019)
 //emrs(1) - buffers enabled, RDQS disable, DQS enable, 0 latency, DLL enable
+#define SDCS1	4
 
 #ifdef ASM
 	.macro ddr_init
@@ -69,7 +70,7 @@
 
 	ldr	r1, [r0, #ESD_CTL1];
 	add	r2, r1, LSR #31		//chip select 1 bit
-	
+
 	ldr	r1, [r0, #ESD_CTL0];
 	and	r0, r1, #(7 << 24)
 	add	r2, r0, LSR #24		//rows
@@ -85,7 +86,7 @@
 	.macro ddr_get_tapeout
 	mov	r0, #1
 	.endm
-	
+
 	.equiv	IIM_BASE,	0x83f98000	//weird 0x53ffc000 in documentation
 	.equiv	I_STAT,		0x0000
 	.equiv	I_STATM,	0x0004
@@ -238,28 +239,28 @@ dcd:		.word	0xb17219e9	//0x1c
 #if 1
 //babbage tape out 2, 56 DCD entries
 	.word	0x73fa88a0, 0x00000200	//SW_PAD_CTL_GRP_INMODE1, ddr2 input type
-	.word	0x73fa850c, 0x000020c5	//SW_PAD_CTL_PAD_EIM_SDODT1, 100K Pull Down, high drive strength
-	.word	0x73fa8510, 0x000020c5	//SW_PAD_CTL_PAD_EIM_SDODT0, 100K Pull Down, high drive strength
-	.word	0x73fa883c, 0x00000002	//SW_PAD_CTL_GRP_DDR_A0, (a0-a7)Medium drive strength
-	.word	0x73fa8848, 0x00000002	//SW_PAD_CTL_GRP_DDR_A1, (a8-a14,ba0-ba2)Medium drive strength
-	.word	0x73fa84b8, 0x000000e7	//SW_PAD_CTL_PAD_DRAM_SDCLK1, Max drive strength
-	.word	0x73fa84bc, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
-	.word	0x73fa84c0, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
-	.word	0x73fa84c4, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS2, Disable pull down
-	.word	0x73fa84c8, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS3, Disable pull down
+	.word	0x73fa850c, 0x000020c3	//SW_PAD_CTL_PAD_EIM_SDODT1, 100K Pull Down, medium drive strength
+	.word	0x73fa8510, 0x000020c3	//SW_PAD_CTL_PAD_EIM_SDODT0, 100K Pull Down, medium drive strength
+	.word	0x73fa883c, 0x00000003	//SW_PAD_CTL_GRP_DDR_A0, (a0-a7)Medium drive strength
+	.word	0x73fa8848, 0x00000003	//SW_PAD_CTL_GRP_DDR_A1, (a8-a14,ba0-ba2)Medium drive strength
+	.word	0x73fa84b8, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_SDCLK1, medium drive strength
+	.word	0x73fa84bc, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
+	.word	0x73fa84c0, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
+	.word	0x73fa84c4, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS2, Disable pull down
+	.word	0x73fa84c8, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS3, Disable pull down
 	.word	0x73fa8820, 0x00000000	//SW_PAD_CTL_GRP_DDRPKS, select keeper
 	.word	0x73fa84a4, 0x00000003	//SW_PAD_CTL_PAD_DRAM_RAS, Medium Drive Strength
 	.word	0x73fa84a8, 0x00000003	//SW_PAD_CTL_PAD_DRAM_CAS, Medium Drive Strength
 	.word	0x73fa84ac, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_SDWE, Medium Drive Strength
 	.word	0x73fa84b0, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_SDCKE0, Medium Drive Strength
 	.word	0x73fa84b4, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_SDCKE1, Medium Drive Strength
-	.word	0x73fa84cc, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_SDCKE1, Medium Drive Strength
-	.word	0x73fa84d0, 0x000000e2	//SW_PAD_CTL_PAD_DRAM_CS0, Medium Drive Strength, slow slew rate
+	.word	0x73fa84cc, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_CS0, Medium Drive Strength
+	.word	0x73fa84d0, 0x000000e3	//SW_PAD_CTL_PAD_DRAM_CS1, Medium Drive Strength
 //serial downloader doesn't have the next 4
-	.word	0x73fa882c, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B4 (D24-D31), high drive strength
-	.word	0x73fa88a4, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B0 (D0-D7), high drive strength
-	.word	0x73fa88ac, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B1 (D8-D15, high drive strength
-	.word	0x73fa88b8, 0x00000004	//SW_PAD_CTL_GRP_DRAM_B2 (D16-D23), high drive strength
+	.word	0x73fa882c, 0x00000002	//SW_PAD_CTL_GRP_DRAM_B4 (D24-D31), Medium drive strength
+	.word	0x73fa88a4, 0x00000002	//SW_PAD_CTL_GRP_DRAM_B0 (D0-D7), Medium drive strength
+	.word	0x73fa88ac, 0x00000002	//SW_PAD_CTL_GRP_DRAM_B1 (D8-D15, Medium drive strength
+	.word	0x73fa88b8, 0x00000002	//SW_PAD_CTL_GRP_DRAM_B2 (D16-D23), Medium drive strength
 
 	.word	0x73fa8228, 0		//SW_MUX_CTL_PAD_UART1_RXD
 	.word	0x73fa822c, 0		//SW_MUX_CTL_PAD_UART1_TXD
@@ -268,6 +269,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0
 #endif
 	.endm
+
 
 	.macro esd_dcd_data
 #if 1
@@ -298,39 +300,28 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x83fd9014, 0x04008008	//ESDSCR, CSD0
 	.word	0x83fd9014, 0x0000801a	//emrs(2)
 	.word	0x83fd9014, 0x0000801b	//emrs(3)
-	.word	0x83fd9014, 0x00448019	//emrs(1) - 50 ohms ODT
+	.word	0x83fd9014, SCR_EMRS1_DEFAULT	//emrs(1) - 50 ohms ODT
 	.word	0x83fd9014, 0x07328018	//MRS (load mode register)
 	.word	0x83fd9014, 0x04008008	//PRECHARGE ALL
 	.word	0x83fd9014, 0x00008010	//auto-refresh
 	.word	0x83fd9014, 0x00008010	//auto-refresh
 	.word	0x83fd9014, 0x06328018	//MRS (load mode register)
-	.word	0x83fd9014, 0x03c48019	//emrs(1) - calibrate vs 0x03808019
-//
-	.word	0x83fd9014, 0x00448019	//emrs(1) - buffers enabled, RDQS disable, DQS enable,
-						//OCD calibration mode exit, 50 ohm termination
-						//0 latency, Normal drive strength, DLL enable
-						// vs 0x00408019
-//
+	.word	0x83fd9014, 0x03800000 | SCR_EMRS1_DEFAULT	//emrs(1) - calibrate
+	.word	0x83fd9014, SCR_EMRS1_DEFAULT	//OCD calibration mode exit
 	.word	0x83fd9014, 0x00008000	//nop
 #ifdef USE_CSD1
-	.word	0x83fd9014, 0x0400800c	//ESDSCR, CSD1 !!!!
-	.word	0x83fd9014, 0x0000801e	//emrs(2)
-	.word	0x83fd9014, 0x0000801f	//emrs(3)
-	.word	0x83fd9014, 0x0044801d	//emrs(1) - 50 ohms ODT vs 0x0000801d
-//
-	.word	0x83fd9014, 0x0732801c	//MRS (load mode register)
-	.word	0x83fd9014, 0x0400800c	//PRECHARGE ALL
-	.word	0x83fd9014, 0x00008014	//auto-refresh
-	.word	0x83fd9014, 0x00008014	//auto-refresh
-	.word	0x83fd9014, 0x0632801c	//MRS (load mode register)
-	.word	0x83fd9014, 0x03c4801d	//emrs(1) - calibrate vs 0x0380801d
-//
-	.word	0x83fd9014, 0x0044801d	//emrs(1) - buffers enabled, RDQS disable, DQS enable,
-						//OCD calibration mode exit, 50 ohm termination
-						//0 latency, Normal drive strength, DLL enable
-						//vs 0x0040801d
-//
-	.word	0x83fd9014, 0x00008004	//nop
+	.word	0x83fd9014, SDCS1 | 0x04008008	//ESDSCR, CSD1 !!!!
+	.word	0x83fd9014, SDCS1 | 0x0000801a	//emrs(2)
+	.word	0x83fd9014, SDCS1 | 0x0000801b	//emrs(3)
+	.word	0x83fd9014, SDCS1 | SCR_EMRS1_DEFAULT	//emrs(1) - 50 ohms ODT vs 0x0000801d
+	.word	0x83fd9014, SDCS1 | 0x07328018	//MRS (load mode register)
+	.word	0x83fd9014, SDCS1 | 0x04008008	//PRECHARGE ALL
+	.word	0x83fd9014, SDCS1 | 0x00008010	//auto-refresh
+	.word	0x83fd9014, SDCS1 | 0x00008010	//auto-refresh
+	.word	0x83fd9014, SDCS1 | 0x06328018	//MRS (load mode register)
+	.word	0x83fd9014, SDCS1 | 0x03800000 | SCR_EMRS1_DEFAULT	//emrs(1) - calibrate vs 0x0380801d
+	.word	0x83fd9014, SDCS1 | SCR_EMRS1_DEFAULT	//OCD calibration mode exit
+	.word	0x83fd9014, SDCS1 | 0x00008000	//nop
 #endif
 	.word	0x83fd9000, 0xb2a20000	//ESDCTL0, refresh 4 rows each refresh clock
 #ifdef USE_CSD1
@@ -341,7 +332,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x83fd9000 + ESD_DLY2, 0x00f48c00	// D8-D15 read delay
 	.word	0x83fd9000 + ESD_DLY3, 0x00f48c00	// D16-D23 read delay
 	.word	0x83fd9000 + ESD_DLY4, 0x00f48c00	// D24-D31 read delay
-	.word	0x83fd9000 + ESD_DLY5, 0x00f49100	// D0-D31 write delay
+	.word	0x83fd9000 + ESD_DLY5, 0x00f49000	// D0-D31 write delay
 	.word	0x83fd9000 + ESD_GPR, 0x90000000	// DQS gating delays
 	.word	0x83fd9014, 0x00000000	//ESDSCR, AXI address readies normal operation
 	.word	0
@@ -495,18 +486,18 @@ dcd:		.word	0xb17219e9	//0x1c
 	.endm
 
 	.macro ddr_single_iomux_dcd_data
-	.word	0x73fa84bc, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS0, Enable pull down
-	.word	0x73fa84c0, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS1, Enable pull down
-	.word	0x73fa84c4, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS2, Enable pull down
-	.word	0x73fa84c8, 0x000000c5	//SW_PAD_CTL_PAD_DRAM_SDQS3, Enable pull down
+	.word	0x73fa84bc, 0x000000c3	//SW_PAD_CTL_PAD_DRAM_SDQS0, Enable pull down
+	.word	0x73fa84c0, 0x000000c3	//SW_PAD_CTL_PAD_DRAM_SDQS1, Enable pull down
+	.word	0x73fa84c4, 0x000000c3	//SW_PAD_CTL_PAD_DRAM_SDQS2, Enable pull down
+	.word	0x73fa84c8, 0x000000c3	//SW_PAD_CTL_PAD_DRAM_SDQS3, Enable pull down
 	.word	0
 	.endm
 
 	.macro ddr_differential_iomux_dcd_data
-	.word	0x73fa84bc, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
-	.word	0x73fa84c0, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
-	.word	0x73fa84c4, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS2, Disable pull down
-	.word	0x73fa84c8, 0x00000045	//SW_PAD_CTL_PAD_DRAM_SDQS3, Disable pull down
+	.word	0x73fa84bc, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
+	.word	0x73fa84c0, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
+	.word	0x73fa84c4, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS2, Disable pull down
+	.word	0x73fa84c8, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS3, Disable pull down
 	.word	0
 	.endm
 
