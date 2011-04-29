@@ -47,7 +47,7 @@
 #define CSP_BASE_REG_PA_AIPS2	0x83F00000
 
 #define EMRS1_DRIVE_STRENGTH		EMRS1_DRIVE_STRENGTH_REDUCED
-#define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_50
+#define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_75
 #define SCR_EMRS1_DEFAULT		(((EMRS1_DRIVE_STRENGTH | EMRS1_ODT_TERM) << 16) | 0x8019)
 //emrs(1) - buffers enabled, RDQS disable, DQS enable, 0 latency, DLL enable
 #define SDCS1	4
@@ -301,7 +301,7 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	0x83fd9014, 0x0000801a	//emrs(2)
 	.word	0x83fd9014, 0x0000801b	//emrs(3)
 	.word	0x83fd9014, SCR_EMRS1_DEFAULT	//emrs(1) - 50 ohms ODT
-	.word	0x83fd9014, 0x07328018	//MRS (load mode register)
+	.word	0x83fd9014, 0x05328018	//MRS (load mode register)
 	.word	0x83fd9014, 0x04008008	//PRECHARGE ALL
 	.word	0x83fd9014, 0x00008010	//auto-refresh
 	.word	0x83fd9014, 0x00008010	//auto-refresh
