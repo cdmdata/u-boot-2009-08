@@ -100,6 +100,15 @@ inline void Set_GPIO_input(unsigned gp)
 	writel(reg, base + GPIO_DIR);
 }
 
+unsigned get_machid(void)
+{
+	unsigned machid = 0;
+	char *s = getenv ("machid");
+	if (s)
+		machid = simple_strtoul (s, NULL, 16);
+	return machid;
+}
+
 static inline void setup_boot_device(void)
 {
 	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
@@ -402,12 +411,22 @@ static void setup_i2c(unsigned int module_base)
 		mxc_iomux_set_input(MUX_IN_I2C3_IPP_SCL_IN_SELECT_INPUT,
 				INPUT_CTL_PATH1);
 		mxc_iomux_set_pad(MX53_PIN_GPIO_3, pad_ctl);
-		/* GPIO_6 for I2C3_SDA */
-		mxc_request_iomux(MX53_PIN_GPIO_6,
-				IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION);
-		mxc_iomux_set_input(MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT,
-				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_GPIO_6, pad_ctl);
+		if (get_machid() == MACH_TYPE_MX53_NITROGEN_A) {
+			/* pad GPIO_16 for I2C3_SDA is gpio7[11] */
+			mxc_request_iomux(MX53_PIN_GPIO_16,
+					IOMUX_CONFIG_ALT6 | IOMUX_CONFIG_SION);
+			mxc_iomux_set_input(MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT,
+					INPUT_CTL_PATH2);
+			mxc_iomux_set_pad(MX53_PIN_GPIO_6, pad_ctl);
+		} else {
+			/* GPIO_6 for I2C3_SDA */
+			mxc_request_iomux(MX53_PIN_GPIO_6,
+					IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION);
+			mxc_iomux_set_input(MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT,
+					INPUT_CTL_PATH1);
+			mxc_iomux_set_pad(MX53_PIN_GPIO_6, pad_ctl);
+
+		}
 		break;
 	default:
 		printf("Invalid I2C base: 0x%x\n", module_base);
@@ -478,6 +497,11 @@ void init_display_pins(void)
 	mxc_request_iomux(MX53_PIN_EIM_A22, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_A22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
+	/* gpio2[20] - Display enable for chimei 7" panel */
+	Set_GPIO_output_val(MAKE_GP(2, 20), 1);
+	mxc_request_iomux(MX53_PIN_EIM_A18, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_A18, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+
 #define PWMCR	0x0
 #define PWMSR	0x4
 #define PWMIR	0x8
@@ -499,15 +523,8 @@ void init_display_pins(void)
 	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
 	udelay(5);
 	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
-
-	{
-		char *s = getenv ("machid");
-		if (s) {
-			unsigned machid = simple_strtoul (s, NULL, 16);
-			if (machid == MACH_TYPE_MX53_NITROGEN_V1)
-				tfp410_bus = I2C1_BASE_ADDR;
-		}
-	}
+	if (get_machid() == MACH_TYPE_MX53_NITROGEN_V1)
+		tfp410_bus = I2C1_BASE_ADDR;
 
 	/* Init tfp410 */
 	buf[0] = 0xbd;
@@ -890,8 +907,6 @@ int board_init(void)
 	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_i2c(I2C2_BASE_ADDR);
 	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
-	setup_i2c(I2C2_BASE_ADDR);
-	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_core_voltages();
 #endif
 	return 0;
@@ -1069,7 +1084,10 @@ int board_late_init(void)
 #ifdef CONFIG_VIDEO_IMX5X
 	setup_display();
 #endif
-
+#ifdef CONFIG_I2C_MXC
+	setup_i2c(I2C3_BASE_ADDR);
+	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+#endif
 	return 0;
 }
 

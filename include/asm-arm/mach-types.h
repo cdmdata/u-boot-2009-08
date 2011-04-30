@@ -3074,6 +3074,8 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_MX51_NITROGEN        3167
 #define MACH_TYPE_MX53_NITROGEN        3168
 #define MACH_TYPE_MX53_NITROGEN_V1     3169
+#define MACH_TYPE_MX53_NITROGEN_A      3170
+
 
 #ifdef CONFIG_ARCH_EBSA110
 # ifdef machine_arch_type
