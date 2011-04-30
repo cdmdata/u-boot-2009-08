@@ -1,11 +1,16 @@
+//Micron
 //#define DDR_TYPE	MT47H128M8CF_3			//512MB, 333 MHz
 //#define DDR_TYPE	MT47H128M8CF_3_REV1		//512MB, 333 MHz
-#define DDR_TYPE	MT47H128M8CF_25E		//512MB, 400 MHz
+//#define DDR_TYPE	MT47H128M8CF_25E		//512MB, 400 MHz
 //#define DDR_TYPE	MT47H128M8CF_25E_REV1		//512MB, 400 MHz
 //#define DDR_TYPE	MT47H128M8CF_5			//512MB, 200 MHz
+//#define DDR_TYPE	MT47H64M8CF_25E			//256MB
+
+//Hynix
+#define DDR_TYPE	H5PS1G83EFR_S6C			//512MB, 400 MHz
 //#define DDR_TYPE	H5PS2G83AFR_S6			//1GB
 //#define DDR_TYPE	H5PS2G83AFR_S5			//1GB
-//#define DDR_TYPE	MT47H64M8CF_25E			//256MB
+
 #define PMIC_DA9053_ADDR 0x48
 //#define USE_CSD1 1
 #define TO2
@@ -17,7 +22,7 @@
 #define H5PS2G83AFR_S6		6	//1GB
 #define H5PS2G83AFR_S5		7	//1GB
 #define MT47H64M8CF_25E		8	//256MB
-
+#define H5PS1G83EFR_S6C		9	//512MB, 400 MHz, CL 6, tRCD 6, tRP 6
 
 #define CPU_2_BE_32(l) \
        ((((l) & 0x000000FF) << 24) | \
@@ -207,6 +212,7 @@
 	.endm
 
 	.macro ddr_data
+//Micron Memory
 	//MT47H128M8CF_3  DDR2-667(333MHz), tck=3ns(333Mhz), CL=5 wr=15 ns, rcd=15 ns, rp=15 ns
 	//512MB = 3 bank bits(8 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
@@ -231,7 +237,6 @@
 //	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01730205, 0x020a020a, 0x201e1e20, 0x57525f4d //v
 //	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x016c016a, 0x013e013e, 0x23252523, 0x534e554a //v
 	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x016e013d, 0x01750179, 0x24222626, 0x534e574c //v 2e:7b
-//	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x0168013d, 0x016e016e, 0x201d2422, 0x534a554a //v???
 	ddr_type	MT47H128M8CF_25E,      1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01780131, 0x0139017d, 0x27292930, 0x57504949
 	ddr_type	MT47H128M8CF_25E_REV1, 1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x013a013c, 0x013a0145, 0x34313634, 0x433e3e3e
 
@@ -241,6 +246,12 @@
 	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01100111, 0x01140113, 0x34343434, 0x4b484c46	//v
 	ddr_type	MT47H128M8CF_5,        1, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
 
+	//MT47H64M8CF_25E, tck=2.5 ns(400Mhz), CL=5, WR=15ns, tRCD=12.5ns, tRP=12.5ns
+	//256MB = 2 bank bits(4 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 28 bits
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+	ddr_type	MT47H64M8CF_25E,       2, 400, 2, 14, 10, 5, 4, 6, 5, 5, 0x01460204, 0x0146014a, 0x1f1c211f, 0x4f485646
+
+//Hynix Memory
 	//H5PS2G83AFR_S6  DDR2-800(400Mhz), RL=6, WR=15ns, tRCD=6, tRP=6
 	//1GB   = 3 bank bits(8 banks) + 15 row bits + 10 column bits + 2 bits(32 bit width) = 30 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
@@ -251,10 +262,11 @@
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
 	ddr_type	H5PS2G83AFR_S5,        2, 400, 3, 15, 10, 5, 4, 6, 5, 5, 0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
 
-	//MT47H64M8CF_25E, tck=2.5 ns(400Mhz), CL=5, WR=15ns, tRCD=12.5ns, tRP=12.5ns
-	//256MB = 2 bank bits(4 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 28 bits
+	//H5PS1G83EFR_S6C DDR2-800(400Mhz), CL=6, tRCD=6, tRP=6
+	//512MB = 3 bank bits(8 banks) + 14 Row bits, 10 Column bits, + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	MT47H64M8CF_25E,       2, 400, 2, 14, 10, 5, 4, 6, 5, 5, 0x01460204, 0x0146014a, 0x1f1c211f, 0x4f485646
+	ddr_type	H5PS1G83EFR_S6C,       2, 400, 3, 14, 10, 6, 5, 6, 6, 6, 0x01770172, 0x0177017b, 0x25232523, 0x5250564b //v 2e:84
+
 	.word		0
 	.endm
 
