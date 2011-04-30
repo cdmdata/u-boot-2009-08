@@ -226,6 +226,7 @@ waitosc:
 	str r0, [rClk, #CLKCTL_CCGR6]
 
 	/* Make sure to switch the DDR away from PLL 1 */
+	ldr r2, [rClk, #CLKCTL_CBCDR]	//keep the initial ddr podf value
 	ldr r3, =0x19239145
 	str r3, [rClk, #CLKCTL_CBCDR]
 	divisor_change_wait rClk
@@ -281,7 +282,9 @@ waitosc:
 	ldr r0, =0x000020C2
 	str r0, [rClk, #CLKCTL_CBCMR]
 	/* ddr clock from PLL 1, all perclk dividers are 1 since using 24MHz */
-	ldr r0, =0x59E35100
+	ldr r0, =0x41E35100
+	and r2, r2, #(7 << 27)		//keep the initial ddr podf value
+	orr r0, r0, r2
 	str r0, [rClk, #CLKCTL_CBCDR]
 
 	/* Use PLL2 for UART clock, get 66.5MHz from it */
