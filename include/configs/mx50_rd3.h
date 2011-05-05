@@ -1,7 +1,7 @@
 /*
- * Copyright (C) 2010 Freescale Semiconductor, Inc.
+ * Copyright (C) 2011 Freescale Semiconductor, Inc.
  *
- * Configuration settings for the MX50-ARM2 Freescale board.
+ * Configuration settings for the MX50-RDP Freescale board.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,15 +27,17 @@
  /* High Level Configuration Options */
 #define CONFIG_MXC
 #define CONFIG_MX50
-#define CONFIG_MX50_ARM2
+#define CONFIG_MX50_RD3
 #define CONFIG_LPDDR2
 #define CONFIG_FLASH_HEADER
 #define CONFIG_FLASH_HEADER_OFFSET 0x400
 
 #define CONFIG_SKIP_RELOCATE_UBOOT
 
+/*
 #define CONFIG_ARCH_CPU_INIT
 #define CONFIG_ARCH_MMU
+*/
 
 #define CONFIG_MX50_HCLK_FREQ	24000000
 #define CONFIG_SYS_PLL2_FREQ    400
@@ -70,7 +72,7 @@
  * Hardware drivers
  */
 #define CONFIG_MXC_UART
-#define CONFIG_UART_BASE_ADDR   UART1_BASE_ADDR
+#define CONFIG_UART_BASE_ADDR	UART1_BASE_ADDR
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -132,7 +134,7 @@
  * Miscellaneous configurable options
  */
 #define CONFIG_SYS_LONGHELP		/* undef to save memory */
-#define CONFIG_SYS_PROMPT		"ARM2 U-Boot > "
+#define CONFIG_SYS_PROMPT		"MX50_RD3 U-Boot > "
 #define CONFIG_AUTO_COMPLETE
 #define CONFIG_SYS_CBSIZE		256	/* Console I/O Buffer Size */
 /* Print Buffer Size */
@@ -154,7 +156,7 @@
 #define CONFIG_FEC0_IOBASE	FEC_BASE_ADDR
 #define CONFIG_FEC0_PINMUX	-1
 #define CONFIG_FEC0_PHY_ADDR	-1
-#define CONFIG_FEC0_MIIBASE 	-1
+#define CONFIG_FEC0_MIIBASE	-1
 
 #define CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
 
@@ -164,44 +166,22 @@
 #define CONFIG_DISCOVER_PHY
 
 /*
-#define CONFIG_SPLASH_SCREEN
-*/
-
-/*
- * SPLASH SCREEN Configs
+ * DDR ZQ calibration
  */
-#ifdef CONFIG_SPLASH_SCREEN
-	#define CONFIG_LCD
-	#undef LCD_TEST_PATTERN
-	#define CONFIG_FB_BASE                          (TEXT_BASE + 0x300000)
-	#define CONFIG_SYS_CONSOLE_IS_IN_ENV            1
-	/* #define CONFIG_SPLASH_IS_IN_MMC                 1 */
-	#define LCD_BPP					LCD_MONOCHROME
-	/* #define CONFIG_SPLASH_SCREEN_ALIGN           1 */
-
-	#define CONFIG_MXC_EPDC				1
-
-	#define CONFIG_WORKING_BUF_ADDR			(TEXT_BASE + 0x100000)
-	#define CONFIG_WAVEFORM_BUF_ADDR		(TEXT_BASE + 0x200000)
-	#define CONFIG_WAVEFORM_FILE_OFFSET		0x100000
-	#define CONFIG_WAVEFORM_FILE_SIZE		0xB4000
-	#define CONFIG_WAVEFORM_FILE_IN_MMC
-#endif
-
-#ifdef CONFIG_SPLASH_IS_IN_MMC
-	#define CONFIG_SPLASH_IMG_OFFSET		0x4c000
-	#define CONFIG_SPLASH_IMG_SIZE			0x19000
-#endif
+#define CONFIG_ZQ_CALIB
 
 /*
  * I2C Configs
  */
 #define CONFIG_CMD_I2C          1
-#define CONFIG_HARD_I2C         1
-#define CONFIG_I2C_MXC          1
-#define CONFIG_SYS_I2C_PORT             I2C2_BASE_ADDR
-#define CONFIG_SYS_I2C_SPEED            100000
-#define CONFIG_SYS_I2C_SLAVE            0xfe
+
+#ifdef CONFIG_CMD_I2C
+	#define CONFIG_HARD_I2C         1
+	#define CONFIG_I2C_MXC          1
+	#define CONFIG_SYS_I2C_PORT             I2C2_BASE_ADDR
+	#define CONFIG_SYS_I2C_SPEED            100000
+	#define CONFIG_SYS_I2C_SLAVE            0xfe
+#endif
 
 
 /*
@@ -210,7 +190,7 @@
 #define CONFIG_FSL_SF		1
 #define CONFIG_CMD_SPI
 #define CONFIG_CMD_SF
-#define CONFIG_SPI_FLASH_IMX_ATMEL	1
+#define CONFIG_SPI_FLASH_IMX_M25PXX	1
 #define CONFIG_SPI_FLASH_CS	1
 #define CONFIG_IMX_CSPI
 #define IMX_CSPI_VER_0_7        1
@@ -236,6 +216,7 @@
 	#define CONFIG_DYNAMIC_MMC_DEVNO
 
 	#define CONFIG_BOOT_PARTITION_ACCESS
+	#define CONFIG_EMMC_DDR_PORT_DETECT
 	#define CONFIG_EMMC_DDR_MODE
 
 	/* Indicate to esdhc driver which ports support 8-bit data */
@@ -272,7 +253,11 @@
  * APBH DMA Configs
  */
 #define CONFIG_APBH_DMA
-#define CONFIG_MXS_DMA_REG_BASE ABPHDMA_BASE_ADDR
+
+#ifdef CONFIG_APBH_DMA
+	#define CONFIG_APBH_DMA_V2
+	#define CONFIG_MXS_DMA_REG_BASE	ABPHDMA_BASE_ADDR
+#endif
 
 /*-----------------------------------------------------------------------
  * Stack sizes
