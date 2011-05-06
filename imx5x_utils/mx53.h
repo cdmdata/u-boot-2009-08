@@ -1,3 +1,4 @@
+#include <config.h>
 //Micron
 //#define DDR_TYPE	MT47H128M8CF_3			//512MB, 333 MHz
 //#define DDR_TYPE	MT47H128M8CF_3_REV1		//512MB, 333 MHz
@@ -40,7 +41,12 @@
 #define UART1_BASE	0x53fbc000
 #define UART2_BASE	0x53fc0000
 #define UART3_BASE	0x5000c000
+
+#ifdef CONFIG_UART_BASE_ADDR
+#define UART_BASE	CONFIG_UART_BASE_ADDR
+#else
 #define UART_BASE	UART2_BASE
+#endif
 #define IPU_CM_REG_BASE		0x1E000000
 #define IPU_IDMAC_BASE		0x1E008000
 
@@ -703,6 +709,7 @@ get_ddr_type_addr:
 	.word	0x53FA872c, DQVAL	/* GRP_B3DS: D24-D31 */
 #if 1
 //uart1 rxd:PATA_DMACK, txd:PATA_DIOW
+//Note: Serial downloader assumes UART1_TXD is CSI0_DAT10, UART1_RXD is CSI0_DAT11
 	.word	0x53FA8274, 3		//Mux: PATA_DMACK - UART1_RXD
 	.word	0x53FA85F4, 0x1e4	//CTL: PATA_DMACK - UART1_RXD
 	.word	0x53FA8878, 3		//Select: UART1_IPP_UART_RXD_MUX_SELECT_INPUT

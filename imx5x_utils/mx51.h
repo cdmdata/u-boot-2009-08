@@ -1,3 +1,4 @@
+#include <config.h>
 //256 meg is fine if we're just writing sdmmc to the SDCard
 #define USE_CSD1	//512MB board uses CS0 and CS1, we will disable CS1 if ram doesn't appear to work
 
@@ -16,7 +17,13 @@
 #define UART1_BASE	0x73fbc000
 #define UART2_BASE	0x73fc0000
 #define UART3_BASE	0x7000c000
+
+#ifdef CONFIG_UART_BASE_ADDR
+#define UART_BASE	CONFIG_UART_BASE_ADDR
+#else
 #define UART_BASE	UART1_BASE
+#endif
+
 #define IPU_CM_REG_BASE		0x5E000000
 #define IPU_IDMAC_BASE		0x5E008000
 
