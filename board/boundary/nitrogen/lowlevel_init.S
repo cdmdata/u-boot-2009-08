@@ -274,7 +274,7 @@ waitosc:
 	str r0, [r1, #0x14]
 
 	/* Run TO 3.0 at Full speed, for other TO's wait till we increase VDDGP */
-	mov r0, #0
+	mov r0, #CONFIG_SYS_ARM_PODF
 	str r0, [rClk, #CLKCTL_CACRR]
 
 	/* setup the rest */

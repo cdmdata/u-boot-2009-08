@@ -39,6 +39,7 @@
 #define CONFIG_SKIP_RELOCATE_UBOOT
 
 #define CONFIG_MX51_HCLK_FREQ	24000000	/* RedBoot says 26MHz */
+#define CONFIG_SYS_ARM_PODF	0	/* divide by (n+1), n = 0-7 */
 
 #define CONFIG_ARCH_CPU_INIT
 #define CONFIG_ARCH_MMU

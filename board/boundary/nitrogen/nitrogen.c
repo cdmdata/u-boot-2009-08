@@ -580,7 +580,7 @@ static void setup_core_voltage_i2c(void)
 
 	puts("PMIC Mode: linear\n");
 
-	writel(0x0, CCM_BASE_ADDR + CLKCTL_CACRR);
+	writel(CONFIG_SYS_ARM_PODF, CCM_BASE_ADDR + CLKCTL_CACRR);
 	reg = readl(GPIO2_BASE_ADDR + 0x0);
 	reg &= ~0x4000;  /* Lower reset line */
 	writel(reg, GPIO2_BASE_ADDR + 0x0);
@@ -662,7 +662,7 @@ static void setup_core_voltage_spi(void)
 		pmic_reg(slave, 26, val, 1);
 		udelay(50);
 		/* Raise the core frequency to 800MHz */
-		writel(0x0, CCM_BASE_ADDR + CLKCTL_CACRR);
+		writel(CONFIG_SYS_ARM_PODF, CCM_BASE_ADDR + CLKCTL_CACRR);
 	} else {
 		/* TO 3.0 */
 		/* Setup VCC (SW2) to 1.225 */
