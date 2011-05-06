@@ -270,15 +270,41 @@ dcd:		.word	0xb17219e9	//0x1c
 #endif
 	.endm
 
-
+#define ESDMISC_INIT_DEFAULT	0x0aaad0d0	//ODT_EN should not be set yet
+#define ESDMISC_RUN_DEFAULT	0x0aaaf6d0	//enable ODT, MIF3
+/*
+ * Bit 31 - CS0_RDY
+ * Bit 30 - CS1_RDY
+ * Bit 29 - ODT_IDLE
+ * Bit 28 - SDCLK_EXT
+ * Bit 27-26 - DQ[31-24] resistor for odt (0 - off, 1 - 150 ohm, 2 - 75 ohm, 3 - 50 ohm)
+ * Bit 25-24 - DQ[23-16]
+ * Bit 23-22 - DQ[15-8]
+ * Bit 21-20 - DQ[7-0]
+ * Bit 19-16 - must be 1010 for Jedec standard compliant devices
+ * Bit 15 - differential DQS enable
+ * Bit 14 - auto_dll_pause enable
+ * Bit 13 - odt enable
+ * Bit 12 - Bank interleave enable
+ * Bit 11 - Force measurement
+ * Bit 10-9 - MIF3_MODE, 0 disable, 3 enable all
+ * Bit 8-7 - read additional Latency(RALAT) 01 means 1 cycle delay
+ * Bit 6 - 1 means 8 bank device
+ * Bit 5 - Latency hiding disable
+ * Bit 4 - DDR2 enable
+ * Bit 3 - DDR enable
+ * Bit 2 - reserved
+ * Bit 1 - reset
+ * Bit 0 - reserved
+ */
 	.macro esd_dcd_data
 #if 1
-	.word	0x83fd9000, 0x82a20000	//ESDCTL0, 13 row, 10 col, 32 bit width
+	.word	ESD_BASE + ESD_CTL0, 0x82a20000	//13 row, 10 col, 32 bit width
 #ifdef USE_CSD1
-	.word	0x83fd9008, 0x82a20000	//ESDCTL1
+	.word	ESD_BASE + ESD_CTL1, 0x82a20000
 #endif
-	.word	0x83fd9010, 0x000ad0d0	//ESDMISC, ddr2, 3 bank bits (13+10+3+2) = 28 bits = 256M
-	.word	0x83fd9004, 0x333584ab	//ESDCFG0 0x333574aa vs 333584ab
+	.word	ESD_BASE + ESD_MISC, ESDMISC_INIT_DEFAULT
+	.word	ESD_BASE + ESD_CFG0, 0x333584ab
 //Samsung K4T1G164Q[E/F]-BCE6000 - E6 means DDR2-667, tCK, CL=3 : 5 - 8 ns
 //					K4T1G164QF-BCE6000
 //tRFC(refresh to any command)		127.5 ns (26 clocks)	Bits 31-28: 3 = 26 clocks (130 ns)(ESDCTL0[23] is double tRFC)
@@ -294,47 +320,47 @@ dcd:		.word	0xb17219e9	//0x1c
 //tRC(ACTIVE to ACTIVE, same bank)	60 ns (12 clocks)	Bits 3-0:   0xb - 12 clocks(60ns), was 0xa = 11 clocks (55 ns)
 
 #ifdef USE_CSD1
-	.word	0x83fd900c, 0x333584ab	//ESDCFG1
+	.word	ESD_BASE + ESD_CFG1, 0x333584ab
 #endif
 //CSD0 always used
-	.word	0x83fd9014, 0x04008008	//ESDSCR, CSD0
-	.word	0x83fd9014, 0x0000801a	//emrs(2)
-	.word	0x83fd9014, 0x0000801b	//emrs(3)
-	.word	0x83fd9014, SCR_EMRS1_DEFAULT	//emrs(1) - 50 ohms ODT
-	.word	0x83fd9014, 0x05328018	//MRS (load mode register)
-	.word	0x83fd9014, 0x04008008	//PRECHARGE ALL
-	.word	0x83fd9014, 0x00008010	//auto-refresh
-	.word	0x83fd9014, 0x00008010	//auto-refresh
-	.word	0x83fd9014, 0x06328018	//MRS (load mode register)
-	.word	0x83fd9014, 0x03800000 | SCR_EMRS1_DEFAULT	//emrs(1) - calibrate
-	.word	0x83fd9014, SCR_EMRS1_DEFAULT	//OCD calibration mode exit
-	.word	0x83fd9014, 0x00008000	//nop
+	.word	ESD_BASE + ESD_SCR, 0x04008008	//PRECHARGE ALL
+	.word	ESD_BASE + ESD_SCR, 0x0000801a	//emrs(2)
+	.word	ESD_BASE + ESD_SCR, 0x0000801b	//emrs(3)
+	.word	ESD_BASE + ESD_SCR, SCR_EMRS1_DEFAULT	//emrs(1) - 50 ohms ODT
+	.word	ESD_BASE + ESD_SCR, 0x05328018	//MRS (load mode register)
+	.word	ESD_BASE + ESD_SCR, 0x04008008	//PRECHARGE ALL
+	.word	ESD_BASE + ESD_SCR, 0x00008010	//auto-refresh
+	.word	ESD_BASE + ESD_SCR, 0x00008010	//auto-refresh
+	.word	ESD_BASE + ESD_SCR, 0x06328018	//MRS (load mode register)
+	.word	ESD_BASE + ESD_SCR, 0x03800000 | SCR_EMRS1_DEFAULT	//emrs(1) - calibrate
+	.word	ESD_BASE + ESD_SCR, SCR_EMRS1_DEFAULT	//OCD calibration mode exit
+	.word	ESD_BASE + ESD_SCR, 0x00008000	//nop
 #ifdef USE_CSD1
-	.word	0x83fd9014, SDCS1 | 0x04008008	//ESDSCR, CSD1 !!!!
-	.word	0x83fd9014, SDCS1 | 0x0000801a	//emrs(2)
-	.word	0x83fd9014, SDCS1 | 0x0000801b	//emrs(3)
-	.word	0x83fd9014, SDCS1 | SCR_EMRS1_DEFAULT	//emrs(1) - 50 ohms ODT vs 0x0000801d
-	.word	0x83fd9014, SDCS1 | 0x07328018	//MRS (load mode register)
-	.word	0x83fd9014, SDCS1 | 0x04008008	//PRECHARGE ALL
-	.word	0x83fd9014, SDCS1 | 0x00008010	//auto-refresh
-	.word	0x83fd9014, SDCS1 | 0x00008010	//auto-refresh
-	.word	0x83fd9014, SDCS1 | 0x06328018	//MRS (load mode register)
-	.word	0x83fd9014, SDCS1 | 0x03800000 | SCR_EMRS1_DEFAULT	//emrs(1) - calibrate vs 0x0380801d
-	.word	0x83fd9014, SDCS1 | SCR_EMRS1_DEFAULT	//OCD calibration mode exit
-	.word	0x83fd9014, SDCS1 | 0x00008000	//nop
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x04008008	//ESDSCR, CSD1 !!!!
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x0000801a	//emrs(2)
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x0000801b	//emrs(3)
+	.word	ESD_BASE + ESD_SCR, SDCS1 | SCR_EMRS1_DEFAULT	//emrs(1) - 50 ohms ODT vs 0x0000801d
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x07328018	//MRS (load mode register)
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x04008008	//PRECHARGE ALL
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x00008010	//auto-refresh
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x00008010	//auto-refresh
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x06328018	//MRS (load mode register)
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x03800000 | SCR_EMRS1_DEFAULT	//emrs(1) - calibrate vs 0x0380801d
+	.word	ESD_BASE + ESD_SCR, SDCS1 | SCR_EMRS1_DEFAULT	//OCD calibration mode exit
+	.word	ESD_BASE + ESD_SCR, SDCS1 | 0x00008000	//nop
 #endif
-	.word	0x83fd9000, 0xb2a20000	//ESDCTL0, refresh 4 rows each refresh clock
+	.word	ESD_BASE + ESD_CTL0, 0xb2a20000	//refresh 4 rows each refresh clock
 #ifdef USE_CSD1
-	.word	0x83fd9008, 0xb2a20000	//ESDCTL1, ...
+	.word	ESD_BASE + ESD_CTL1, 0xb2a20000
 #endif
-	.word	0x83fd9010, 0x000ad6d0	//ESDMISC
-	.word	0x83fd9000 + ESD_DLY1, 0x00f48c00	// D0-D7 read delay
-	.word	0x83fd9000 + ESD_DLY2, 0x00f48c00	// D8-D15 read delay
-	.word	0x83fd9000 + ESD_DLY3, 0x00f48c00	// D16-D23 read delay
-	.word	0x83fd9000 + ESD_DLY4, 0x00f48c00	// D24-D31 read delay
-	.word	0x83fd9000 + ESD_DLY5, 0x00f49000	// D0-D31 write delay
-	.word	0x83fd9000 + ESD_GPR, 0x90000000	// DQS gating delays
-	.word	0x83fd9014, 0x00000000	//ESDSCR, AXI address readies normal operation
+	.word	ESD_BASE + ESD_MISC, ESDMISC_RUN_DEFAULT
+	.word	ESD_BASE + ESD_DLY1, 0x00f48c00	// D0-D7 read delay
+	.word	ESD_BASE + ESD_DLY2, 0x00f48c00	// D8-D15 read delay
+	.word	ESD_BASE + ESD_DLY3, 0x00f48c00	// D16-D23 read delay
+	.word	ESD_BASE + ESD_DLY4, 0x00f48c00	// D24-D31 read delay
+	.word	ESD_BASE + ESD_DLY5, 0x00f49000	// D0-D31 write delay
+	.word	ESD_BASE + ESD_GPR, 0x90000000	// DQS gating delays
+	.word	ESD_BASE + ESD_SCR, 0x00000000	//ESDSCR, AXI address readies normal operation
 	.word	0
 //CSD0 DDR - 0x90000000 (256M), CSD1 DDR - 0xa0000000 (256M)
 #endif
@@ -392,12 +418,12 @@ dcd:		.word	0xb17219e9	//0x1c
 	tst	r1, #1<<14
 	beq	91b
 #if 1
-	BigMov	r1, 0x000ad0d2		//ESDMISC, ddr2, 3 bank bits (13+10+3+2) = 28 bits = 256M
+	BigMov	r1, ESDMISC_INIT_DEFAULT | 0x02 //ESDMISC
 	str	r1, [r3, #ESD_MISC]	// soft reset
-	bic	r1, r1, #2
 	mov	r0,#0x1
 91:	subs	r0,r0,#1
 	bne	91b
+	BigEor2	r1, (ESDMISC_INIT_DEFAULT | 0x02) ^ ESDMISC_RUN_DEFAULT
 	str	r1, [r3, #ESD_MISC]	// release reset
 #endif
 	BigMov	r1, 0x04008008		//PRECHARGE ALL
