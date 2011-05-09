@@ -26,6 +26,7 @@
 #include <image.h>
 #include <u-boot/zlib.h>
 #include <asm/byteorder.h>
+#include <malloc.h>
 
 #ifdef CONFIG_LCD_MULTI
 #include "lcd_multi.h"
@@ -175,19 +176,44 @@ static void setup_memory_tags (bd_t *bd)
 }
 #endif /* CONFIG_SETUP_MEMORY_TAGS */
 
+static char console_equal[] = "console=";
+static const char *fixup_console(const char *cmdline)
+{
+	char *console_str=getenv("console");
+	char *p;
+	unsigned len;
+	if (!console_str)
+		return cmdline ;
+
+	if (strstr(cmdline,console_equal))
+		return cmdline ;
+
+	len = strlen(console_str) + strlen(console_equal) + 1;
+
+	p = (char *)malloc(strlen(cmdline)+2+len);
+	if (p) {
+		strcpy(p,cmdline);
+		strcat(p, " " );
+		strcat(p,console_equal);
+		strcat(p,console_str);
+		cmdline = p;
+	}
+	return cmdline;
+}
 
 static void setup_commandline_tag (bd_t *bd, char *commandline)
 {
-	char *p;
-#ifdef CONFIG_LCD_MULTI
-	commandline = fixupPanelBootArg(commandline);
-#endif
+	const char *p = commandline;
+	/* eat leading white space */
+	for (; *p == ' '; p++);
 
-	if (!commandline)
+#ifdef CONFIG_LCD_MULTI
+	p = fixupPanelBootArg(p);
+#endif
+	p = fixup_console(p);
+	if (!p)
 		return;
 
-	/* eat leading white space */
-	for (p = commandline; *p == ' '; p++);
 
 	/* skip non-existent command lines so the kernel will still
 	 * use its default command line.
