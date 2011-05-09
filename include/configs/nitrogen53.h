@@ -23,6 +23,7 @@
 #define __CONFIG_H
 
 #include <asm/arch/mx53.h>
+#define CONFIG_MACH_TYPE	MACH_TYPE_MX53_NITROGEN
 
  /* High Level Configuration Options */
 #define CONFIG_ARMV7		1	/* This is armv7 Cortex-A8 CPU core */
@@ -200,8 +201,9 @@
 #define CONFIG_LOADADDR		0x70800000	/* loadaddr env var */
 #define CONFIG_RD_LOADADDR	(CONFIG_LOADADDR + 0x300000)
 
-#define	CONFIG_EXTRA_ENV_SETTINGS					\
-		"ethprime=FEC0\0"					\
+#define	CONFIG_EXTRA_ENV_SETTINGS	\
+	"ethprime=FEC0\0"		\
+	"console=ttymxc1,115200\0"	\
 
 #define CONFIG_ARP_TIMEOUT	200UL
 

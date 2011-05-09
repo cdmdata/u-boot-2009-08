@@ -102,10 +102,8 @@ inline void Set_GPIO_input(unsigned gp)
 
 unsigned get_machid(void)
 {
-	unsigned machid = 0;
 	char *s = getenv ("machid");
-	if (s)
-		machid = simple_strtoul (s, NULL, 16);
+	unsigned machid = (s) ? simple_strtoul(s, NULL, 16) : CONFIG_MACH_TYPE;
 	return machid;
 }
 
@@ -308,10 +306,7 @@ static void get_best_ratio(unsigned *pnum, unsigned *pdenom, unsigned max)
 	*pdenom = d[i];
 }
 
-#define UART1_BASE	0x53fbc000
-#define UART2_BASE	0x53fc0000
-#define UART3_BASE	0x5000c000
-#define UART_BASE	UART2_BASE
+#define UART_BASE	CONFIG_UART_BASE_ADDR
 
 #define UFCR           0x0090
 #define UBIR           0x00a4
@@ -893,7 +888,7 @@ int board_init(void)
 	setup_spi();
 #endif
 
-	gd->bd->bi_arch_number = MACH_TYPE_MX53_NITROGEN;	/* board id for linux */
+	gd->bd->bi_arch_number = CONFIG_MACH_TYPE;	/* board id for linux */
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
