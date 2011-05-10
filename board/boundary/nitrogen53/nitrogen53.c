@@ -412,7 +412,7 @@ static void setup_i2c(unsigned int module_base)
 					IOMUX_CONFIG_ALT6 | IOMUX_CONFIG_SION);
 			mxc_iomux_set_input(MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT,
 					INPUT_CTL_PATH2);
-			mxc_iomux_set_pad(MX53_PIN_GPIO_6, pad_ctl);
+			mxc_iomux_set_pad(MX53_PIN_GPIO_16, pad_ctl);
 		} else {
 			/* GPIO_6 for I2C3_SDA */
 			mxc_request_iomux(MX53_PIN_GPIO_6,
