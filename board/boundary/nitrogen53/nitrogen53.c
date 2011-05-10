@@ -400,6 +400,8 @@ static void setup_i2c(unsigned int module_base)
 		mxc_iomux_set_pad(MX53_PIN_EIM_EB2, pad_ctl);
 		break;
 	case I2C3_BASE_ADDR:
+		/* GPIO_0 - SSI_EXT1 output clock, this is needed for sgtl500 */
+		mxc_request_iomux(MX53_PIN_GPIO_0, IOMUX_CONFIG_ALT3);
 		/* GPIO_3 for I2C3_SCL */
 		mxc_request_iomux(MX53_PIN_GPIO_3,
 				IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION);
