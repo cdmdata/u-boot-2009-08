@@ -225,7 +225,7 @@ const unsigned char reg_data[] = {
 		0x3b, 0x6a,		/* on,  LDO10, tfp410(6a:3.3V) */
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
 //		0x34, 0x7f		/* on,  LDO3, 3.3V (7f:3.3V) */
-		0x2e, 0x73,		/* on,  VBUCKCORE, 1.812V (73:1.775V) */
+//		0x2e, 0x73,		/* on,  VBUCKCORE, 1.812V (73:1.775V) */
 		0x2f, 0x61,		/* on,  VBUCK_PRO, 1.302V (61:1.325V) */
 		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
 		0x3c, 0x7f,		/* go:core, pro, mem, LDO2, LDO3 */
