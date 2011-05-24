@@ -253,6 +253,14 @@ int power_up_ddr(unsigned i2c_base, unsigned chip)
 		if (ret)
 			return ret;
 	}
+	i = *((int *)0x63f98024); /* silicon revision */
+	if (3 > i) {
+		/* set VBUCKCORE to 1.2V */
+		buf[0] = 0x5c ;
+		buf[1] = 0x61 ;
+		ret = i2c_write(i2c_base, chip, 0x2e, 1, buf, 1);
+		ret = i2c_write(i2c_base, chip, 0x3c, 1, buf+1, 1);
+	}
 	delayMicro(1000);
 	return ret;
 }
