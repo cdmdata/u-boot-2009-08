@@ -238,6 +238,7 @@ const unsigned char reg_data[] = {
 /* LDO8 - leave on 1.8V, serial port messed up otherwise on newest board */
 //		0x39, 0x0c,		/* off, LDO8, camera db(4c:1.8V) */
 		0x3a, 0x1f,		/* off, LDO9, 2.8V camera(5f:2.75V) */
+		0x1a, 0x97,		/* gp11 input, usbotg id */
 };
 
 int power_up_ddr(unsigned i2c_base, unsigned chip)
