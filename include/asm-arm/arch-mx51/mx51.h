@@ -463,16 +463,8 @@
 #define IIM_SREV_REV_LEN        4
 #define PROD_SIGNATURE_MX51     0x1
 
-#define CHIP_REV_1_0            0x10
-#define CHIP_REV_1_1            0x11
-#define CHIP_REV_2_0            0x20
-#define CHIP_REV_2_5		0x25
-#define CHIP_REV_3_0            0x30
-
-#define BOARD_REV_1_0           0x0
-#define BOARD_REV_2_0           0x1
-
-#define BOARD_VER_OFFSET	0x8
+#define SREV2_0 0x10
+#define SREV3_0 0x20
 
 #define NAND_FLASH_BOOT		0x10000000
 #define SPI_NOR_FLASH_BOOT	0x80000000

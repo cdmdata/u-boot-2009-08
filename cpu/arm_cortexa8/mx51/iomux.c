@@ -42,11 +42,19 @@ enum iomux_reg_addr {
 
 #define MUX_PIN_NUM_MAX (((MUX_I_END - MUX_I_START) >> 2) + 1)
 
+/* out: srev */
+unsigned get_srev(void)
+{
+	unsigned base = IIM_BASE_ADDR;
+	unsigned reg = readl(base + IIM_SREV_OFF);
+	return reg;
+}
+
 static inline u32 _get_mux_reg(iomux_pin_name_t pin)
 {
 	u32 mux_reg = PIN_TO_IOMUX_MUX(pin);
 
-	if (is_soc_rev(CHIP_REV_2_0) < 0) {
+	if (get_srev() < SREV2_0) {
 		if ((pin == MX51_PIN_NANDF_RB5) ||
 			(pin == MX51_PIN_NANDF_RB6) ||
 			(pin == MX51_PIN_NANDF_RB7))
@@ -64,7 +72,7 @@ static inline u32 _get_pad_reg(iomux_pin_name_t pin)
 {
 	u32 pad_reg = PIN_TO_IOMUX_PAD(pin);
 
-	if (is_soc_rev(CHIP_REV_2_0) < 0) {
+	if (get_srev() < SREV2_0) {
 		if ((pin == MX51_PIN_NANDF_RB5) ||
 			(pin == MX51_PIN_NANDF_RB6) ||
 			(pin == MX51_PIN_NANDF_RB7))
@@ -88,7 +96,7 @@ static inline u32 _get_pad_reg(iomux_pin_name_t pin)
 
 static inline u32 _get_mux_end()
 {
-	if (is_soc_rev(CHIP_REV_2_0) < 0)
+	if (get_srev() < SREV2_0)
 		return IOMUXC_BASE_ADDR + (0x3F8 - 4);
 	else
 		return IOMUXC_BASE_ADDR + (0x3F0 - 4);
@@ -171,7 +179,7 @@ void mxc_iomux_set_input(iomux_input_select_t input, u32 config)
 {
 	u32 reg = IOMUXSW_INPUT_CTL + (input << 2);
 
-	if (is_soc_rev(CHIP_REV_2_0) < 0) {
+	if (get_srev() < SREV2_0) {
 		if (input == MUX_IN_IPU_IPP_DI_0_IND_DISPB_SD_D_SELECT_INPUT)
 			input -= 4;
 		else if (input ==

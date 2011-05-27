@@ -63,7 +63,6 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-static u32 system_rev;
 static enum boot_device boot_dev;
 u32	mx51_io_base_addr;
 
@@ -95,6 +94,14 @@ inline void Set_GPIO_input(unsigned gp)
 	reg = readl(base + GPIO_DIR);
 	reg &= ~mask;		/* configure GPIO line as input */
 	writel(reg, base + GPIO_DIR);
+}
+
+unsigned get_srev(void);
+
+u32 get_board_rev(void)
+{
+	unsigned srev = get_srev();
+	return 0x51010 + srev;
 }
 
 static inline void setup_boot_device(void)
@@ -135,8 +142,6 @@ static inline void setup_boot_device(void)
 		}
 		break;
 	}
-	system_rev = 0x51000 | CHIP_REV_3_0;
-//	printf("%s: forcing chip rev 3.0 (0x%x)\n", __func__, system_rev );
 }
 
 enum boot_device get_boot_device(void)
@@ -144,27 +149,6 @@ enum boot_device get_boot_device(void)
 	return boot_dev;
 }
 
-u32 get_board_rev(void)
-{
-	return system_rev;
-}
-
-static inline void setup_soc_rev(void)
-{
-	system_rev = 0x51000 | CHIP_REV_3_0;
-}
-
-static inline void set_board_rev(void)
-{
-	if ((__REG(GPIO1_BASE_ADDR + 0x0) & (0x1 << 22)) == 0)
-		system_rev |= BOARD_REV_2_0 << BOARD_VER_OFFSET;
-
-}
-
-inline int is_soc_rev(int rev)
-{
-	return (system_rev & 0xFF) - rev;
-}
 
 #ifdef CONFIG_ARCH_MMU
 void board_mmu_init(void)
@@ -367,7 +351,7 @@ static void setup_expio(void)
 	writel(0x72080F00, WEIM_BASE_ADDR + 0x78 + CSWCR1);
 	if ((readw(CS5_BASE_ADDR + PBC_ID_AAAA) == 0xAAAA) &&
 	    (readw(CS5_BASE_ADDR + PBC_ID_5555) == 0x5555)) {
-		if (is_soc_rev(CHIP_REV_2_0) < 0) {
+		if (get_srev() < SREV2_0) {
 			reg = readl(CCM_BASE_ADDR + CLKCTL_CBCDR);
 			reg = (reg & (~0x70000)) | 0x30000;
 			writel(reg, CCM_BASE_ADDR + CLKCTL_CBCDR);
@@ -645,7 +629,7 @@ static void setup_core_voltage_spi(void)
 	/* power up the system first */
 	pmic_reg(slave, 34, 0x00200000, 1);
 
-	if (is_soc_rev(CHIP_REV_2_0) <= 0) {
+	if (get_srev() <= SREV2_0) {
 		/* Set core voltage to 1.1V */
 		val = pmic_reg(slave, 24, 0, 0);
 		val = (val & (~0x1f)) | 0x14;
@@ -1069,9 +1053,6 @@ int board_init(void)
 	debug_putc('b');
 	setup_boot_device();
 	debug_putc('c');
-	setup_soc_rev();
-	debug_putc('d');
-	set_board_rev();
 
 	gd->bd->bi_arch_number = MACH_TYPE_MX51_NITROGEN;	/* board id for linux */
 	/* address of boot parameters */
@@ -1259,20 +1240,8 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	printf("Board: MX51 Nitrogen ");
-
-	if (is_soc_rev(CHIP_REV_3_0) == 0) {
-		printf("3.0 [");
-	} else if ((is_soc_rev(CHIP_REV_2_0) == 0)
-	 && (system_rev & (BOARD_REV_2_0 << BOARD_VER_OFFSET))) {
-		printf("2.5 [");
-	} else if (is_soc_rev(CHIP_REV_2_0) == 0) {
-		printf("2.0 [");
-	} else if (is_soc_rev(CHIP_REV_1_1) == 0) {
-		printf("1.1 [");
-	} else {
-		printf("1.0 [");
-	}
+	unsigned srev = get_srev();
+	printf("Board: MX51 Nitrogen %d.%d [", (srev >> 4) + 1, srev & 0x0f);
 
 	switch (__REG(SRC_BASE_ADDR + 0x8)) {
 	case 0x0001:

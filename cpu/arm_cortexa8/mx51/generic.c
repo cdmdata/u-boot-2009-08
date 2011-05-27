@@ -1000,11 +1000,13 @@ int clk_config(u32 ref, u32 freq, u32 clk_type)
 #endif
 
 #if defined(CONFIG_DISPLAY_CPUINFO)
+unsigned get_srev(void);
+
 int print_cpuinfo(void)
 {
+	unsigned srev = get_srev();
 	printf("CPU:   Freescale i.MX51 family %d.%dV at %d MHz\n",
-	       (get_board_rev() & 0xFF) >> 4,
-	       (get_board_rev() & 0xF),
+	       (srev >> 4) + 1, (srev & 0xf),
 		__get_mcu_main_clk() / 1000000);
 	mxc_dump_clocks();
 	return 0;
