@@ -54,7 +54,7 @@
 #define CSP_BASE_REG_PA_AIPS2	0x83F00000
 
 #define EMRS1_DRIVE_STRENGTH		EMRS1_DRIVE_STRENGTH_REDUCED
-#define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_75
+#define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_150
 #define SCR_EMRS1_DEFAULT		(((EMRS1_DRIVE_STRENGTH | EMRS1_ODT_TERM) << 16) | 0x8019)
 //emrs(1) - buffers enabled, RDQS disable, DQS enable, 0 latency, DLL enable
 #define SDCS1	4
@@ -277,8 +277,14 @@ dcd:		.word	0xb17219e9	//0x1c
 #endif
 	.endm
 
-#define ESDMISC_INIT_DEFAULT	0x0aaad0d0	//ODT_EN should not be set yet
-#define ESDMISC_RUN_DEFAULT	0x0aaaf6d0	//enable ODT, MIF3
+#define ESDM_ODT_NONE	0
+#define ESDM_ODT_150	1
+#define ESDM_ODT_75	2
+#define ESDM_ODT_50	3
+#define ESDM_ODT	ESDM_ODT_150
+#define MAKE_ODT(a)	(((a << 6) | (a << 4) | (a << 2) | a) << 20)
+#define ESDMISC_INIT_DEFAULT	(0x000ad0d0 | MAKE_ODT(ESDM_ODT))	//ODT_EN should not be set yet
+#define ESDMISC_RUN_DEFAULT	(0x000af6d0 | MAKE_ODT(ESDM_ODT))	//enable ODT, MIF3
 /*
  * Bit 31 - CS0_RDY
  * Bit 30 - CS1_RDY
