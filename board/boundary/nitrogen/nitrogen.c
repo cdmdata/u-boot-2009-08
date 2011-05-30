@@ -629,20 +629,23 @@ static void setup_core_voltage_spi(void)
 	/* power up the system first */
 	pmic_reg(slave, 34, 0x00200000, 1);
 
+// Macro to convert voltage specified in mV to PMIC voltage code
+#define mV_TO_CODE(mV)	(((mV) - 600) / 25)
+
 	if (get_srev() <= SREV2_0) {
 		/* Set core voltage to 1.1V */
 		val = pmic_reg(slave, 24, 0, 0);
-		val = (val & (~0x1f)) | 0x14;
+		val = (val & (~0x1f)) | mV_TO_CODE(1100);
 		pmic_reg(slave, 24, val, 1);
 
 		/* Setup VCC (SW2) to 1.25 */
 		val = pmic_reg(slave, 25, 0, 0);
-		val = (val & (~0x1f)) | 0x1a;
+		val = (val & (~0x1f)) | mV_TO_CODE(1250);
 		pmic_reg(slave, 25, val, 1);
 
-		/* Setup 1V2_DIG1 (SW3) to 1.25 */
+		/* Setup 1V2_DIG1 (SW3) to 1.275 */
 		val = pmic_reg(slave, 26, 0, 0);
-		val = (val & (~0x1f)) | 0x1a;
+		val = (val & (~0x1f)) | mV_TO_CODE(1250);
 		pmic_reg(slave, 26, val, 1);
 		udelay(50);
 		/* Raise the core frequency to 800MHz */
@@ -651,12 +654,12 @@ static void setup_core_voltage_spi(void)
 		/* TO 3.0 */
 		/* Setup VCC (SW2) to 1.225 */
 		val = pmic_reg(slave, 25, 0, 0);
-		val = (val & (~0x1f)) | 0x19;
+		val = (val & (~0x1f)) | mV_TO_CODE(1225);
 		pmic_reg(slave, 25, val, 1);
 
 		/* Setup 1V2_DIG1 (SW3) to 1.2 */
 		val = pmic_reg(slave, 26, 0, 0);
-		val = (val & (~0x1f)) | 0x18;
+		val = (val & (~0x1f)) | mV_TO_CODE(1200);
 		pmic_reg(slave, 26, val, 1);
 	}
 
