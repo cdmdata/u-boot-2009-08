@@ -225,7 +225,7 @@ const unsigned char reg_data[] = {
 		0x3b, 0x6a,		/* on,  LDO10, tfp410(6a:3.3V) */
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
 //		0x34, 0x7f		/* on,  LDO3, 3.3V (7f:3.3V) */
-//		0x2e, 0x73,		/* on,  VBUCKCORE, 1.812V (73:1.775V) */
+		0x2e, 0x5c,		/* on,  VBUCKCORE, 1.2V if srev < 3, 1.812V (0x73:1.775V) if old rev of board*/
 		0x2f, 0x61,		/* on,  VBUCK_PRO, 1.302V (61:1.325V) */
 		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
 		0x3c, 0x7f,		/* go:core, pro, mem, LDO2, LDO3 */
@@ -246,21 +246,17 @@ int power_up_ddr(unsigned i2c_base, unsigned chip)
 	int ret;
 	int i;
 	unsigned char buf[4];
+	unsigned srev = *((int *)0x63f98024); /* silicon revision */
 	
 	i2c_init(i2c_base, 400000);
 	for (i = 0; i < sizeof(reg_data); i += 2) {
+		unsigned reg = reg_data[i];
 		buf[0] = reg_data[i+1];
-		ret = i2c_write(i2c_base, chip, reg_data[i], 1, buf, 1);
-		if (ret)
-			return ret;
-	}
-	i = *((int *)0x63f98024); /* silicon revision */
-	if (3 > i) {
-		/* set VBUCKCORE to 1.2V */
-		buf[0] = 0x5c ;
-		buf[1] = 0x61 ;
-		ret = i2c_write(i2c_base, chip, 0x2e, 1, buf, 1);
-		ret = i2c_write(i2c_base, chip, 0x3c, 1, buf+1, 1);
+		if ((reg != 0x2e) || (srev < 3)) {
+			ret = i2c_write(i2c_base, chip, reg, 1, buf, 1);
+			if (ret)
+				return ret;
+		}
 	}
 	delayMicro(1000);
 	return ret;
