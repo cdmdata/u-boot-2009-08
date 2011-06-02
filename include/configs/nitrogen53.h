@@ -24,6 +24,7 @@
 
 #include <asm/arch/mx53.h>
 #define CONFIG_MACH_TYPE	MACH_TYPE_MX53_NITROGEN
+#define CONFIG_BOARD_NAME	"MX53-Nitrogen"
 
  /* High Level Configuration Options */
 #define CONFIG_ARMV7		1	/* This is armv7 Cortex-A8 CPU core */

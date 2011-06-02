@@ -1093,7 +1093,7 @@ int checkboard(void)
 	unsigned base = ESD_BASE;
 	unsigned tapeout = (readl(base + ESD_ZQHWCTRL) >> 31) + 1;
 	unsigned srev = readl(0x63f98024);
-	printf("Board: MX53-Nitrogen, TO%d SREV=%x ", tapeout, srev);
+	printf("Board: " CONFIG_BOARD_NAME ", TO%d SREV=%x ", tapeout, srev);
 	printf("Boot Reason: [");
 
 	switch (__REG(SRC_BASE_ADDR + 0x8)) {
