@@ -176,6 +176,7 @@ uart_init_done:
 	mov	r1, #PMIC_DA9053_ADDR
 	bl	power_up_ddr
 #endif
+ddr_setup:
 	ddr_init
 	mov	r0,#0x10000
 2:	subs	r0,r0,#1
@@ -233,6 +234,14 @@ uart_init_done:
 //	bl	TransmitX
 
 	bl	main
+
+#ifdef PMIC_DA9053_ADDR
+	ldr		r0, =I2C_BASE
+	mov		r1, #PMIC_DA9053_ADDR
+	bl		vbuckcore_boost
+	movs	r0,r0
+	beq		ddr_setup
+#endif
 #define LL4(a,b,c,d) ((a)+(b<<8)+(c<<16)+(d<<24))
 	BigMov	r0, LL4('W','D','R','\n')
 	bl	TransmitX
