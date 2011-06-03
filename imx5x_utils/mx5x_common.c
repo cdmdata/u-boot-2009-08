@@ -1,3 +1,5 @@
+#include <config.h>
+#include <asm/mach-types.h>
 #include <stdarg.h>
 //#define DEBUG
 #include "mx5x_common.h"
@@ -219,7 +221,7 @@ int ram_test(unsigned *ram_base)
 	return 0;
 }
 
-unsigned char da9052_init_data[] = {
+static unsigned char da9052_init_data[] = {
 //If LDO10 is turned off then DA9053 accesses will fail
 //And it can never be turned back on. Fixed on next board
 		0x3b, 0x6a,		/* on,  LDO10, tfp410(6a:3.3V) */
@@ -272,17 +274,24 @@ int i2c_read_byte(unsigned i2c_base, unsigned chip, unsigned reg)
 	return buf[0];
 }
 
-const unsigned char da9052_boost_vbuckcore_data[] = {
+static const unsigned char da9052_boost_vbuckcore_data[] = {
 		0x2e, 0x73,		/* on,  VBUCKCORE (0x73:1.775V) , old rev of board*/
 		0x3c, 0x61,		/* go:core */
 		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
 };
 
-//An event with be registered if there is a 1 to 0 transition on gp12
-const unsigned char da9052_gp12_event[] = {
+#if defined(CONFIG_MACH_TYPE) && defined(MACH_TYPE_MX53_NITROGEN_A)
+#if (CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A)
+#define SKIP_GP12_TEST
+#endif
+#endif
+
+#ifndef SKIP_GP12_TEST
+static const unsigned char da9052_gp12_event[] = {
 		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
 		0x1b, 0x09,		/* gp12 input, no LDO9_en , active low */
 };
+#endif
 
 int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 {
@@ -295,6 +304,7 @@ int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 		return ret;
 	if (ret == 0x73)
 		return 1;
+#ifndef SKIP_GP12_TEST
 	ret = i2c_write_array(i2c_base, chip, da9052_gp12_event, sizeof(da9052_gp12_event));
 	if (ret)
 		return ret;
@@ -304,6 +314,7 @@ int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 	my_printf("statusd=%x\n", ret);
 	if (!(ret & 0x10))
 		return -2;	/* gp12 is grounded (new rev), don't change voltage */
+#endif
 	ret = i2c_write_array(i2c_base, chip, da9052_boost_vbuckcore_data, sizeof(da9052_boost_vbuckcore_data));
 	delayMicro(1000);
 	return ret;
