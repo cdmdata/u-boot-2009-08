@@ -73,6 +73,10 @@ int main(void)
 	unsigned char *destX = ram_base + 0x03f00000;
 	unsigned len;
 	my_printf("ram_base=%x ecspi_base=%x\n", ram_base, base);
+	if (!ram_test((unsigned *)ram_base)) {
+		flush_uart();
+		return 0;
+	}
 #if 0
 	for (;;) {
 		*((unsigned *)(ram_base + 0x15555554)) = 0x55555555;
