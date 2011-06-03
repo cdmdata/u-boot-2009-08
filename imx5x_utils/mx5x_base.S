@@ -26,7 +26,6 @@
 	.global iomuxc_ddr_differential
 #define rFNAME r8
 #define rFOFF r9
-#define rUART r10
 #define rIIM r12
 
 #include <asm/BigMacro.h>
@@ -127,13 +126,14 @@ assem_start:
 //1:	b	1b
 	init_gps
 	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE
-	BigMov	rUART,UART_BASE	//0x28
 
 	config_uart_clocks
+	BigMov	r3,UART1_BASE	//0x28
 ////////
+0:
 	adr	r6,init_tab
 	adr	r7,init_tab_end
-	add	r1,rUART, #UCR1
+	add	r1,r3, #UCR1
 1:	ldrh	r0,[r6],#2
 	and	r2,r1,#0xff
 	cmp	r2,#0xac	//UBRC
@@ -141,6 +141,10 @@ assem_start:
 	addeq	r1,r1,#4
 	cmp	r6,r7
 	bne	1b
+	BigMov	r0,UART2_BASE	//0x28
+	cmp	r3, r0
+	movne	r3, r0
+	bne	0b
 	b	uart_init_done
 init_tab:
 	.short	0x0001		//UCR1 (0x80)
