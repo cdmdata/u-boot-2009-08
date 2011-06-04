@@ -34,12 +34,15 @@
 #define MAKE_TAG(tag, len, v) CPU_2_BE_32(( ((tag) << 24) | ((len) << 8) | (v) ))
 #define MXC_DCD_ITEM(addr, val)	.word CPU_2_BE_32(addr), CPU_2_BE_32(val)
 
+#define AIPS1_BASE_ADDR		0x53F00000
+#define AIPS2_BASE_ADDR		0x63F00000
+
 #define STACK_HIGH	0xf805ff00
 #define RAM_BASE	0x70000000
 #define ECSPI1_BASE	0x50010000
 #define MM_SDMMC_BASE	0x50004000
-#define UART1_BASE	0x53fbc000
-#define UART2_BASE	0x53fc0000
+#define UART1_BASE	(AIPS1_BASE_ADDR + 0x000bc000)
+#define UART2_BASE	(AIPS1_BASE_ADDR + 0x000c0000)
 #define UART3_BASE	0x5000c000
 
 #ifdef CONFIG_UART_BASE_ADDR
@@ -48,24 +51,24 @@
 #define UART_BASE	UART2_BASE
 #endif
 #define IPU_CM_REG_BASE		0x1E000000
-#define IPU_IDMAC_BASE		0x1E008000
+#define IPU_IDMAC_BASE		0x1e008000
 
-#define PLL1_BASE_ADDR		(0x63F80000)
-#define PLL2_BASE_ADDR		(0x63F84000)
-#define PLL3_BASE_ADDR		(0x63F88000)
-#define PLL4_BASE_ADDR		(0x63F8C000)
-#define M4IF_BASE		(0x63FD8000)
+#define PLL1_BASE_ADDR		(AIPS2_BASE_ADDR + 0x00080000)
+#define PLL2_BASE_ADDR		(AIPS2_BASE_ADDR + 0x00084000)
+#define PLL3_BASE_ADDR		(AIPS2_BASE_ADDR + 0x00088000)
+#define PLL4_BASE_ADDR		(AIPS2_BASE_ADDR + 0x0008C000)
+#define M4IF_BASE		(AIPS2_BASE_ADDR + 0x000D8000)
 
 
-#define GPIO1_BASE	0x53f84000
-#define GPIO2_BASE	0x53f88000
-#define GPIO3_BASE	0x53f8c000
-#define GPIO4_BASE	0x53f90000
-#define WDOG_BASE	0x53f98000
-#define CCM_BASE	0x53fd4000
-#define I2C1_BASE_ADDR  0x63fc8000
+#define GPIO1_BASE	(AIPS1_BASE_ADDR + 0x00084000)
+#define GPIO2_BASE	(AIPS1_BASE_ADDR + 0x00088000)
+#define GPIO3_BASE	(AIPS1_BASE_ADDR + 0x0008c000)
+#define GPIO4_BASE	(AIPS1_BASE_ADDR + 0x00090000)
+#define WDOG_BASE	(AIPS1_BASE_ADDR + 0x00098000)
+#define CCM_BASE	(AIPS1_BASE_ADDR + 0x000d4000)
+#define I2C1_BASE_ADDR  (AIPS2_BASE_ADDR + 0x000C8000)
 #define I2C_BASE	I2C1_BASE_ADDR
-#define ESD_BASE	0x63fd9000
+#define ESD_BASE	(AIPS2_BASE_ADDR + 0x000d9000)
 #define ESD_CTL		0x000
 #define ESD_PDC		0x004
 #define ESD_OTC		0x008
@@ -131,11 +134,11 @@
 #define ESD_MUR		0x0f8
 #define ESD_WRCADL	0x0fc
 
-#define IOMUXC_BASE_ADDR (0x53FA8000)
+#define IOMUXC_BASE_ADDR (AIPS1_BASE_ADDR + 0x000A8000)
 
 // AIPS Constants
-#define CSP_BASE_REG_PA_AIPS1	0x53F00000
-#define CSP_BASE_REG_PA_AIPS2	0x63F00000
+#define CSP_BASE_REG_PA_AIPS1	AIPS1_BASE_ADDR
+#define CSP_BASE_REG_PA_AIPS2	AIPS2_BASE_ADDR
 
 #define EMRS1_DRIVE_STRENGTH		EMRS1_DRIVE_STRENGTH_REDUCED
 #define EMRS1_ODT_TERM			EMRS1_ODT_TERM_OHM_75
@@ -682,67 +685,69 @@ get_ddr_type_addr:
 #define ADDDS_VAL	0x00280000	//dse 5
 #define CTLDS_VAL	0x00280000	//dse 5
 #endif
+
+#define _IOM	IOMUXC_BASE_ADDR
 	.macro iomux_dcd_data
-	.word	0x53FA8554, DQVAL	/* DQM3: */
-	.word	0x53FA8558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
-	.word	0x53FA8560, DQVAL	/* DQM2: */
-	.word	0x53FA8564, DQVAL | 0x40	/* SDODT1: pue=1 but PKE=0 */
-	.word	0x53FA8568, DQVAL | 0x40	/* SDQS2: pue=1 but PKE=0 */
-	.word	0x53FA8570, 0x00200000	/* SDCLK_1: dse 4 - 75 NA 60 NA */
-	.word	0x53FA8574, CAS_VAL	/* CAS: */
-	.word	0x53FA8578, 0x00200000	/* SDCLK_0: dse 4 */
-	.word	0x53FA857c, DQVAL | 0x40	/* SDQS0: pue=1 but PKE=0 */
-	.word	0x53FA8580, DQVAL | 0x40	/* SDODT0: pue=1 but PKE=0 */
-	.word	0x53FA8584, DQVAL	/* DQM0: */
-	.word	0x53FA8588, RAS_VAL	/* RAS: */
-	.word	0x53FA8590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
-	.word	0x53FA8594, DQVAL	/* DQM1: */
-	.word	0x53FA86f0, ADDDS_VAL	/* GRP_ADDDS A0-A15 BA0-BA2: */
-	.word	0x53FA86f4, 0x00000200	/* GRP_DDRMODE_CTL: DDR2 SDQS0-3 */
-	.word	0x53FA86fc, 0x00000000	/* GRP_DDRPKE: PKE=0 for A0-A15,CAS,CS0,CS1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCLK_0-1,SDWE */
-	.word	0x53FA8714, 0x00000000	/* GRP_DDRMODE: CMOS input type?????? D0-D31 */
-	.word	0x53FA8718, DQVAL	/* GRP_B0DS: D0-D7 */
-	.word	0x53FA871c, DQVAL	/* GRP_B1SD: D8-D15 */
-	.word	0x53FA8720, CTLDS_VAL	/* GRP_CTLDS:  CS0-1, SDCKE0-1, SDWE*/
-	.word	0x53FA8724, IOMUXC_DDR_TYPE	/* GRP_DDR_TYPE: A0-A15,CAS,CS0-1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCKE0-1,SDCLK_0-1,SDODT0-1,SDQS0-3,SDWE */
-	.word	0x53FA8728, DQVAL	/* GRP_B2DS: D16-D23 */
-	.word	0x53FA872c, DQVAL	/* GRP_B3DS: D24-D31 */
+	.word	_IOM+0x554, DQVAL	/* DQM3: */
+	.word	_IOM+0x558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
+	.word	_IOM+0x560, DQVAL	/* DQM2: */
+	.word	_IOM+0x564, DQVAL | 0x40	/* SDODT1: pue=1 but PKE=0 */
+	.word	_IOM+0x568, DQVAL | 0x40	/* SDQS2: pue=1 but PKE=0 */
+	.word	_IOM+0x570, 0x00200000	/* SDCLK_1: dse 4 - 75 NA 60 NA */
+	.word	_IOM+0x574, CAS_VAL	/* CAS: */
+	.word	_IOM+0x578, 0x00200000	/* SDCLK_0: dse 4 */
+	.word	_IOM+0x57c, DQVAL | 0x40	/* SDQS0: pue=1 but PKE=0 */
+	.word	_IOM+0x580, DQVAL | 0x40	/* SDODT0: pue=1 but PKE=0 */
+	.word	_IOM+0x584, DQVAL	/* DQM0: */
+	.word	_IOM+0x588, RAS_VAL	/* RAS: */
+	.word	_IOM+0x590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
+	.word	_IOM+0x594, DQVAL	/* DQM1: */
+	.word	_IOM+0x6f0, ADDDS_VAL	/* GRP_ADDDS A0-A15 BA0-BA2: */
+	.word	_IOM+0x6f4, 0x00000200	/* GRP_DDRMODE_CTL: DDR2 SDQS0-3 */
+	.word	_IOM+0x6fc, 0x00000000	/* GRP_DDRPKE: PKE=0 for A0-A15,CAS,CS0,CS1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCLK_0-1,SDWE */
+	.word	_IOM+0x714, 0x00000000	/* GRP_DDRMODE: CMOS input type?????? D0-D31 */
+	.word	_IOM+0x718, DQVAL	/* GRP_B0DS: D0-D7 */
+	.word	_IOM+0x71c, DQVAL	/* GRP_B1SD: D8-D15 */
+	.word	_IOM+0x720, CTLDS_VAL	/* GRP_CTLDS:  CS0-1, SDCKE0-1, SDWE*/
+	.word	_IOM+0x724, IOMUXC_DDR_TYPE	/* GRP_DDR_TYPE: A0-A15,CAS,CS0-1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCKE0-1,SDCLK_0-1,SDODT0-1,SDQS0-3,SDWE */
+	.word	_IOM+0x728, DQVAL	/* GRP_B2DS: D16-D23 */
+	.word	_IOM+0x72c, DQVAL	/* GRP_B3DS: D24-D31 */
 #if 1
 //uart1 rxd:PATA_DMACK, txd:PATA_DIOW
 //Note: Serial downloader assumes UART1_TXD is CSI0_DAT10, UART1_RXD is CSI0_DAT11
-	.word	0x53FA8274, 3		//Mux: PATA_DMACK - UART1_RXD
-	.word	0x53FA85F4, 0x1e4	//CTL: PATA_DMACK - UART1_RXD
-	.word	0x53FA8878, 3		//Select: UART1_IPP_UART_RXD_MUX_SELECT_INPUT
-	.word	0x53FA8270, 3		//MUX: PATA_DIOW - UART1_TXD
-	.word	0x53FA85F0, 0x1e4	//CTL: PATA_DIOW - UART1_TXD
+	.word	_IOM+0x274, 3		//Mux: PATA_DMACK - UART1_RXD
+	.word	_IOM+0x5F4, 0x1e4	//CTL: PATA_DMACK - UART1_RXD
+	.word	_IOM+0x878, 3		//Select: UART1_IPP_UART_RXD_MUX_SELECT_INPUT
+	.word	_IOM+0x270, 3		//MUX: PATA_DIOW - UART1_TXD
+	.word	_IOM+0x5F0, 0x1e4	//CTL: PATA_DIOW - UART1_TXD
 #endif
 //uart2 rxd:PATA_BUFFER_EN, txd:PATA_DMARQ
-	.word	0x53FA827C, 3		//Mux: PATA_BUFFER_EN - UART1_RXD
-	.word	0x53FA85FC, 0x1e4	//CTL: PATA_BUFFER_EN - UART1_RXD
-	.word	0x53FA8880, 3		//Select: UART2_IPP_UART_RXD_MUX_SELECT_INPUT
-	.word	0x53FA8278, 3		//MUX: PATA_DMARQ - UART1_TXD
-	.word	0x53FA85F8, 0x1e4	//CTL: PATA_DMARQ UART1_TXD
+	.word	_IOM+0x27C, 3		//Mux: PATA_BUFFER_EN - UART1_RXD
+	.word	_IOM+0x5FC, 0x1e4	//CTL: PATA_BUFFER_EN - UART1_RXD
+	.word	_IOM+0x880, 3		//Select: UART2_IPP_UART_RXD_MUX_SELECT_INPUT
+	.word	_IOM+0x278, 3		//MUX: PATA_DMARQ - UART1_TXD
+	.word	_IOM+0x5F8, 0x1e4	//CTL: PATA_DMARQ UART1_TXD
 
-	.word	0x53FA8198, 1		//EIM_EB1: mux gpio2[29]
-	.word	0x53FA84e8, 0x104
+	.word	_IOM+0x198, 1		//EIM_EB1: mux gpio2[29]
+	.word	_IOM+0x4e8, 0x104
 	.word	0
 	.endm
 
 	.macro ddr_single_iomux_dcd_data
 	/* Enable pull down */
-	.word	0x53FA857c, DQVAL | 0x40 | 0x80	/* SDQS0: pue=1 PKE=1 */
-	.word	0x53FA8590, DQVAL | 0x40 | 0x80	/* SDQS1: pue=1 PKE=1 */
-	.word	0x53FA8568, DQVAL | 0x40 | 0x80	/* SDQS2: pue=1 PKE=1 */
-	.word	0x53FA8558, DQVAL | 0x40 | 0x80	/* SDQS3: pue=1 PKE=1 */
+	.word	_IOM+0x57c, DQVAL | 0x40 | 0x80	/* SDQS0: pue=1 PKE=1 */
+	.word	_IOM+0x590, DQVAL | 0x40 | 0x80	/* SDQS1: pue=1 PKE=1 */
+	.word	_IOM+0x568, DQVAL | 0x40 | 0x80	/* SDQS2: pue=1 PKE=1 */
+	.word	_IOM+0x558, DQVAL | 0x40 | 0x80	/* SDQS3: pue=1 PKE=1 */
 	.word	0
 	.endm
 
 	.macro ddr_differential_iomux_dcd_data
 	/* Disable pull down */
-	.word	0x53FA857c, DQVAL | 0x40	/* SDQS0: pue=1 but PKE=0 */
-	.word	0x53FA8590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
-	.word	0x53FA8568, DQVAL | 0x40	/* SDQS2: pue=1 but PKE=0 */
-	.word	0x53FA8558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
+	.word	_IOM+0x57c, DQVAL | 0x40	/* SDQS0: pue=1 but PKE=0 */
+	.word	_IOM+0x590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
+	.word	_IOM+0x568, DQVAL | 0x40	/* SDQS2: pue=1 but PKE=0 */
+	.word	_IOM+0x558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
 	.word	0
 	.endm
 
@@ -864,39 +869,39 @@ get_ddr_type_addr:
 #define PAD_CSPI1_SCLK	(HYS_ENABLE | DSE_HIGH)
 
 	.macro ecspi1_iomux_dcd_data
-	.word	0x53fa8468, PAD_CSPI1_MOSI	//SW_PAD_CTL_EIM_D18 - ECSPI1_MOSI
-	.word	0x53fa8464, PAD_CSPI1_MISO	//SW_PAD_CTL_EIM_D17 - ECSPI1_MISO
-	.word	0x53fa846c, PAD_CSPI1_SS1	//SW_PAD_CTL_EIM_D19 - ECSPI1_SS1
-	.word	0x53fa8460, PAD_CSPI1_SCLK	//SW_PAD_CTL_EIM_D16 - ECSPI1_SCLK
+	.word	_IOM+0x468, PAD_CSPI1_MOSI	//SW_PAD_CTL_EIM_D18 - ECSPI1_MOSI
+	.word	_IOM+0x464, PAD_CSPI1_MISO	//SW_PAD_CTL_EIM_D17 - ECSPI1_MISO
+	.word	_IOM+0x46c, PAD_CSPI1_SS1	//SW_PAD_CTL_EIM_D19 - ECSPI1_SS1
+	.word	_IOM+0x460, PAD_CSPI1_SCLK	//SW_PAD_CTL_EIM_D16 - ECSPI1_SCLK
 
-	.word	0x53fa8120, ALT4		//SW_MUX_CTL_PAD_EIM_D18, alt4 ECSPI1_MOSI, alt1 gpio3[18]
-	.word	0x53fa87a4, 3		//mosi input select
-	.word	0x53fa811c, ALT4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
-	.word	0x53fa87a0, 3		//miso input select
-	.word	0x53fa8124, ALT1		//SW_MUX_CTL_PAD_EIM_D19, alt4 ECSPI1_SS1, alt1 gpio3[19]
-	.word	0x53fa87ac, 2		//ss1 input select
-	.word	0x53fa8118, ALT4		//SW_MUX_CTL_PAD_EIM_D16, alt4 ECSPI1_SCLK, alt1 gpio3[16]
-	.word	0x53fa879c, 3		//clk input select
+	.word	_IOM+0x120, ALT4		//SW_MUX_CTL_PAD_EIM_D18, alt4 ECSPI1_MOSI, alt1 gpio3[18]
+	.word	_IOM+0x7a4, 3		//mosi input select
+	.word	_IOM+0x11c, ALT4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
+	.word	_IOM+0x7a0, 3		//miso input select
+	.word	_IOM+0x124, ALT1		//SW_MUX_CTL_PAD_EIM_D19, alt4 ECSPI1_SS1, alt1 gpio3[19]
+	.word	_IOM+0x7ac, 2		//ss1 input select
+	.word	_IOM+0x118, ALT4		//SW_MUX_CTL_PAD_EIM_D16, alt4 ECSPI1_SCLK, alt1 gpio3[16]
+	.word	_IOM+0x79c, 3		//clk input select
 	.word	0
 	.endm
 
 	.macro i2c1_iomux_dcd_data
-	.word	0x53FA814c, ALT5 | SION	//Mux: EIM_D28, SDA of i2c1
-	.word	0x53FA8494, HYS_ENABLE | PKE_ENABLE | PULL | R22K_PU | OPENDRAIN_ENABLE | DSE_HIGH | SRE_FAST
-	.word	0x53FA8818, 1		//Select EIM_D28
-	.word	0x53FA812c, ALT5 | SION	//Mux: EIM_D21, SCL of i2c1
-	.word	0x53FA8474, HYS_ENABLE | PKE_ENABLE | PULL | R22K_PU | OPENDRAIN_ENABLE | DSE_HIGH | SRE_FAST
-	.word	0x53FA8814, 1		//Select EIM_D21
+	.word	_IOM+0x14c, ALT5 | SION	//Mux: EIM_D28, SDA of i2c1
+	.word	_IOM+0x494, HYS_ENABLE | PKE_ENABLE | PULL | R22K_PU | OPENDRAIN_ENABLE | DSE_HIGH | SRE_FAST
+	.word	_IOM+0x818, 1		//Select EIM_D28
+	.word	_IOM+0x12c, ALT5 | SION	//Mux: EIM_D21, SCL of i2c1
+	.word	_IOM+0x474, HYS_ENABLE | PKE_ENABLE | PULL | R22K_PU | OPENDRAIN_ENABLE | DSE_HIGH | SRE_FAST
+	.word	_IOM+0x814, 1		//Select EIM_D21
 	.word	0
 	.endm
 
 	.macro miso_gp_iomux_dcd_data
-	.word	0x53fa811c, 1		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
+	.word	_IOM+0x11c, 1		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
 	.word	0
 	.endm
 
 	.macro miso_ecspi_iomux_dcd_data
-	.word	0x53fa811c, 4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
+	.word	_IOM+0x11c, 4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
 	.word	0
 	.endm
 
@@ -958,19 +963,19 @@ get_ddr_type_addr:
 #define PAD_SD1_CD	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
 #define PAD_SD1_WP	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
 	.macro mmc_iomux_dcd_data
-	.word	0x53fa866c, PAD_SD1_DATA0	//SW_PAD_CTL_SD1_DATA0
-	.word	0x53fa8670, PAD_SD1_DATA1	//SW_PAD_CTL_SD1_DATA1
-	.word	0x53fa8674, PAD_SD1_CMD		//SW_PAD_CTL_SD1_CMD
-	.word	0x53fa8678, PAD_SD1_DATA2	//SW_PAD_CTL_SD1_DATA2
-	.word	0x53fa867c, PAD_SD1_CLK		//SW_PAD_CTL_SD1_CLK
-	.word	0x53fa8680, PAD_SD1_DATA3	//SW_PAD_CTL_SD1_DATA3
+	.word	_IOM+0x66c, PAD_SD1_DATA0	//SW_PAD_CTL_SD1_DATA0
+	.word	_IOM+0x670, PAD_SD1_DATA1	//SW_PAD_CTL_SD1_DATA1
+	.word	_IOM+0x674, PAD_SD1_CMD		//SW_PAD_CTL_SD1_CMD
+	.word	_IOM+0x678, PAD_SD1_DATA2	//SW_PAD_CTL_SD1_DATA2
+	.word	_IOM+0x67c, PAD_SD1_CLK		//SW_PAD_CTL_SD1_CLK
+	.word	_IOM+0x680, PAD_SD1_DATA3	//SW_PAD_CTL_SD1_DATA3
 
-	.word	0x53fa82e4, 0			//SW_MUX_CTL_PAD_SD1_DATA0
-	.word	0x53fa82e8, 0			//SW_MUX_CTL_PAD_SD1_DATA1
-	.word	0x53fa82ec, ALT0|SION		//SW_MUX_CTL_PAD_SD1_CMD
-	.word	0x53fa82f0, 0			//SW_MUX_CTL_PAD_SD1_DATA2
-	.word	0x53fa82f4, 0			//SW_MUX_CTL_PAD_SD1_CLK
-	.word	0x53fa82f8, 0			//SW_MUX_CTL_PAD_SD1_DATA3
+	.word	_IOM+0x2e4, 0			//SW_MUX_CTL_PAD_SD1_DATA0
+	.word	_IOM+0x2e8, 0			//SW_MUX_CTL_PAD_SD1_DATA1
+	.word	_IOM+0x2ec, ALT0|SION		//SW_MUX_CTL_PAD_SD1_CMD
+	.word	_IOM+0x2f0, 0			//SW_MUX_CTL_PAD_SD1_DATA2
+	.word	_IOM+0x2f4, 0			//SW_MUX_CTL_PAD_SD1_CLK
+	.word	_IOM+0x2f8, 0			//SW_MUX_CTL_PAD_SD1_DATA3
 	.endm
 
 	.macro mmc_get_cd

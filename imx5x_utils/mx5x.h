@@ -1,6 +1,6 @@
-#define GPIO_DR 0
-#define GPIO_DIR 4
-#define GPIO_PSR 8
+#define GPIO_DR		0x00
+#define GPIO_DIR	0x04
+#define GPIO_PSR	0x08
 
 #define WDOG_WCR  0x00
 #define WDOG_WSR  0x02
