@@ -4,6 +4,7 @@
 //#define DEBUG
 #include "mx5x_common.h"
 #include "mx5x_i2c.h"
+#include "mx5x.h"
 
 #define UTXD 0x0040
 #define USR2 0x0098
@@ -313,7 +314,7 @@ int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 		return ret;
 	my_printf("statusd=%x\n", ret);
 	if (!(ret & 0x10))
-		return -2;	/* gp12 is grounded (new rev), don't change voltage */
+		return ERROR_GP12_LOW;	/* gp12 is grounded (new rev), don't change voltage */
 #endif
 	ret = i2c_write_array(i2c_base, chip, da9052_boost_vbuckcore_data, sizeof(da9052_boost_vbuckcore_data));
 	delayMicro(1000);

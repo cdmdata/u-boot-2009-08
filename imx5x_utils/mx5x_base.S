@@ -243,6 +243,9 @@ ddr_setup:
 	bl	vbuckcore_boost
 	movs	r0,r0
 	beq	ddr_setup
+	cmn	r0, #-ERROR_GP12_LOW
+	bne	1f
+//Start serial bootloader
 1:
 #endif
 #define LL4(a,b,c,d) ((a)+(b<<8)+(c<<16)+(d<<24))
