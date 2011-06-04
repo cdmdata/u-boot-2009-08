@@ -404,10 +404,11 @@
 	str	r0, [r1, #CCM_CLPCR]
 #endif
 
-//	debug_ch 'a'
 	BigMov	r4, ESD_BASE
 	esd_con_req r4
-//	debug_ch 'b'
+	ldr	r0, [r4, #ESD_MISC]
+	orr	r0, r0, #2
+	str	r0, [r4, #ESD_MISC]	//software reset
 
 	mov	r0, #0
 	str	r0, [r4, #ESD_ODTCTRL]
