@@ -236,11 +236,14 @@ ddr_setup:
 	bl	main
 
 #ifdef PMIC_DA9053_ADDR
-	ldr		r0, =I2C_BASE
-	mov		r1, #PMIC_DA9053_ADDR
-	bl		vbuckcore_boost
+	cmn	r0, #-ERROR_MEMORY_TEST
+	bne	1f
+	ldr	r0, =I2C_BASE
+	mov	r1, #PMIC_DA9053_ADDR
+	bl	vbuckcore_boost
 	movs	r0,r0
-	beq		ddr_setup
+	beq	ddr_setup
+1:
 #endif
 #define LL4(a,b,c,d) ((a)+(b<<8)+(c<<16)+(d<<24))
 	BigMov	r0, LL4('W','D','R','\n')

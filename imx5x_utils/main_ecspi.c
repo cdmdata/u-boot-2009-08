@@ -1,5 +1,6 @@
 #include <stdarg.h>
 //#define DEBUG
+#include "mx5x.h"
 #include "mx5x_common.h"
 #include "mx5x_ecspi.h"
 #define NULL 0
@@ -31,7 +32,7 @@ int main(void)
 	read_block_rtn read_rtn;
 	if (!ram_test((unsigned *)ram_base)) {
 		flush_uart();
-		return 0;
+		return ERROR_MEMORY_TEST;
 	}
 	ci.search = ci.buf = ci.initial_buf = (unsigned *)(ram_base +0x03f00000);
 	ci.hdr = NULL;

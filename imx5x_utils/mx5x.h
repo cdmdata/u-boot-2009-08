@@ -29,6 +29,8 @@
 
 #define EMRS1_DQS_SINGLE_BIT	10
 
+#define ERROR_MEMORY_TEST	-10
+
 #ifdef ASM
 	.equiv	URXD,	0x0000
 	.equiv	UTXD,	0x0040

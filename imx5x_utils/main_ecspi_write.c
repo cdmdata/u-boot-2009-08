@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #define DEBUG
+#include "mx5x.h"
 #include "mx5x_common.h"
 #include "mx5x_ecspi.h"
 
@@ -75,7 +76,7 @@ int main(void)
 	my_printf("ram_base=%x ecspi_base=%x\n", ram_base, base);
 	if (!ram_test((unsigned *)ram_base)) {
 		flush_uart();
-		return 0;
+		return ERROR_MEMORY_TEST;
 	}
 #if 0
 	for (;;) {
