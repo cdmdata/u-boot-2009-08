@@ -409,6 +409,9 @@
 	esd_con_req r4
 //	debug_ch 'b'
 
+	mov	r0, #0
+	str	r0, [r4, #ESD_ODTCTRL]
+
 	ddr_pll		r2, r3
 	ddr_start_pll	r2, r3
 
