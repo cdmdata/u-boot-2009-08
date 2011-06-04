@@ -1,5 +1,4 @@
 #include <config.h>
-#include <asm/mach-types.h>
 #include <stdarg.h>
 //#define DEBUG
 #include "mx5x_common.h"
@@ -281,13 +280,7 @@ static const unsigned char da9052_boost_vbuckcore_data[] = {
 		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
 };
 
-#if defined(CONFIG_MACH_TYPE) && defined(MACH_TYPE_MX53_NITROGEN_A)
-#if (CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A)
-#define SKIP_GP12_TEST
-#endif
-#endif
-
-#ifndef SKIP_GP12_TEST
+#ifndef CONFIG_SKIP_DDR_VBUCKCORE_GP12_TEST
 static const unsigned char da9052_gp12_event[] = {
 		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
 		0x1b, 0x09,		/* gp12 input, no LDO9_en , active low */
@@ -305,7 +298,7 @@ int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 		return ret;
 	if (ret == 0x73)
 		return 1;
-#ifndef SKIP_GP12_TEST
+#ifndef CONFIG_SKIP_DDR_VBUCKCORE_GP12_TEST
 	ret = i2c_write_array(i2c_base, chip, da9052_gp12_event, sizeof(da9052_gp12_event));
 	if (ret)
 		return ret;
