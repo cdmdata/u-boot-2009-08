@@ -816,6 +816,11 @@ int esdhc_gpio_init(bd_t *bis)
 			mxc_iomux_set_pad(MX53_PIN_SD1_DATA3, 0x1D4);
 			break;
 		case 1:
+			/* eMMC reset pin, gp5[2] - low active reset pin*/
+			Set_GPIO_output_val(MAKE_GP(5, 2), 0);
+			mxc_request_iomux(MX53_PIN_EIM_A25, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_EIM_A25, 0x0);
+
 			mxc_request_iomux(MX53_PIN_ATA_RESET_B,
 						IOMUX_CONFIG_ALT2);
 			mxc_request_iomux(MX53_PIN_ATA_IORDY,
@@ -847,6 +852,9 @@ int esdhc_gpio_init(bd_t *bis)
 			mxc_iomux_set_pad(MX53_PIN_ATA_DATA1, 0x1D4);
 			mxc_iomux_set_pad(MX53_PIN_ATA_DATA2, 0x1D4);
 			mxc_iomux_set_pad(MX53_PIN_ATA_DATA3, 0x1D4);
+
+			/* release eMMC reset */
+			Set_GPIO_output_val(MAKE_GP(5, 2), 1);
 			break;
 		default:
 			printf("Warning: you configured more ESDHC controller"
