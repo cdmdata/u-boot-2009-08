@@ -48,8 +48,8 @@ typedef enum iomux_config {
 		PAD_CTL_DSE_40ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
 
 #define MX6Q_USDHC_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE |	\
-		PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED | \
-		PAD_CTL_DSE_40ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
+		PAD_CTL_PUS_47K_UP | PAD_CTL_SPEED_LOW | \
+		PAD_CTL_DSE_80ohm | PAD_CTL_SRE_FAST | PAD_CTL_HYS)
 
 
 #define _MX6Q_PAD_SD2_DAT1__USDHC2_DAT1                                        \
