@@ -787,6 +787,8 @@ int get_mmc_env_devno(void)
 }
 #endif
 
+#define MX53_SDHC_PAD_CTRL      (PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | \
+		PAD_CTL_75K_PU | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST)
 
 int esdhc_gpio_init(bd_t *bis)
 {
@@ -808,12 +810,12 @@ int esdhc_gpio_init(bd_t *bis)
 			mxc_request_iomux(MX53_PIN_SD1_DATA3,
 						IOMUX_CONFIG_ALT0);
 
-			mxc_iomux_set_pad(MX53_PIN_SD1_CMD, 0x1E4);
-			mxc_iomux_set_pad(MX53_PIN_SD1_CLK, 0xD4);
-			mxc_iomux_set_pad(MX53_PIN_SD1_DATA0, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_SD1_DATA1, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_SD1_DATA2, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_SD1_DATA3, 0x1D4);
+			mxc_iomux_set_pad(MX53_PIN_SD1_CMD, MX53_SDHC_PAD_CTRL);
+			mxc_iomux_set_pad(MX53_PIN_SD1_CLK, MX53_SDHC_PAD_CTRL);
+			mxc_iomux_set_pad(MX53_PIN_SD1_DATA0, MX53_SDHC_PAD_CTRL);
+			mxc_iomux_set_pad(MX53_PIN_SD1_DATA1, MX53_SDHC_PAD_CTRL);
+			mxc_iomux_set_pad(MX53_PIN_SD1_DATA2, MX53_SDHC_PAD_CTRL);
+			mxc_iomux_set_pad(MX53_PIN_SD1_DATA3, MX53_SDHC_PAD_CTRL);
 			break;
 		case 1:
 			/* eMMC reset pin, gp5[2] - low active reset pin*/
@@ -821,37 +823,36 @@ int esdhc_gpio_init(bd_t *bis)
 			mxc_request_iomux(MX53_PIN_EIM_A25, IOMUX_CONFIG_ALT1);
 			mxc_iomux_set_pad(MX53_PIN_EIM_A25, 0x0);
 
-			mxc_request_iomux(MX53_PIN_ATA_RESET_B,
+			mxc_request_iomux(MX53_PIN_ATA_RESET_B,		/* CMD */
 						IOMUX_CONFIG_ALT2);
-			mxc_request_iomux(MX53_PIN_ATA_IORDY,
+			mxc_request_iomux(MX53_PIN_ATA_IORDY,		/* CLK */
 						IOMUX_CONFIG_ALT2);
-			mxc_request_iomux(MX53_PIN_ATA_DATA8,
+			mxc_request_iomux(MX53_PIN_ATA_DATA8,		/* D0 */
 						IOMUX_CONFIG_ALT4);
-			mxc_request_iomux(MX53_PIN_ATA_DATA9,
+			mxc_request_iomux(MX53_PIN_ATA_DATA9,		/* D1 */
 						IOMUX_CONFIG_ALT4);
-			mxc_request_iomux(MX53_PIN_ATA_DATA10,
+			mxc_request_iomux(MX53_PIN_ATA_DATA10,		/* D2 */
 						IOMUX_CONFIG_ALT4);
-			mxc_request_iomux(MX53_PIN_ATA_DATA11,
+			mxc_request_iomux(MX53_PIN_ATA_DATA11,		/* D3 */
 						IOMUX_CONFIG_ALT4);
-			mxc_request_iomux(MX53_PIN_ATA_DATA0,
+			mxc_request_iomux(MX53_PIN_ATA_DATA0,		/* D4 */
 						IOMUX_CONFIG_ALT4);
-			mxc_request_iomux(MX53_PIN_ATA_DATA1,
+			mxc_request_iomux(MX53_PIN_ATA_DATA1,		/* D5 */
 						IOMUX_CONFIG_ALT4);
-			mxc_request_iomux(MX53_PIN_ATA_DATA2,
+			mxc_request_iomux(MX53_PIN_ATA_DATA2,		/* D6 */
 						IOMUX_CONFIG_ALT4);
-			mxc_request_iomux(MX53_PIN_ATA_DATA3,
+			mxc_request_iomux(MX53_PIN_ATA_DATA3,		/* D7 */
 						IOMUX_CONFIG_ALT4);
-
-			mxc_iomux_set_pad(MX53_PIN_ATA_RESET_B, 0x1E4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_IORDY, 0xD4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA8, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA9, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA10, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA11, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA0, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA1, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA2, 0x1D4);
-			mxc_iomux_set_pad(MX53_PIN_ATA_DATA3, 0x1D4);
+			mxc_iomux_set_pad(MX53_PIN_ATA_RESET_B, MX53_SDHC_PAD_CTRL);	/* CMD */
+			mxc_iomux_set_pad(MX53_PIN_ATA_IORDY, MX53_SDHC_PAD_CTRL);	/* CLK */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA8, MX53_SDHC_PAD_CTRL);	/* D0 */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA9, MX53_SDHC_PAD_CTRL);	/* D1 */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA10, MX53_SDHC_PAD_CTRL);	/* D2 */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA11, MX53_SDHC_PAD_CTRL);	/* D3 */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA0, MX53_SDHC_PAD_CTRL);	/* D4 */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA1, MX53_SDHC_PAD_CTRL);	/* D5 */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA2, MX53_SDHC_PAD_CTRL);	/* D6 */
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA3, MX53_SDHC_PAD_CTRL);	/* D7 */
 
 			/* release eMMC reset */
 			Set_GPIO_output_val(MAKE_GP(5, 2), 1);
