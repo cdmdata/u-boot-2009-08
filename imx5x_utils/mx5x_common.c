@@ -242,6 +242,7 @@ static unsigned char da9052_init_data[] = {
 		0x3a, 0x1f,		/* off, LDO9, 2.8V camera(5f:2.75V) */
 		0x1a, 0x97,		/* gp11 input, usbotg id */
 		0x1b, 0x09,		/* gp12 input, no LDO9_en */
+		0x45, 0x2f,		/* charge coin cell @200uA to 3.1V */
 };
 
 int i2c_write_byte(unsigned i2c_base, unsigned chip, unsigned reg, unsigned char val)
