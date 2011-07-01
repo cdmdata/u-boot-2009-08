@@ -25,6 +25,9 @@
 #define MT47H64M8CF_25E		8	//256MB
 #define H5PS1G83EFR_S6C		9	//512MB, 400 MHz, CL 6, tRCD 6, tRP 6
 
+
+#define HAB_RVT_FAIL_SAFE_VECT	0x000000BC
+
 #define CPU_2_BE_32(l) \
        ((((l) & 0x000000FF) << 24) | \
 	(((l) & 0x0000FF00) << 8)  | \

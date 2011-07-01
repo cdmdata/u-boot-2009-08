@@ -174,6 +174,7 @@
 
 .section ".text.init", "x"
 
+	.align	5
 .globl lowlevel_init
 lowlevel_init:
 

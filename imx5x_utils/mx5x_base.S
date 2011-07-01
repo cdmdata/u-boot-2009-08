@@ -246,6 +246,10 @@ ddr_setup:
 	cmn	r0, #-ERROR_GP12_LOW
 	bne	1f
 //Start serial bootloader
+	bl	flush_uart
+	mov	r0, #HAB_RVT_FAIL_SAFE_VECT
+	ldr	r0, [r0]
+	bx	r0	/* this branches to thumb code */
 1:
 #endif
 #define LL4(a,b,c,d) ((a)+(b<<8)+(c<<16)+(d<<24))
