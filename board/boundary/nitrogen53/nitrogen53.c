@@ -818,10 +818,31 @@ int esdhc_gpio_init(bd_t *bis)
 			mxc_iomux_set_pad(MX53_PIN_SD1_DATA3, MX53_SDHC_PAD_CTRL);
 			break;
 		case 1:
-			/* eMMC reset pin, gp5[2] - low active reset pin*/
+			/* eMMC reset pin, gp5[2] - low active reset pin */
 			Set_GPIO_output_val(MAKE_GP(5, 2), 0);
 			mxc_request_iomux(MX53_PIN_EIM_A25, IOMUX_CONFIG_ALT1);
-			mxc_iomux_set_pad(MX53_PIN_EIM_A25, 0x0);
+			mxc_iomux_set_pad(MX53_PIN_EIM_A25, 0);
+/* pull-up off */
+#define WL12XX_IRQ_PAD_CTL	(PAD_CTL_HYS_ENABLE | \
+		PAD_CTL_PUE_PULL | PAD_CTL_100K_PU | PAD_CTL_DRV_MEDIUM)
+			/*
+			 * WL1271(TiWi) wireless LAN/BT,
+			 * gp2[24] - wlan_irq
+			 * gp3[0] - high active WLAN enable pin
+			 * gp3[1] - high active BT enable pin
+			 */
+			/* wl1271 wl_irq */
+			Set_GPIO_input(MAKE_GP(2, 24));
+			mxc_request_iomux(MX53_PIN_EIM_CS1, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_EIM_CS1, WL12XX_IRQ_PAD_CTL);
+			/* wl1271 wl_en */
+			Set_GPIO_output_val(MAKE_GP(3, 0), 0);
+			mxc_request_iomux(MX53_PIN_EIM_DA0, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_EIM_DA0, 0x0);
+			/* wl1271 bt_en */
+			Set_GPIO_output_val(MAKE_GP(3, 1), 0);
+			mxc_request_iomux(MX53_PIN_EIM_DA1, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_EIM_DA1, 0x0);
 
 			mxc_request_iomux(MX53_PIN_ATA_RESET_B,		/* CMD */
 						IOMUX_CONFIG_ALT2);
