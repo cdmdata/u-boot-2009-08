@@ -7,6 +7,7 @@ else
 fi
 
 lecho "check U-Boot" ;
+echo "check U-Boot" ;
 if fatload mmc 0 72000000 u-boot-nitrogen53*.bin ; then
       if sf probe 1 27000000 ; then
            if sf read 0x72400000 0x400 $filesize ; then
@@ -14,35 +15,46 @@ if fatload mmc 0 72000000 u-boot-nitrogen53*.bin ; then
                    lecho "..." ;
                else
                    lecho "Need U-Boot upgrade" ;
+                   echo "Need U-Boot upgrade" ;
                    lecho "Program in 10 seconds" ;
-                   for n in 5 4 3 2 1 0 ; do
-                        lecho $n ;
+                   echo "Program in 10 seconds" ;
+                   for n in 9 8 7 6 5 4 3 2 1 0 ; do
+                        lecho $n ; echo $n ; 
                         sleep 1 ;
                    done
+		   lecho "erasing" ; echo "erasing" ;
                    sf erase 0 0x40000 ;
 		   # two steps to prevent bricking
+		   lecho "programming" ; echo "programming" ;
                    sf write 0x72000400 0x800 $filesize
                    sf write 0x72000000 0x400 0x400
+		   lecho "verifying" ; echo "verifying" ;
                    if sf read 0x72400000 0x400 $filesize ; then
                        if cmp.b 0x72000000 0x72400000 $filesize ; then
                            while lecho "U-Boot upgraded. Cycle power" ; do
+				echo "U-Boot upgraded. Cycle power" ;
 				sleep 120
 			   done			   
                        else
                            lecho "Read verification error" ;
+                           echo "Read verification error" ;
                        fi
                    else
                         lecho "Error re-reading EEPROM" ;
+                        echo "Error re-reading EEPROM" ;
                    fi
                fi
            else
                lecho "Error reading boot loader from EEPROM" ;
+               echo "Error reading boot loader from EEPROM" ;
            fi
       else
            lecho "Error initializing EEPROM" ;
+           echo "Error initializing EEPROM" ;
       fi ;
 else
      lecho "No U-Boot image found on SD card" ;
+     echo "No U-Boot image found on SD card" ;
 fi
 
 if fatload mmc 0 72000000 uImage53* ; then
