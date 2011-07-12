@@ -1115,6 +1115,11 @@ int board_late_init(void)
 	setup_i2c(I2C3_BASE_ADDR);
 	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
+	/* gpio3[23] - KEEPON */
+	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_D23, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+	Set_GPIO_output_val(MAKE_GP(3, 23), 1);
+
 	return 0;
 }
 

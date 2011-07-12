@@ -976,6 +976,8 @@ get_ddr_type_addr:
 	.word	_IOM+0x678, PAD_SD1_DATA2	//SW_PAD_CTL_SD1_DATA2
 	.word	_IOM+0x67c, PAD_SD1_CLK		//SW_PAD_CTL_SD1_CLK
 	.word	_IOM+0x680, PAD_SD1_DATA3	//SW_PAD_CTL_SD1_DATA3
+	.word	_IOM+0x47C, 0			//SW_PAD_CTL_PAD_EIM_D23
+	.word	0x53F8C000,0x3e788440		//set GPIO3:23 low
 
 	.word	_IOM+0x2e4, 0			//SW_MUX_CTL_PAD_SD1_DATA0
 	.word	_IOM+0x2e8, 0			//SW_MUX_CTL_PAD_SD1_DATA1
@@ -983,6 +985,7 @@ get_ddr_type_addr:
 	.word	_IOM+0x2f0, 0			//SW_MUX_CTL_PAD_SD1_DATA2
 	.word	_IOM+0x2f4, 0			//SW_MUX_CTL_PAD_SD1_CLK
 	.word	_IOM+0x2f8, 0			//SW_MUX_CTL_PAD_SD1_DATA3
+	.word	_IOM+0x134, ALT1		//SW_MUX_CTL_PAD_EIM_D23
 	.endm
 
 	.macro mmc_get_cd
