@@ -62,6 +62,7 @@ dcd_hdr:          .word	MAKE_TAG(0xD2, hdr_end - ., 0x40)
 write_dcd_cmd:    .word	MAKE_TAG(0xCC, cmd_end1 - ., 4) 
 //0x040402CC /* Tag=0xCC, Len=64*8 + 4, Param=4 */
 
+#if 0
 /* DCD */
 MXC_DCD_ITEM(1, IOMUXC_BASE_ADDR + 0x554, 0x00380000)	/* DQM3: dse 7 - 43 30 34 20 ohm drive strength*/
 MXC_DCD_ITEM(2, IOMUXC_BASE_ADDR + 0x558, 0x00380040)	/* SDQS3: pue=1 but PKE=0, dse 7 */
@@ -140,6 +141,8 @@ MXC_DCD_ITEM(61, ESDCTL_BASE_ADDR + 0x01c, 0x00468039)	/* ESDSCR */
 MXC_DCD_ITEM(62, ESDCTL_BASE_ADDR + 0x020, 0x00004800)	/* ESDREF, (1)32k refresh cycle rate, (1) 2 refreshes/cycle */
 MXC_DCD_ITEM(63, ESDCTL_BASE_ADDR + 0x058, 0x00033337)	/* ODTCTRL */
 MXC_DCD_ITEM(64, ESDCTL_BASE_ADDR + 0x01c, 0x00000000)	/* ESDSCR: AXI address readies normal operation */
+#endif
+
 cmd_end1:
 
 hdr_end:
