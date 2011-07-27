@@ -513,7 +513,7 @@ void init_display_pins(void)
 
 	/* Power up LDO10 of DA9053 for tfp410 */
 	buf[0] = 0x6a;
-	if (bus_i2c_write(I2C1_BASE_ADDR, 0x48, 0x3b, 1, buf, 1))
+	if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, 0x3b, 1, buf, 1))
 		printf("LDO10 reg of DA9053 failed\n");
 	udelay(500);
 
@@ -1108,6 +1108,29 @@ extern void setup_display(void);
 
 int board_late_init(void)
 {
+#ifdef CONFIG_I2C_MXC
+	char *pmic_regs ;
+	if (0 != (pmic_regs = getenv("PMICREGS"))) {
+		pmic_regs = strtok(pmic_regs,",");
+		while (pmic_regs) {
+			unsigned regnum = simple_strtoul(pmic_regs,0,16);
+			char *cval = strchr(pmic_regs,':');
+			unsigned regval = cval ? simple_strtoul(cval+1,0,16)
+						: -1UL ;
+			if ((0 != cval)
+			    &&
+			    (regnum < 127)
+			    &&
+			    (regval <= 0x100)){
+				printf ("PMIC[0x%02x] == 0x%02x\n", regnum, regval);
+				if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, regnum, 1, (uchar *)&regval, 1)) {
+					printf("Error storing PMIC[0x%02x] == 0x%02x\n", regnum, regval);
+				}
+			}
+			pmic_regs = strtok(0,",");
+		}
+	}
+#endif
 #ifdef CONFIG_VIDEO_IMX5X
 	setup_display();
 #endif

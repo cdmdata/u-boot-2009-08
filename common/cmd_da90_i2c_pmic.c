@@ -36,8 +36,6 @@ int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, in
 #error DA90_I2C_BUS is undefined
 #endif
 
-#define DA90_I2C_ADDR 0x48
-
 #define DA90REG_PAGE_CON	0
 #define DA90REG_STATUS_A	1
 #define DA90REG_STATUS_B	2
