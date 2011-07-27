@@ -1111,10 +1111,11 @@ int board_late_init(void)
 #ifdef CONFIG_I2C_MXC
 	char *pmic_regs ;
 	if (0 != (pmic_regs = getenv("PMICREGS"))) {
-		pmic_regs = strtok(pmic_regs,",");
-		while (pmic_regs) {
-			unsigned regnum = simple_strtoul(pmic_regs,0,16);
-			char *cval = strchr(pmic_regs,':');
+		char *save=strdup(pmic_regs);
+		char *next = strtok(save,",");
+		while (next) {
+			unsigned regnum = simple_strtoul(next,0,16);
+			char *cval = strchr(next,':');
 			unsigned regval = cval ? simple_strtoul(cval+1,0,16)
 						: -1UL ;
 			if ((0 != cval)
@@ -1127,8 +1128,9 @@ int board_late_init(void)
 					printf("Error storing PMIC[0x%02x] == 0x%02x\n", regnum, regval);
 				}
 			}
-			pmic_regs = strtok(0,",");
+			next = strtok(0,",");
 		}
+		free(save);
 	}
 #endif
 #ifdef CONFIG_VIDEO_IMX5X
