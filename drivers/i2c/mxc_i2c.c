@@ -132,6 +132,8 @@ static int tx_byte(unsigned base, u8 byte, int clear_wait)
 	return 0;
 }
 
+void toggle_i2c(unsigned int base);
+
 static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 {
 	int i, retry = 0;
@@ -141,6 +143,7 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 		i2c_reset(base);
 		for (i = 0; i < I2C_MAX_TIMEOUT; i++)
 			udelay(I2C_TIMEOUT_TICKET);
+		toggle_i2c(base);
 	}
 	if (retry >= 3) {
 		printf("%s:bus is busy(%x)\n",
@@ -149,9 +152,16 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 	}
 	__REG16(base + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX;
 	if (!wait_for_sr_state(base, ST_BUS_BUSY)) {
-		printf("%s:trigger start fail(%x)\n",
-		       __func__, __REG16(base + I2SR));
-		return -1;
+		printf("%s:trigger start fail(%x)\n", __func__, __REG16(base + I2SR));
+		__REG16(base + I2CR) = I2CR_IEN;	//stop
+		udelay(1000);
+		i2c_reset(base);
+		toggle_i2c(base);
+		__REG16(base + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX;
+		if (!wait_for_sr_state(base, ST_BUS_BUSY)) {
+			printf("%s:toggle didn't work\n", __func__, __REG16(base + I2SR));
+			return -1;
+		}
 	}
 	if (tx_byte(base, chip << 1, 0)) {
 		printf("%s:chip address cycle fail(%x)\n",

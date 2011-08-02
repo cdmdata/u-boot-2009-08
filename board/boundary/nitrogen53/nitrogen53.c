@@ -74,7 +74,7 @@ static enum boot_device boot_dev;
 #define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
 unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR,
 		GPIO5_BASE_ADDR, GPIO6_BASE_ADDR, GPIO7_BASE_ADDR};
-inline void Set_GPIO_output_val(unsigned gp, unsigned val)
+void Set_GPIO_output_val(unsigned gp, unsigned val)
 {
 	unsigned base = gp_base[gp >> 5];
 	unsigned mask = (1 << (gp & 0x1f));
@@ -90,7 +90,7 @@ inline void Set_GPIO_output_val(unsigned gp, unsigned val)
 	writel(reg, base + GPIO_DIR);
 }
 
-inline void Set_GPIO_input(unsigned gp)
+void Set_GPIO_input(unsigned gp)
 {
 	unsigned base = gp_base[gp >> 5];
 	unsigned mask = (1 << (gp & 0x1f));
@@ -98,6 +98,13 @@ inline void Set_GPIO_input(unsigned gp)
 	reg = readl(base + GPIO_DIR);
 	reg &= ~mask;		/* configure GPIO line as input */
 	writel(reg, base + GPIO_DIR);
+}
+
+unsigned gpio_get_value(unsigned gp)
+{
+	unsigned base = gp_base[gp >> 5];
+	unsigned reg = readl(base + GPIO_PSR);
+	return (reg >> (gp & 0x1f)) & 1;
 }
 
 unsigned get_machid(void)
@@ -361,74 +368,111 @@ static void setup_uart(void)
 
 
 #ifdef CONFIG_I2C_MXC
-static void setup_i2c(unsigned int module_base)
+#define I2C_PAD_NO_PULLUP (PAD_CTL_HYS_ENABLE |	PAD_CTL_100K_PU | \
+		PAD_CTL_ODE_OPENDRAIN_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST)
+#define I2C_PAD_22K_PULLUP (PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | PAD_CTL_22K_PU | \
+		PAD_CTL_ODE_OPENDRAIN_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST)
+
+struct pin_ctrl {
+	iomux_pin_name_t pin;
+	u32 sel_input;
+	unsigned char alt;
+	unsigned char path;
+	unsigned char gp;
+	unsigned char spare;
+};
+
+struct i2c_select {
+	u32 pad_ctl;
+	struct pin_ctrl sda;
+	struct pin_ctrl scl;
+};
+
+static int i2c_get_index(unsigned module_base)
 {
-	unsigned pad_ctl = PAD_CTL_HYS_ENABLE |
-			PAD_CTL_100K_PU | PAD_CTL_ODE_OPENDRAIN_ENABLE |
-			PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST;
+	int i = -1;
 	switch (module_base) {
 	case I2C1_BASE_ADDR:
-		pad_ctl = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE |
-				PAD_CTL_PUE_PULL | PAD_CTL_22K_PU |
-				PAD_CTL_ODE_OPENDRAIN_ENABLE |
-				PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST;
-		/* i2c1 SDA */
-		mxc_request_iomux(MX53_PIN_EIM_D28,
-				IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION);
-		mxc_iomux_set_input(MUX_IN_I2C1_IPP_SDA_IN_SELECT_INPUT,
-				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_EIM_D28, pad_ctl);
-		/* i2c1 SCL */
-		mxc_request_iomux(MX53_PIN_EIM_D21,
-				IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION);
-		mxc_iomux_set_input(MUX_IN_I2C1_IPP_SCL_IN_SELECT_INPUT,
-				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_EIM_D21, pad_ctl);
+		i = 0;
 		break;
 	case I2C2_BASE_ADDR:
-		/* i2c2 SDA */
-		mxc_request_iomux(MX53_PIN_KEY_ROW3,
-				IOMUX_CONFIG_ALT4 | IOMUX_CONFIG_SION);
-		mxc_iomux_set_input(MUX_IN_I2C2_IPP_SDA_IN_SELECT_INPUT,
-				INPUT_CTL_PATH0);
-		mxc_iomux_set_pad(MX53_PIN_KEY_ROW3, pad_ctl);
-		/* i2c2 SCL */
-		mxc_request_iomux(MX53_PIN_EIM_EB2,
-				IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION);
-		mxc_iomux_set_input(MUX_IN_I2C2_IPP_SCL_IN_SELECT_INPUT,
-				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_EIM_EB2, pad_ctl);
+		i = 1;
 		break;
 	case I2C3_BASE_ADDR:
-		/* GPIO_0 - SSI_EXT1 output clock, this is needed for sgtl500 */
-		mxc_request_iomux(MX53_PIN_GPIO_0, IOMUX_CONFIG_ALT3);
-		/* GPIO_3 for I2C3_SCL */
-		mxc_request_iomux(MX53_PIN_GPIO_3,
-				IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION);
-		mxc_iomux_set_input(MUX_IN_I2C3_IPP_SCL_IN_SELECT_INPUT,
-				INPUT_CTL_PATH1);
-		mxc_iomux_set_pad(MX53_PIN_GPIO_3, pad_ctl);
-		if (get_machid() == MACH_TYPE_MX53_NITROGEN_A) {
-			/* pad GPIO_16 for I2C3_SDA is gpio7[11] */
-			mxc_request_iomux(MX53_PIN_GPIO_16,
-					IOMUX_CONFIG_ALT6 | IOMUX_CONFIG_SION);
-			mxc_iomux_set_input(MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT,
-					INPUT_CTL_PATH2);
-			mxc_iomux_set_pad(MX53_PIN_GPIO_16, pad_ctl);
-		} else {
-			/* GPIO_6 for I2C3_SDA */
-			mxc_request_iomux(MX53_PIN_GPIO_6,
-					IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION);
-			mxc_iomux_set_input(MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT,
-					INPUT_CTL_PATH1);
-			mxc_iomux_set_pad(MX53_PIN_GPIO_6, pad_ctl);
-
-		}
+		i = (get_machid() == MACH_TYPE_MX53_NITROGEN_A) ? 3 : 2;
 		break;
 	default:
 		printf("Invalid I2C base: 0x%x\n", module_base);
 		break;
 	}
+	return i;
+}
+
+struct i2c_select i2c_sel[] = {
+//0
+	{ I2C_PAD_22K_PULLUP,
+		{MX53_PIN_EIM_D28, MUX_IN_I2C1_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(3, 28)},
+		{MX53_PIN_EIM_D21, MUX_IN_I2C1_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(3, 21)}},
+//1
+	{ I2C_PAD_NO_PULLUP,
+		{MX53_PIN_KEY_ROW3, MUX_IN_I2C2_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT4 | IOMUX_CONFIG_SION, INPUT_CTL_PATH0, MAKE_GP(4, 13)},
+		{MX53_PIN_EIM_EB2,  MUX_IN_I2C2_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(2, 30)}},
+//2
+	{ I2C_PAD_NO_PULLUP,
+		{MX53_PIN_GPIO_6,  MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(1, 6)},
+		{MX53_PIN_GPIO_3,  MUX_IN_I2C3_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(1, 3)}},
+//3
+	{ I2C_PAD_NO_PULLUP,
+		{MX53_PIN_GPIO_16, MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT6 | IOMUX_CONFIG_SION, INPUT_CTL_PATH2, MAKE_GP(7, 11)},
+		{MX53_PIN_GPIO_3,  MUX_IN_I2C3_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(1, 3)}},
+};
+
+
+static void setup_i2c(unsigned int module_base)
+{
+	int i = i2c_get_index(module_base);
+	struct i2c_select* p;
+	if (i < 0)
+		return;
+
+	/* GPIO_0 - SSI_EXT1 output clock, this is needed for sgtl500 */
+	mxc_request_iomux(MX53_PIN_GPIO_0, IOMUX_CONFIG_ALT3);
+
+	p = &i2c_sel[i];
+	/* SDA */
+	mxc_request_iomux(p->sda.pin, p->sda.alt);
+	mxc_iomux_set_input(p->sda.sel_input, p->sda.path);
+	mxc_iomux_set_pad(p->sda.pin, p->pad_ctl);
+	/* SCL */
+	mxc_request_iomux(p->scl.pin, p->scl.alt);
+	mxc_iomux_set_input(p->scl.sel_input, p->scl.path);
+	mxc_iomux_set_pad(p->scl.pin, p->pad_ctl);
+}
+
+void toggle_i2c(unsigned int module_base)
+{
+	int i = i2c_get_index(module_base);
+	struct i2c_select* p;
+	if (i < 0)
+		return;
+	p = &i2c_sel[i];
+	Set_GPIO_input(p->sda.gp);
+	Set_GPIO_input(p->scl.gp);
+	mxc_request_iomux(p->sda.pin, 1 | IOMUX_CONFIG_SION);
+	mxc_request_iomux(p->scl.pin, 1 | IOMUX_CONFIG_SION);
+
+	printf("%s sda=%i scl=%i sda.gp=0x%x scl.gp=0x%x\n", __func__, gpio_get_value(p->sda.gp), gpio_get_value(p->scl.gp), p->sda.gp, p->scl.gp);
+	/* Send high and low on the SCL line */
+	for (i = 0; i < 9; i++) {
+		Set_GPIO_output_val(p->scl.gp, 0);
+		udelay(20);
+		Set_GPIO_input(p->scl.gp);
+		udelay(10);
+		printf("%s sda=%i scl=%i\n", __func__, gpio_get_value(p->sda.gp), gpio_get_value(p->scl.gp));
+		udelay(10);
+	}
+	mxc_request_iomux(p->sda.pin, p->sda.alt);
+	mxc_request_iomux(p->scl.pin, p->scl.alt);
 }
 #endif
 
