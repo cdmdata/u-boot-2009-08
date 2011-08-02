@@ -125,7 +125,7 @@ static int tx_byte(unsigned base, u8 byte, int clear_wait)
 	}
 	sr = wait_for_sr_state(base, ST_BYTE_COMPLETE);
 	if ((!sr) || (sr & I2SR_RX_NO_AK)) {
-		DPRINTF("%s:%x <= %x\n", __func__, sr, byte);
+		printf("%s: sr=%x byte=%x\n", __func__, sr, byte);
 		return -1;
 	}
 	DPRINTF("%s:%x\n", __func__, byte);
@@ -175,6 +175,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int
 
 	if (i2c_addr(base, chip, addr, alen)) {
 		printf("i2c_addr failed\n");
+		__REG16(base + I2CR) = I2CR_IEN | I2CR_TX_NO_AK;	/* send stop */
 		return -1;
 	}
 
@@ -183,6 +184,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int
 	if (tx_byte(base, chip << 1 | 1, 1)) {
 		printf("%s:Send 2th chip address fail(%x)\n",
 		       __func__, __REG16(base + I2SR));
+		__REG16(base + I2CR) = I2CR_IEN | I2CR_TX_NO_AK;	/* send stop */
 		return -1;
 	}
 	__REG16(base + I2CR) = I2CR_IEN | I2CR_MSTA |
@@ -193,6 +195,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int
 	for (;;) {
 		if (!wait_for_sr_state(base, ST_BYTE_COMPLETE)) {
 			printf("%s: fail sr=%x cr=%x, len=%i\n", __func__, __REG16(base + I2SR), __REG16(base + I2CR), len);
+			__REG16(base + I2CR) = I2CR_IEN | I2CR_TX_NO_AK;	/* send stop */
 			return -1;
 		}
 		if (len == 2) {
@@ -220,12 +223,15 @@ int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, in
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
 		__func__, chip, addr, alen, len);
 
-	if (i2c_addr(base, chip, addr, alen))
+	if (i2c_addr(base, chip, addr, alen)) {
+		__REG16(base + I2CR) = I2CR_IEN;	/* send stop */
 		return -1;
-
+	}
 	while (len--)
-		if (tx_byte(base, *buf++, 0))
+		if (tx_byte(base, *buf++, 0)) {
+			__REG16(base + I2CR) = I2CR_IEN;	/* send stop */
 			return -1;
+		}
 
 	__REG16(base + I2CR) = I2CR_IEN;
 
