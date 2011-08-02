@@ -301,4 +301,8 @@
 #define CONFIG_CMD_SOURCE
 #define CONFIG_CMD_RUN
 
+#define DA90_I2C_BUS I2C1_BASE_ADDR
+#define DA90_I2C_ADDR 0x48
+#define CONFIG_CMD_DA90_I2C_PMIC
+
 #endif				/* __CONFIG_H */
