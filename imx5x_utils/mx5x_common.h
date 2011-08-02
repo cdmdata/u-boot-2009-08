@@ -4,6 +4,10 @@ typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 typedef unsigned int size_t;
 typedef unsigned int uint;
+
+typedef void (*exec_rtn)(void);
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset);
+
 #define NULL 0
 #define IO_READ(r,o)      (*((volatile uint32_t*)((r)+(o))))
 #define IO_WRITE(r,o,d)   (*((volatile uint32_t*)((r)+(o))) = ((uint32_t)(d)))
@@ -20,7 +24,8 @@ struct common_info {
 	void *search;
 	void *cur_end;
 	void *end;
-
+	void *dest;
+	uint file_size;
 };
 
 void dump_mem(void *buf, uint block, uint block_cnt);
@@ -72,8 +77,8 @@ unsigned get_ram_size(void);
 unsigned get_tapeout_version(void);
 
 void header_search(struct common_info *pinfo);
+exec_rtn header_get_rtn(void *_hdr);
 void header_update_end(struct common_info *pinfo);
-int header_present(struct common_info *pinfo);
-void exec_program(struct common_info *pinfo, uint32_t start_block);
-void exec_dl(unsigned char* ubl, unsigned length);
+int header_present(void *hdr);
+int common_exec_program(struct common_info *pinfo);
 void hw_watchdog_reset(void);

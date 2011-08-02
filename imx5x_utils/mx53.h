@@ -25,8 +25,17 @@
 #define MT47H64M8CF_25E		8	//256MB
 #define H5PS1G83EFR_S6C		9	//512MB, 400 MHz, CL 6, tRCD 6, tRP 6
 
-
-#define HAB_RVT_FAIL_SAFE_VECT	0x000000BC
+#define HAB_RVT_HDR			0x94
+#define HAB_RVT_ENTRY			0x98
+#define HAB_RVT_EXIT			0x9c
+#define HAB_RVT_CHECK_TARGET		0xa0
+#define HAB_RVT_AUTHENTICATE_IMAGE	0xa4
+#define HAB_RVT_RUN_DCD			0xa8
+#define HAB_RVT_RUN_CSF			0xac
+#define HAB_RVT_ASSERT			0xb0
+#define HAB_RVT_REPORT_EVENT		0xb4
+#define HAB_RVT_REPORT_STATUS		0xb8
+#define HAB_RVT_FAIL_SAFE_VECT		0xbc
 
 #define CPU_2_BE_32(l) \
        ((((l) & 0x000000FF) << 24) | \
@@ -618,10 +627,10 @@
 
 /* ************************************************** */
 /* ************************************************** */
-	.macro header_macro start_rtn
+	.macro header_macro plug_rtn
 //offset 0x400 for SD/MMC
 ivt_header:		.word MAKE_TAG(0xD1, 0x20, 0x40) /* 0x402000D1, Tag=0xD1, Len=0x0020, Ver=0x40 */
-app_code_jump_v:	.word (\start_rtn)
+app_code_jump_v:	.word mfgtool_start
 reserv1:		.word 0x0
 dcd_ptr:		.word 0x0
 boot_data_ptr:		.word boot_data
@@ -629,16 +638,44 @@ self_ptr:		.word ivt_header
 app_code_csf:		.word 0x0
 reserv2:		.word 0x0
 
-
+mfgtool_start:		b	\plug_rtn	//stupid mfgtool assumes start is after reserv2
 boot_data:		.word 0xf8006000
 image_len:		.word program_length
-plugin:			.word 0x0
+plugin:			.word 0x1
 ddr_type:		.word DDR_TYPE
 			ddr_data
 get_ddr_type_addr:
 	adr	r2,ddr_type
 	mov	pc, lr
-.endm
+	.endm
+
+	.macro header_chain_ivt rtn
+ivt_header2:		.word MAKE_TAG(0xD1, 0x20, 0x40) /* 0x402000D1, Tag=0xD1, Len=0x0020, Ver=0x40 */
+app_code_jump_v2:	.word mfgtool_start2
+			.word 0x0
+dcd_ptr2:		.word 0x0
+boot_data_ptr2:		.word boot_data
+self_ptr2:		.word ivt_header2
+app_code_csf2:		.word 0x0
+			.word 0x0
+mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
+	.endm
+
+	.macro plug_entry_setup
+	.endm
+
+#define HEADER_SEARCH		mx53_header_search
+#define HEADER_GET_RTN		mx53_header_get_rtn
+#define HEADER_UPDATE_END	mx53_header_update_end
+
+#define IVT_BARKER 0x402000d1
+	.macro test_for_header
+	BigMov	r1, IVT_BARKER
+	ldr	r0, [r0]
+	cmp	r0, r1
+	moveq	r0,#1
+	movne	r0,#0
+	.endm
 
 #define ALT0	0x0
 #define ALT1	0x1
@@ -724,7 +761,9 @@ get_ddr_type_addr:
 //Note: Serial downloader assumes UART1_TXD is CSI0_DAT10, UART1_RXD is CSI0_DAT11
 	.word	_IOM+0x274, 3		//Mux: PATA_DMACK - UART1_RXD
 	.word	_IOM+0x5F4, 0x1e4	//CTL: PATA_DMACK - UART1_RXD
-	.word	_IOM+0x878, 3		//Select: UART1_IPP_UART_RXD_MUX_SELECT_INPUT
+//This line screws up bootloader downloads
+//when we need to download a second file via HAB_RVT_FAIL_SAFE
+//	.word	_IOM+0x878, 3		//Select: UART1_IPP_UART_RXD_MUX_SELECT_INPUT
 	.word	_IOM+0x270, 3		//MUX: PATA_DIOW - UART1_TXD
 	.word	_IOM+0x5F0, 0x1e4	//CTL: PATA_DIOW - UART1_TXD
 #endif
@@ -976,8 +1015,6 @@ get_ddr_type_addr:
 	.word	_IOM+0x678, PAD_SD1_DATA2	//SW_PAD_CTL_SD1_DATA2
 	.word	_IOM+0x67c, PAD_SD1_CLK		//SW_PAD_CTL_SD1_CLK
 	.word	_IOM+0x680, PAD_SD1_DATA3	//SW_PAD_CTL_SD1_DATA3
-	.word	_IOM+0x47C, 0			//SW_PAD_CTL_PAD_EIM_D23
-	.word	0x53F8C000,0x3e788440		//set GPIO3:23 low
 
 	.word	_IOM+0x2e4, 0			//SW_MUX_CTL_PAD_SD1_DATA0
 	.word	_IOM+0x2e8, 0			//SW_MUX_CTL_PAD_SD1_DATA1
@@ -985,26 +1022,12 @@ get_ddr_type_addr:
 	.word	_IOM+0x2f0, 0			//SW_MUX_CTL_PAD_SD1_DATA2
 	.word	_IOM+0x2f4, 0			//SW_MUX_CTL_PAD_SD1_CLK
 	.word	_IOM+0x2f8, 0			//SW_MUX_CTL_PAD_SD1_DATA3
-	.word	_IOM+0x134, ALT1		//SW_MUX_CTL_PAD_EIM_D23
 	.endm
 
 	.macro mmc_get_cd
 	mov	r0,#0	//always card present
 	.endm
 
-#define HEADER_SEARCH		mx53_header_search
-#define EXEC_PROGRAM		mx53_exec_program
-#define EXEC_DL			mx53_exec_dl
-#define HEADER_UPDATE_END	mx53_header_update_end
-
-#define IVT_BARKER 0x402000d1
-	.macro test_for_header
-	BigMov	r1, IVT_BARKER
-	ldr	r0, [r0, #4]
-	cmp	r0, r1
-	moveq	r0,#1
-	movne	r0,#0
-	.endm
 
 #endif
 

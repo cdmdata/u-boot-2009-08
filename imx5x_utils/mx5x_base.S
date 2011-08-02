@@ -11,6 +11,7 @@
 	.global ecspi_ss_inactive
 	.global ecspi_read_miso
 	.global mmc_read_cd
+	.global chain_ivt
 	.global get_ram_base
 	.global get_ram_size
 	.global get_tapeout_version
@@ -18,12 +19,13 @@
 	.global ReceiveX
 	.global hw_watchdog_reset
 	.global header_search
-	.global exec_program
-	.global exec_dl
+	.global header_get_rtn
 	.global header_update_end
 	.global header_present
 	.global iomuxc_ddr_single
 	.global iomuxc_ddr_differential
+	.global header_base
+
 #define rFNAME r8
 #define rFOFF r9
 #define rIIM r12
@@ -116,14 +118,98 @@
 	.endm
 
 	.section .header_mem,"x"
+header_base:
 	header_macro assem_start
 
 	.section .text
 assem_start:
-	BigMov	sp,STACK_HIGH
+	plug_entry_setup
+	tst	r0, #3
+	tsteq	r1, #3
+	tsteq	r2, #3
+	beq	plug_start
+#if 0
+	BigMov	sp,STACK_HIGH - 12
+#else
+	str	lr,[sp, #-4]!
+	sub	sp, sp, #12
+#endif
+	add	r0, sp, #0
+	add	r1, sp, #4
+	add	r2, sp, #8
+	bl	plug_start
+1:
+	cmp	r0, #1
+	bne	2f		//branch if error
+#if 0
+	ldr	lr,[sp, #12]
+	movs	lr, lr
+	addne	sp, sp, #16	//return if able
+#if 1
+	bne	rvt_reset
+#else
+	bxne	lr
+#endif
+#endif
+	ldmia	sp, {r0-r2}
+	add	r0, r0, r2
+	bl	header_get_rtn
+	movs	r3, r0
+	addne	r0, sp, #0
+	addne	r1, sp, #4
+	addne	r2, sp, #8
+	blxne	r3
+	b	1b
+#define LL4(a,b,c,d) ((a)+(b<<8)+(c<<16)+(d<<24))
+2:
+#if 1
+//delay before reset to help prevent USB windows trouble with mfgtool
+	mov	r3,#0xc00000
+3:	subs	r3,r3,#1
+	bne	3b
+#endif
+	ldr	r0, [sp, #12]
+	bl	print_hex
+	mov	r0, #0x20
+	bl	TransmitX
+	BigMov	r0, LL4('E','R','R','\n')
+	bl	TransmitX
+	bl	flush_uart
+	ldr	lr, [sp, #12]
+	mov	r0, #0
+	add	sp, sp, #16
+#if 0
+	movs	lr, lr
+	bxne	lr
+#endif
+
+rvt_reset:
+#ifdef HAB_RVT_FAIL_SAFE_VECT
+	BigMov	r0, LL4('R','V','T','\n')
+	bl	TransmitX
+	bl	flush_uart
+	mov	r0, #HAB_RVT_ENTRY
+	ldr	lr, [r0]
+	blx	lr
+	mov	r0, #HAB_RVT_FAIL_SAFE_VECT
+	ldr	lr, [r0]
+	blx	lr
+#endif
+wdg_reset:
+	BigMov	r0, LL4('W','D','R','\n')
+	bl	TransmitX
+	bl	flush_uart
+wdg_reset2:
+	BigMov	r1, WDOG_BASE
+	BigMov	r0, 0x4
+	strh	r0,[r1, #WDOG_WCR]
+98:	b	98b
+
+plug_start:
+	/* Save the return address and the function arguments */
+	push	{r0-r12, lr}
 	hw_init
 	bl	Basic_Init_IOMux
-//1:	b	1b
 	init_gps
 	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE
 
@@ -163,14 +249,38 @@ init_tab:
 	.short	0x0060		//UTS (0xb4)
 init_tab_end:
 	.align	2
-
-
+#if 0
+hb:	.word	header_base
+pe:	.word	program_end
+#endif
 uart_init_done:
 	mov	r0,#0xc0000	//0x40000 gives garbage, 0x6000 garbage somtimes
 1:	subs	r0,r0,#1	//delay for UART to power up, avoiding garbage characters transmitting
 	bne	1b
 //	mov	r0, #'A'
 //	bl	TransmitX
+
+#if 0
+//Dump program for comparsion
+	ldr	r4, hb
+	ldr	r5, pe
+10:
+	debug_hex r4
+	mov	r0, #' '
+	bl	TransmitX
+	mov	r6,#4
+11:	ldr	r0, [r4], #4
+	debug_hex r0
+	subs	r6, r6, #1
+	bne	11b
+	mov	r0, #0x0d
+	bl	TransmitX
+	mov	r0, #0x0a
+	bl	TransmitX
+	cmp	r4, r5
+	blo	10b
+#endif
+
 #ifdef PMIC_DA9053_ADDR
 	ldr	r0, =I2C_BASE
 	mov	r1, #PMIC_DA9053_ADDR
@@ -232,34 +342,31 @@ ddr_setup:
 #endif
 //	mov	r0, #'G'
 //	bl	TransmitX
-
-	bl	main
-
+	/* reload the function arguments */
+	ldmia	sp, {r0-r2}
+	bl	plug_main
+	mov	r4, r0
 #ifdef PMIC_DA9053_ADDR
-	cmn	r0, #-ERROR_MEMORY_TEST
+	cmn	r4, #-ERROR_MEMORY_TEST
 	bne	1f
+//	bl	get_ram_base
+//	bl	ram_test
+//	cmp	r0, #0
+//	bne	1f		//br if ram test passed
+
 	ldr	r0, =I2C_BASE
 	mov	r1, #PMIC_DA9053_ADDR
 	bl	vbuckcore_boost
 	movs	r0,r0
 	beq	ddr_setup
-	cmn	r0, #-ERROR_GP12_LOW
-	bne	1f
-//Start serial bootloader
-	bl	flush_uart
-	mov	r0, #HAB_RVT_FAIL_SAFE_VECT
-	ldr	r0, [r0]
-	bx	r0	/* this branches to thumb code */
 1:
 #endif
-#define LL4(a,b,c,d) ((a)+(b<<8)+(c<<16)+(d<<24))
-	BigMov	r0, LL4('W','D','R','\n')
-	bl	TransmitX
+	bl	flush_uart
+	cmp	r4, #1
+	movne	r4, #0	//anything but 1 is failure
+	str	r4, [sp, #0]
+	pop	{r0-r12, pc}
 
-	BigMov	r1, WDOG_BASE
-	BigMov	r0, 0x4
-	strh	r0,[r1, #WDOG_WCR]
-3:	b	3b
 
 #ifdef mx51
 Basic_Init_ESD:
@@ -305,6 +412,10 @@ IOMUX_TABLE:
 ESD_TABLE:
 	esd_dcd_data
 #endif
+
+	.section .text.chain_ivt,"x"
+chain_ivt:
+	header_chain_ivt plug_main2
 
 	.section .text.get_ram_base,"x"
 get_ram_base:
@@ -477,13 +588,9 @@ ReceiveX:
 header_search:
 	b HEADER_SEARCH
 
-	.section .text.exec_program,"x"
-exec_program:
-	b EXEC_PROGRAM
-
-	.section .text.exec_dl,"x"
-exec_dl:
-	b EXEC_DL
+	.section .text.header_get_rtn,"x"
+header_get_rtn:
+	b HEADER_GET_RTN
 
 	.section .text.header_update_end,"x"
 header_update_end:

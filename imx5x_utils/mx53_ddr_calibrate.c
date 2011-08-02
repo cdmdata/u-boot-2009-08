@@ -1078,7 +1078,7 @@ void hw_calibrate(unsigned esd_base, unsigned *ram_base)
 			ram0_base[4], ram0_base[5], ram0_base[6], ram0_base[7]);
 }
 
-int main(void)
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
 	int ret = 0;
 	unsigned mask = 0;

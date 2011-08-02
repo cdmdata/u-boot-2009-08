@@ -654,7 +654,7 @@ static void up_and_measure(unsigned esd_base, unsigned reg_index, unsigned val)
 	IO_MOD(esd_base, ESD_MISC, (1<<11), 0);
 }
 
-int main(void)
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
 	int ret = 0;
 	unsigned *ram_base = (unsigned *)get_ram_base();

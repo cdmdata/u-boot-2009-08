@@ -240,6 +240,34 @@ dcd:		.word	0xb17219e9	//0x1c
 	.word	program_length	//0x24 length
 	.endm
 
+	.macro header_chain_ivt start_rtn
+header2:
+		.word	(\start_rtn)	//0x00 app_start_addr
+		.word	0xb1		//0x04 app_barker
+		.word	0x00		//0x08 csf_ptr
+		.word	dcd_ptr2	//0x0c dcd_ptr_ptr
+		.word	0		//0x10 srk_ptr
+dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
+		.word	image_base	//0x18 app_dest_ptr
+	.endm
+
+	.macro plug_entry_setup
+	mov	r0, #1
+	mov	lr, #0
+	.endm
+
+#define HEADER_SEARCH		mx51_header_search
+#define HEADER_GET_RTN		mx51_header_get_rtn
+#define HEADER_UPDATE_END	mx51_header_update_end
+
+#define APP_BARKER	0xb1
+	.macro test_for_header
+	ldr	r0, [r0, #4]
+	cmp	r0, #APP_BARKER
+	moveq	r0,#1
+	movne	r0,#0
+	.endm
+
 	.macro iomux_dcd_data
 	.word	0x73fa8418, 0x000000e0	//SW_PAD_CTL_PAD_EIM_D26, usb OTG power off
 	.word	0x73fa8084, 0x00000001	//SW_MUX_CTL_PAD_EIM_D26, ALT1 kpp column 7, GPIO on next board
@@ -638,19 +666,6 @@ dcd:		.word	0xb17219e9	//0x1c
 	str	r0, [r1, #GPIO_DIR]
 	ldr	r0, [r1, #GPIO_DR]
 	and	r0, r0, #1
-	.endm
-
-#define HEADER_SEARCH		mx51_header_search
-#define EXEC_PROGRAM		mx51_exec_program
-#define EXEC_DL			mx51_exec_dl
-#define HEADER_UPDATE_END	mx51_header_update_end
-
-#define APP_BARKER	0xb1
-	.macro test_for_header
-	ldr	r0, [r0, #4]
-	cmp	r0, #APP_BARKER
-	moveq	r0,#1
-	movne	r0,#0
 	.endm
 
 #endif

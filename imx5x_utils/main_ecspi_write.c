@@ -66,16 +66,17 @@ void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 
 int xmodem_load(unsigned char * dest);
 
-int main(void)
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
+	struct common_info ci;
 	int base = get_ecspi_base();
 	unsigned char *ram_base = (unsigned char *)get_ram_base();
 	unsigned char *dest  = ram_base + 0x00600000;
 	unsigned char *destX = ram_base + 0x03f00000;
 	unsigned len;
 	my_printf("ram_base=%x ecspi_base=%x\n", ram_base, base);
+	my_printf("pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
 	if (!ram_test((unsigned *)ram_base)) {
-		flush_uart();
 		return ERROR_MEMORY_TEST;
 	}
 #if 0
@@ -91,15 +92,27 @@ int main(void)
 	else {
 		dump_mem(destX, 0x400, 2);
 		my_printf("Xmodem error\n");
-		return -1;
+		return 0;
 	}
 #if 1
 	reverse_word2((unsigned *)dest, (unsigned *)destX, len >> 2);
 	write_ubl(base, dest, len, 0x400);
 #endif
-	exec_dl(destX + 0x400, len - 0x400);
-	dump_mem(destX, 0x400, 14);
-	my_printf("hdr not found\n");
+	destX += 0x400;
+	len -= 0x400;
+
+	ci.search = ci.initial_buf = destX;
+	ci.buf = (destX + len);
+	ci.hdr = 0;
+	ci.cur_end = ci.end = ci.dest = 0;
+	header_search(&ci);
+	header_update_end(&ci);
 	flush_uart();
-	return 0;
+	if (pstart)
+		*pstart = ci.dest;
+	if (pbytes)
+		*pbytes = ci.end - ci.dest;
+	if (pivt_offset)
+		*pivt_offset = ci.hdr - ci.dest;
+	return common_exec_program(&ci) ? 1 : 0;
 }

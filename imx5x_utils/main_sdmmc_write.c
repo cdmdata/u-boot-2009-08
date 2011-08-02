@@ -30,22 +30,30 @@ void write_ubl(unsigned char* ubl, unsigned length, unsigned start_block)
 
 int xmodem_load(unsigned char * dest);
 
-int main(void)
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
+	struct common_info ci;
 	unsigned char *dest = (unsigned char *)0x90600000;
 	unsigned len = xmodem_load(dest);
 	if (len)
 		my_printf("OK len=0x%x\n", len);
 	else {
 		my_printf("Xmodem error\n");
-		return -1;
+		return 0;
 	}
-	write_ubl(dest, len, header_present((struct common_info *)dest) ?
+	write_ubl(dest, len, header_present((void *)dest) ?
 			(0x400/0x200) :		/* UBL starts at block #2 */
 			(0x20000/0x200));	/* eboot starts at block #256 */
-	exec_dl(dest, len);
-	dump_mem(dest, 0x800, 14);
-	my_printf("hdr not found\n");
-	flush_uart();
-	return 0;
+	ci.search = ci.initial_buf = dest;
+	ci.buf = (dest + len);
+	ci.hdr = 0;
+	header_search(&ci);
+	header_update_end(&ci);
+	if (pstart)
+		*pstart = ci.dest;
+	if (pbytes)
+		*pbytes = ci.end - ci.dest;
+	if (pivt_offset)
+		*pivt_offset = ci.hdr - ci.dest;
+	return common_exec_program(&ci) ? 1 : 0;
 }

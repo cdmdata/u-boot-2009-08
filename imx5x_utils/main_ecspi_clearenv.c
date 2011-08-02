@@ -46,7 +46,7 @@ int xmodem_load(unsigned char * dest);
 #define CONFIG_ENV_SF_SIZE		(4 * 1024)
 #define CONFIG_ENV_SF_OFFSET		((384 * 1024)-CONFIG_ENV_SF_SIZE)
 
-int main(void)
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
 	int base = get_ecspi_base();
 	check_page_size(base);

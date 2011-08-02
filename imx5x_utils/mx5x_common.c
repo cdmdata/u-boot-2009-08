@@ -181,6 +181,24 @@ int common_load_block_of_file(struct common_info *pinfo, unsigned block_size)
 	return 0;
 }
 
+int common_exec_program(struct common_info *pinfo)
+{
+	exec_rtn rtn;
+	rtn = header_get_rtn(pinfo->hdr);
+	if (!rtn) {
+		unsigned char *ram_base = (unsigned char *)get_ram_base();
+		my_printf("common_exec_program failed, hdr=%x\n", pinfo->hdr);
+		dump_mem(pinfo->initial_buf, 0x400, 1);
+		if (!ram_test((unsigned *)ram_base)) {
+			my_printf("ram test failed\r\n");
+		}
+	} else {
+		my_printf("file loaded, app_start %x\r\n", rtn);
+	}
+	flush_uart();
+	return (int)rtn;
+}
+
 int ram_test(unsigned *ram_base)
 {
 	unsigned *p = ram_base;
@@ -288,6 +306,7 @@ static const unsigned char da9052_gp12_event[] = {
 };
 #endif
 
+//Return 0 if voltage was boosted
 int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 {
 	int ret;

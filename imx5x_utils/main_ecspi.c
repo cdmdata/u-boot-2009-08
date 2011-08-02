@@ -15,7 +15,12 @@ unsigned crc32(unsigned crc, const unsigned char *buf, unsigned len);
 unsigned long adler32(unsigned long adler,const unsigned char *buf, unsigned int len);
 #endif
 
-int main(void)
+/*
+ * Possible return values
+ * ERROR_MEMORY_TEST (-10)
+ * ERROR_NO_HEADER (-9)
+ */
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
 	struct common_info ci;
 	int base = get_ecspi_base();
@@ -29,7 +34,9 @@ int main(void)
 	unsigned page;
 	unsigned offset_bits;
 	unsigned block_size;
+	unsigned bytes, ivt_offset;
 	read_block_rtn read_rtn;
+//	my_printf("pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
 	if (!ram_test((unsigned *)ram_base)) {
 		flush_uart();
 		return ERROR_MEMORY_TEST;
@@ -52,9 +59,8 @@ int main(void)
 		common_load_block_of_file(&ci, block_size - diff);
 		page++;
 		diff = 0;
-		if (!ci.end) {
+		if (!ci.end)
 			header_update_end(&ci);
-		}
 	} while (ci.buf < ci.cur_end);
 
 #if defined(USE_CRC32) || defined(USE_ADLER32)
@@ -68,12 +74,17 @@ int main(void)
 #endif
 	}
 #endif
-	exec_program(&ci, 0);
-	dump_mem(ci.initial_buf, offset, 1);
-	my_printf("exec_program failed, hdr=%x\n", ci.hdr);
-	if (!ram_test((unsigned *)ram_base)) {
-		my_printf("ram test failed\r\n");
-	}
+	if (ci.hdr)
+		debug_dump((void *)ci.hdr, start_block, 1);
 	flush_uart();
-	return 0;
+	if (pstart)
+		*pstart = ci.dest;
+	bytes = ci.end - ci.dest;
+	ivt_offset = ci.hdr - ci.dest;
+	if (pbytes)
+		*pbytes = bytes;
+	if (pivt_offset)
+		*pivt_offset = ivt_offset;
+//	my_printf("start=%x bytes=%x ivt_offset=%x\n", ci.dest, bytes, ivt_offset);
+	return common_exec_program(&ci) ? 1 : 0;
 }

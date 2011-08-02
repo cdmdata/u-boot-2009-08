@@ -1,5 +1,6 @@
 //#define DEBUG
 #include <stdarg.h>
+#include "mx5x.h"
 #include "mx5x_common.h"
 #include "mx5x_sdmmc.h"
 extern const int prog_start;
@@ -10,7 +11,7 @@ int load_block_of_file(struct info *pinfo)
 	return common_load_block_of_file(&pinfo->c, 512);
 }
 
-int main(void)
+int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
 	struct info info;
 	unsigned root;
@@ -77,8 +78,11 @@ int main(void)
 	info.partition_size = part->size[0] | (part->size[1] << 16);
 	info.partition_end = info.partition_start + info.partition_size;
 	debug_pr("partition_start=%x, partition_size=%x\n", info.partition_start, info.partition_size);
-	if (!info.partition_start)
-		repeat_error(&info.dev, "no partitions\n");
+	if (!info.partition_start) {
+		stop_clock(&info.dev);
+		my_printf("no partitions\n");
+		return 0;
+	}
 
 	sd_read_blocks(&info.dev, info.partition_start, 1, pboot);
 	debug_dump(pboot, info.partition_start, 1);
@@ -107,15 +111,23 @@ skip_partition:
 	if (ret == STATUS_FILE_FOUND) {
 		info.c.search = info.c.initial_buf = info.c.buf = (void *)0x90100000;
 		ret = scan_chain(info.file_cluster, 1, &info, load_block_of_file);
+		stop_clock(&info.dev);
 		if (ret != STATUS_END_OF_CHAIN) {
 			print_hex(ret, 8);
-			repeat_error(&info.dev, " file load failed\n");
+			my_printf(" file load failed\n");
 			return 0;
 		}
-		stop_clock(&info.dev);
-		exec_program(&info.c, info.file_cluster);
 	} else {
-		repeat_error(&info.dev, "U-BOOT.BIN not found\n");
+		stop_clock(&info.dev);
+		my_printf("U-BOOT.BIN not found\n");
+		return 0;
 	}
-	return 0;
+	header_update_end(&info.c);
+	if (pstart)
+		*pstart = info.c.dest;
+	if (pbytes)
+		*pbytes = info.c.end - info.c.dest;
+	if (pivt_offset)
+		*pivt_offset = info.c.hdr - info.c.dest;
+	return common_exec_program(&info.c) ? 1 : 0;
 }
