@@ -35,6 +35,7 @@ SECTIONS {
 		. = ALIGN(4);
 	}
 	"program_length" = . - image_base;
+	"program_end" = .;
 
 	.bss  (LOADADDR(.data) + SIZEOF ( .data) ) : {
 		*(.bss) *(COMMON)
