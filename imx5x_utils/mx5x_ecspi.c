@@ -681,14 +681,20 @@ static int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned l
 	atmel_erase_block_range(base, page, page + page_cnt, offset_bits);
 #endif
 #if 1
-	for (;;) {
-		atmel_write_block(base, page, src, offset_bits, block_size);
-		src += (block_size / 4);
-		page++;
-		if (length <= block_size)
-			break;
-		length -= block_size;
-		my_printf(".");
+	{
+		unsigned page1 = page;	//Write 1st page last
+		unsigned* src1 = src;
+		for (;;) {
+			src += (block_size / 4);
+			page++;
+			if (length <= block_size)
+				break;
+			length -= block_size;
+			atmel_write_block(base, page, src, offset_bits, block_size);
+			my_printf(".");
+		}
+		my_printf("\nWriting lead page\n");
+		atmel_write_block(base, page1, src1, offset_bits, block_size);
 	}
 	my_printf("\r\n");
 #endif
@@ -800,14 +806,20 @@ static int st_write_blocks(int base, unsigned page, unsigned* src, unsigned leng
 	page_cnt = ((length + block_size -1) / block_size);
 	st_erase_sector_range(base, page, page + page_cnt, offset_bits);
 #if 1
-	for (;;) {
-		st_write_block(base, page, src, offset_bits, block_size);
-		src += (block_size / 4);
-		page++;
-		if (length <= block_size)
-			break;
-		length -= block_size;
-		my_printf(".");
+	{
+		unsigned page1 = page;	//Write 1st page last
+		unsigned* src1 = src;
+		for (;;) {
+			src += (block_size / 4);
+			page++;
+			if (length <= block_size)
+				break;
+			length -= block_size;
+			st_write_block(base, page, src, offset_bits, block_size);
+			my_printf(".");
+		}
+		my_printf("\nWriting lead page\n");
+		st_write_block(base, page1, src1, offset_bits, block_size);
 	}
 	my_printf("\r\n");
 #endif
@@ -991,14 +1003,20 @@ static int sst_write_blocks(int base, unsigned page, unsigned* src, unsigned len
 	sst_status(base);
 #endif
 #if 1
-	for (;;) {
-		sst_write_block(base, page, src, offset_bits, block_size);
-		src += (block_size / 4);
-		page++;
-		if (length <= block_size)
-			break;
-		length -= block_size;
-		my_printf(".");
+	{
+		unsigned page1 = page;	//Write 1st page last
+		unsigned* src1 = src;
+		for (;;) {
+			src += (block_size / 4);
+			page++;
+			if (length <= block_size)
+				break;
+			length -= block_size;
+			sst_write_block(base, page, src, offset_bits, block_size);
+			my_printf(".");
+		}
+		my_printf("\nWriting lead page\n");
+		sst_write_block(base, page1, src1, offset_bits, block_size);
 	}
 	my_printf("\r\n");
 #endif
