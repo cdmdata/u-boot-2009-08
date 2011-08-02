@@ -67,6 +67,7 @@ static inline void i2c_reset(unsigned base)
 	__REG16(base + I2CR) = 0;	/* Reset module */
 	__REG16(base + I2SR) = 0;
 	__REG16(base + I2CR) = I2CR_IEN;
+	udelay(100);
 }
 
 void bus_i2c_init(unsigned base, int speed, int unused)
@@ -129,21 +130,6 @@ static int tx_byte(unsigned base, u8 byte, int clear_wait)
 	}
 	DPRINTF("%s:%x\n", __func__, byte);
 	return 0;
-}
-
-int bus_i2c_probe(unsigned base, uchar chip)
-{
-	int ret;
-
-	__REG16(base + I2CR) = 0;	/* Reset module */
-	__REG16(base + I2CR) = I2CR_IEN;
-	for (ret = 0; ret < 1000; ret++)
-		udelay(1);
-	__REG16(base + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX;
-	ret = tx_byte(base, chip << 1, 0);
-	__REG16(base + I2CR) = I2CR_IEN;
-
-	return ret;
 }
 
 static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
@@ -246,6 +232,16 @@ int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, in
 	if (!wait_for_sr_state(base, ST_BUS_IDLE))
 		printf("%s:trigger stop fail\n", __func__);
 	return 0;
+}
+
+int bus_i2c_probe(unsigned base, uchar chip)
+{
+	int ret;
+	i2c_reset(base);
+	ret = bus_i2c_write(base, chip, 0, 0, NULL, 0);
+	if (ret)
+		printf("probe failed\n");
+	return ret;
 }
 
 int i2c_bus;
