@@ -499,7 +499,7 @@ iomuxc_setup_mmc:
 	b	Basic_Init1
 MMC_IOMUX_TABLE:
 	mmc_iomux_dcd_data
-	
+
 	.section .text.iomuxc_ddr_single,"x"
 iomuxc_ddr_single:
 	adr	r3, DDR_SINGLE_IOMUX_TABLE

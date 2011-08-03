@@ -872,9 +872,9 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 #define IOMUXC_GPR1 0x04
 	str	r0, [r1, #IOMUXC_GPR1]
 //91:	ldr	r1, [r3, #ESD_ZQHWCTRL]
-// 	tst	r1, #1<<16
-// 	bne	91b
-// 	BigMov	r1, (1<<13)|(31<<7)|(30<<2)
+//	tst	r1, #1<<16
+//	bne	91b
+//	BigMov	r1, (1<<13)|(31<<7)|(30<<2)
 //	BigMov	r1, (1<<13)|(28<<7)|(6<<2)
 //	str	r1, [r3, #ESD_ZQSWCTRL]
 #endif

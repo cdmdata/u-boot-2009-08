@@ -112,12 +112,12 @@
 /* Assuming 24MHz input clock with doubler ON
  * fdck_2 = 4 * fref * (MFI + (MFN/MFD))/PDF
  * fdck_2 = (MFN/MFD + MFI) * 96 /PDF
- * 
+ *
  * (MFI >= 5) && (MFI <= 15)
  * (PDF >= 1) && (PDF <= 16)
  * (MFD >= 1) && (MFD <= 0x3fffffe)
  * (MFN >= -0x3fffffe) && (MFN <= 0x3fffffe) && (|MFN| <= MFD)
- * 
+ *
  * BRM = 0 if MFD < 8
  * BRM = 1 if MFD >= 8
  */
@@ -237,7 +237,7 @@
 	.macro pll_freq	r_pll, freq
 	pll_op_mfd_mfn	\r_pll, DP_OP_\freq, DP_MFD_\freq, DP_MFN_\freq
 	.endm
-	
+
 	.macro start_pll r_pll, dp_ctl
 	ldr r0, =\dp_ctl
 	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */

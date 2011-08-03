@@ -190,7 +190,7 @@ int i2c_read(unsigned i2c_base, uint8_t chip, uint addr, int alen, uint8_t *buf,
 		*buf++ = ret;
 		if (!(--len))
 			break;
-		
+
 	}
 	if (!wait_for_sr_state(i2c_base, ST_BUS_IDLE))
 		my_printf("%s:trigger stop fail\n", __func__);
@@ -202,12 +202,16 @@ int i2c_write(unsigned i2c_base, uint8_t chip, uint addr, int alen, uint8_t *buf
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
 		__func__, chip, addr, alen, len);
 
-	if (i2c_addr(i2c_base, chip, addr, alen))
+	if (i2c_addr(i2c_base, chip, addr, alen)) {
+		my_printf("%s: i2c_addr failed\n", __func__);
 		return -1;
+	}
 
 	while (len--)
-		if (tx_byte(i2c_base, *buf++, 0))
+		if (tx_byte(i2c_base, *buf++, 0)) {
+			my_printf("%s: failed\n", __func__);
 			return -1;
+		}
 
 	IO_WRITE16(i2c_base, I2CR, I2CR_IEN);
 

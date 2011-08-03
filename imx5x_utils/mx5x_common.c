@@ -202,7 +202,7 @@ int common_exec_program(struct common_info *pinfo)
 int ram_test(unsigned *ram_base)
 {
 	unsigned *p = ram_base;
-	unsigned *p_end = &ram_base[1<<10];	//test 4K of memory 
+	unsigned *p_end = &ram_base[1<<10];	//test 4K of memory
 	unsigned expected;
 	unsigned val[4];
 	while (p < p_end) {
@@ -231,7 +231,7 @@ int ram_test(unsigned *ram_base)
 		expected = ((unsigned)p) ^ 0xaaaaaaaa;
 		if (val[2] != expected) break;
 
-		expected = ((unsigned)p) ^ 0x55555555; 
+		expected = ((unsigned)p) ^ 0x55555555;
 		if (val[3] != expected) break;
 		p += 4;
 	}
