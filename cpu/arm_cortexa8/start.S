@@ -101,6 +101,16 @@ FIQ_STACK_START:
  */
 
 reset:
+
+#if 1
+	sub	r2, sp, #0x400
+	mvn	r1, #0
+1:	str	r1, [r2], #4	//clear 1k of stack
+	cmp	r2, sp
+	bne	1b
+	mov	r0,#0xaa
+	str	r0, [sp, #-4]		//debug marker
+#endif
 	/*
 	 * set the cpu to SVC32 mode
 	 */
@@ -140,7 +150,10 @@ next:
 #ifndef CONFIG_SKIP_RELOCATE_UBOOT
 	bl	relocate
 #endif	/* CONFIG_SKIP_RELOCATE_UBOOT */
-
+#if 1
+	mov	r0,#0xcc
+	str	r0, [sp, #-4]		//debug marker
+#endif
 	/* Set up the stack */
 stack_setup:
 	ldr	r0, _TEXT_BASE		@ upper 128 KiB: relocated uboot
@@ -156,14 +169,30 @@ stack_setup:
 clear_bss:
 	ldr	r0, _bss_start		@ find start of bss segment
 	ldr	r1, _bss_end		@ stop here
-	mov	r2, #0x00000000		@ clear value
+	mov	r2, #0			@ clear value
+	mov	r3, #0
+	mov	r4, #0
+	mov	r5, #0
+	tst	r0, #4
+	strne	r2, [r0], #4		@ clear BSS location
+	tst	r0, #8
+	stmneia	r0!, {r2,r3}		@ clear BSS location
 clbss_l:
-	str	r2, [r0]		@ clear BSS location
+	stmia	r0!, {r2,r3,r4,r5}	@ clear BSS location
 	cmp	r0, r1			@ are we at the end yet
-	add	r0, r0, #4		@ increment clear index pointer
-	bne	clbss_l			@ keep clearing till at end
+	blo	clbss_l			@ keep clearing till at end
 
 #ifdef CONFIG_ARCH_MMU
+	bic	sp, sp, #0x00ff		@align stack to 16k boundary
+	bic	sp, sp, #0x3f00
+	sub	sp, sp, #0x4000		@allocate mmu 1st level table
+	mov	r0, sp
+	sub	sp, sp, #0x100		@a little gap before page table
+	mov	r1, sp
+	mvn	r2, #0
+1:	str	r2, [r1], #4		@fill gap so we can see if it has been changed
+	cmp	r1, r0
+	blo	1b
 	bl	board_mmu_init
 #endif
 	b	start_armboot

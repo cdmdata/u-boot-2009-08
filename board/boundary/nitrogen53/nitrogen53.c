@@ -191,9 +191,8 @@ inline int is_soc_rev(int rev)
 }
 
 #ifdef CONFIG_ARCH_MMU
-void board_mmu_init(void)
+void board_mmu_init(unsigned long ttb_base)
 {
-	unsigned long ttb_base = PHYS_SDRAM_1 + 0x4000;
 	unsigned long i;
 
 	/*
@@ -510,7 +509,7 @@ static int const di0_prgb_pins[] = {
 
 void init_display_pins(void)
 {
-	unsigned machid = 0;
+	unsigned machid = get_machid();
 	unsigned tfp410_bus = I2C2_BASE_ADDR;
 	unsigned char buf[4];
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
@@ -564,7 +563,7 @@ void init_display_pins(void)
 	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
 	udelay(5);
 	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
-	if (get_machid() == MACH_TYPE_MX53_NITROGEN_V1)
+	if (machid == MACH_TYPE_MX53_NITROGEN_V1)
 		tfp410_bus = I2C1_BASE_ADDR;
 
 	/* Init tfp410 */
@@ -978,6 +977,8 @@ int board_init(void)
 	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_i2c(I2C2_BASE_ADDR);
 	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	setup_i2c(I2C3_BASE_ADDR);
+	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_core_voltages();
 #endif
 	return 0;
@@ -1179,10 +1180,6 @@ int board_late_init(void)
 #endif
 #ifdef CONFIG_VIDEO_IMX5X
 	setup_display();
-#endif
-#ifdef CONFIG_I2C_MXC
-	setup_i2c(I2C3_BASE_ADDR);
-	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
 	/* gpio3[23] - KEEPON */
 	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);

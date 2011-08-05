@@ -151,9 +151,8 @@ enum boot_device get_boot_device(void)
 
 
 #ifdef CONFIG_ARCH_MMU
-void board_mmu_init(void)
+void board_mmu_init(unsigned long ttb_base)
 {
-	unsigned long ttb_base = PHYS_SDRAM_1 + 0x4000;
 	unsigned long i;
 
 	/*
