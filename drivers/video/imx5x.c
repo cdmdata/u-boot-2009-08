@@ -441,9 +441,11 @@ static void disable_ipu_clock(void)
 
 void init_display_pins(void);
 void init_lvds_pins(int ch,int lvds);
+void disable_lcd_panel(void);
 
 void setup_display(void)
 {
+	disable_lcd_panel();	//needed so that go nnn(u-boot address, works with testing)
 #ifdef MIPI_HSC_BASE_ADDR
         __REG(MIPI_HSC_BASE_ADDR) = 0xF00 ; // indeed!
 #endif
