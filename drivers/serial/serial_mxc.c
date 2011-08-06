@@ -160,6 +160,19 @@ int serial_getc (void)
 	return (__REG(UART_PHYS + URXD) & URXD_RX_DATA); /* mask out status from upper word */
 }
 
+/* flush output queue. returns 0 on success or negative error number
+ * otherwise
+ */
+int serial_flush_output(void)
+{
+	unsigned usr2;
+	/* wait until the transmitter is no longer busy */
+	do {
+		usr2 = __REG(UART_PHYS + USR2);
+	} while (!(usr2 & (1<<3)));
+	return 0;
+}
+
 void serial_putc (const char c)
 {
 	__REG(UART_PHYS + UTXD) = c;
