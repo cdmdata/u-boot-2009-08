@@ -166,21 +166,21 @@
 	print_debug_ch '2'
 
 	/* Gate of clocks to the peripherals first */
-#if 0
 	mvn	r0, #~0x3FFFFFFF
 	str	r0, [rClk, #CLKCTL_CCGR0]
 	mov	r0, #0x0
 	str	r0, [rClk, #CLKCTL_CCGR1]
 	str	r0, [rClk, #CLKCTL_CCGR2]
 	str	r0, [rClk, #CLKCTL_CCGR3]
+	str	r0, [rClk, #CLKCTL_CCGR7]
 
 	mov	r0, #0x00030000
 	str	r0, [rClk, #CLKCTL_CCGR4]
 	ldr	r0, =0x00FFF030
 	str	r0, [rClk, #CLKCTL_CCGR5]
-	mov	r0, #0x00000300
+	ldr	r0, =0x0303
 	str	r0, [rClk, #CLKCTL_CCGR6]
-#endif
+
 	/* Switch ARM to step clock (clock source 4) */
 	ldr	r0, [rClk, #CLKCTL_CCSR]
 	bic	r0,r0,#4			//deselect step clock for glitch free update
