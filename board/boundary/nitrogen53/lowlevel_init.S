@@ -33,14 +33,14 @@
  */
 .macro init_l2cc
 	/* explicitly disable L2 cache */
-        mrc 15, 0, r0, c1, c0, 1
-        bic r0, r0, #0x2
-        mcr 15, 0, r0, c1, c0, 1
+	mrc	15, 0, r0, c1, c0, 1
+	bic	r0, r0, #0x2
+	mcr	15, 0, r0, c1, c0, 1
 
-        /* reconfigure L2 cache aux control reg */
-        mov r0, #0xC0 | 0x4		/* tag RAM, data RAM */
-        orr r0, r0, #(1 << 24) | (1 << 23) | (1 << 22)	/* disable write allocate (delay, combine, allocate) */
-	mcr 15, 1, r0, c9, c0, 2
+	/* reconfigure L2 cache aux control reg */
+	mov	r0, #0xC0 | 0x4		/* tag RAM, data RAM */
+	orr	r0, r0, #(1 << 24) | (1 << 23) | (1 << 22)	/* disable write allocate (delay, combine, allocate) */
+	mcr	15, 1, r0, c9, c0, 2
 .endm /* init_l2cc */
 
 /* AIPS setup - Only setup MPROTx registers.
@@ -50,13 +50,13 @@
 	 * Set all MPROTx to be non-bufferable, trusted for R/W,
 	 * not forced to user-mode.
 	 */
-	ldr r0, =AIPS1_BASE_ADDR
-	ldr r1, =0x77777777
-	str r1, [r0, #0x0]
-	str r1, [r0, #0x4]
-	ldr r0, =AIPS2_BASE_ADDR
-	str r1, [r0, #0x0]
-	str r1, [r0, #0x4]
+	ldr	r0, =AIPS1_BASE_ADDR
+	ldr	r1, =0x77777777
+	str	r1, [r0, #0x0]
+	str	r1, [r0, #0x4]
+	ldr	r0, =AIPS2_BASE_ADDR
+	str	r1, [r0, #0x0]
+	str	r1, [r0, #0x4]
 .endm /* init_aips */
 
 	.equiv	_DP_OP_1000,	DP_OP_1000
@@ -105,17 +105,17 @@
 	.equiv	_DP_CTL_216,	DP_CTL_216
 
 .macro pll_op_mfd_mfn r_pll, dp_op, dp_mfd, dp_mfn
-	mov r0, #\dp_op
-	str r0, [\r_pll, #PLL_DP_OP]
-	str r0, [\r_pll, #PLL_DP_HFS_OP]
+	mov	r0, #\dp_op
+	str	r0, [\r_pll, #PLL_DP_OP]
+	str	r0, [\r_pll, #PLL_DP_HFS_OP]
 
-	mov r0, #\dp_mfd
-	str r0, [\r_pll, #PLL_DP_MFD]
-	str r0, [\r_pll, #PLL_DP_HFS_MFD]
+	mov	r0, #\dp_mfd
+	str	r0, [\r_pll, #PLL_DP_MFD]
+	str	r0, [\r_pll, #PLL_DP_HFS_MFD]
 
-	mov r0, #\dp_mfn
-	str r0, [\r_pll, #PLL_DP_MFN]
-	str r0, [\r_pll, #PLL_DP_HFS_MFN]
+	mov	r0, #\dp_mfn
+	str	r0, [\r_pll, #PLL_DP_MFN]
+	str	r0, [\r_pll, #PLL_DP_HFS_MFN]
 .endm
 
 .macro pll_op r_pll, freq
@@ -123,22 +123,22 @@
 .endm
 
 .macro start_pll r_pll, dp_ctl
-	ldr r0, =\dp_ctl
-	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
-1:	ldr r0, [\r_pll, #PLL_DP_CTL]
-	tst r0, #0x1
-	beq 1b
+	ldr	r0, =\dp_ctl
+	str	r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
+1:	ldr	r0, [\r_pll, #PLL_DP_CTL]
+	tst	r0, #0x1
+	beq	1b
 .endm
 
 .macro start_pllf r_pll, freq
-	start_pll \r_pll, _DP_CTL_\freq
+	start_pll	\r_pll, _DP_CTL_\freq
 .endm
 
 .macro divisor_change_wait r_clk
 	/* make sure divider effective */
-1:	ldr r0, [\r_clk, #CLKCTL_CDHIPR]
-	cmp r0, #0x0
-	bne 1b
+1:	ldr	r0, [\r_clk, #CLKCTL_CDHIPR]
+	cmp	r0, #0x0
+	bne	1b
 .endm
 
 #define rPLL1 r4
@@ -149,7 +149,7 @@
 .macro init_clock
 	ldr	rClk, =CCM_BASE_ADDR
 
-        /* Disable IPU handshake */
+	/* Disable IPU handshake */
 	mov	r0, #(1<<21)
 	str	r0, [rClk, #CLKCTL_CCDR]
 	print_debug_ch '1'
@@ -201,11 +201,11 @@
 	start_pllf rPLL3, 400
 
 	/* Switch peripheral to PLL 3 */
-        ldr	r0, =0x0001515c		//periph_apm_sel - 01(pll3_sw_clk)
+	ldr	r0, =0x0001515c		//periph_apm_sel - 01(pll3_sw_clk)
 	str	r0, [rClk, #CLKCTL_CBCMR]
-        ldr	r0, =0x02898945
+	ldr	r0, =0x02898945
 	ldr	r2, [rClk, #CLKCTL_CBCDR]
-        str	r0, [rClk, #CLKCTL_CBCDR]
+	str	r0, [rClk, #CLKCTL_CBCDR]
 	divisor_change_wait rClk
 
 	pll_op	rPLL2, CONFIG_SYS_PLL2_FREQ
@@ -258,13 +258,13 @@
 	str	r0, [rClk, #CLKCTL_CCGR6]
 	str	r0, [rClk, #CLKCTL_CCGR7]
 
-        mov	r0, #0
-        str	r0, [rClk, #CLKCTL_CCDR]
+	mov	r0, #0
+	str	r0, [rClk, #CLKCTL_CCDR]
 
-        /* for cko - for ARM div by 8 */
-        mov	r0, #0x000A0000
-        add	r0, r0, #0x00000F0
-        str	r0, [rClk, #CLKCTL_CCOSR]
+	/* for cko - for ARM div by 8 */
+	mov	r0, #0x000A0000
+	add	r0, r0, #0x00000F0
+	str	r0, [rClk, #CLKCTL_CCOSR]
 .endm
 
 .section ".text.init", "x"
@@ -274,24 +274,24 @@ lowlevel_init:
 	mov	r8,lr
 	print_debug_ch '0'
 #ifdef ENABLE_IMPRECISE_ABORT
-        mrs r1, spsr            /* save old spsr */
-        mrs r0, cpsr            /* read out the cpsr */
-	bic r0, r0, #0x100      /* clear the A bit */
-	msr spsr, r0            /* update spsr */
-	add lr, pc, #0x8        /* update lr */
-        movs pc, lr             /* update cpsr */
-        nop
-        nop
-        nop
+	mrs	r1, spsr	    /* save old spsr */
+	mrs	r0, cpsr	    /* read out the cpsr */
+	bic	r0, r0, #0x100      /* clear the A bit */
+	msr	spsr, r0	    /* update spsr */
+	add	lr, pc, #0x8	/* update lr */
+	movs	pc, lr	     /* update cpsr */
 	nop
-	msr spsr, r1            /* restore old spsr */
+	nop
+	nop
+	nop
+	msr	spsr, r1	    /* restore old spsr */
 #endif
 	print_debug_ch '1'
 
 	/* ARM errata ID #468414 */
-	mrc 15, 0, r1, c1, c0, 1
-	orr r1, r1, #(1 << 5)    /* enable L1NEON bit */
-	mcr 15, 0, r1, c1, c0, 1
+	mrc	15, 0, r1, c1, c0, 1
+	orr	r1, r1, #(1 << 5)    /* enable L1NEON bit */
+	mcr	15, 0, r1, c1, c0, 1
 
 	print_debug_ch '2'
 	init_l2cc
@@ -300,7 +300,7 @@ lowlevel_init:
 	init_aips
 
 	print_debug_ch '4'
-	.balignl        32,0xe1a00000   //nop code
+	.balignl	32,0xe1a00000   //nop code
 	init_clock
 
 	mov	pc, r8
