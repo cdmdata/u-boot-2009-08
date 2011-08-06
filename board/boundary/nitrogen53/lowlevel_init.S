@@ -53,123 +53,199 @@
 	str r1, [r0, #0x4]
 .endm /* init_aips */
 
-.macro setup_pll pll, freq
-	ldr r0, =\pll
-	ldr r1, =0x00001232
-	str r1, [r0, #PLL_DP_CTL]
-	mov r1, #0x2
-	str r1, [r0, #PLL_DP_CONFIG]
+	.equiv	_DP_OP_1000,	DP_OP_1000
+	.equiv	_DP_MFN_1000,	DP_MFN_1000
+	.equiv	_DP_MFD_1000,	DP_MFD_1000
+	.equiv	_DP_CTL_1000,	DP_CTL_1000
 
-	ldr r1, W_DP_OP_\freq
-	str r1, [r0, #PLL_DP_OP]
-	str r1, [r0, #PLL_DP_HFS_OP]
+	.equiv	_DP_OP_850,	DP_OP_850
+	.equiv	_DP_MFN_850,	DP_MFN_850
+	.equiv	_DP_MFD_850,	DP_MFD_850
+	.equiv	_DP_CTL_850,	DP_CTL_850
 
-	ldr r1,	W_DP_MFD_\freq
-	str r1, [r0, #PLL_DP_MFD]
-	str r1, [r0, #PLL_DP_HFS_MFD]
+	.equiv	_DP_OP_800,	DP_OP_800
+	.equiv	_DP_MFN_800,	DP_MFN_800
+	.equiv	_DP_MFD_800,	DP_MFD_800
+	.equiv	_DP_CTL_800,	DP_CTL_800
 
-	ldr r1,  W_DP_MFN_\freq
-	str r1, [r0, #PLL_DP_MFN]
-	str r1, [r0, #PLL_DP_HFS_MFN]
+	.equiv	_DP_OP_700,	DP_OP_700
+	.equiv	_DP_MFN_700,	DP_MFN_700
+	.equiv	_DP_MFD_700,	DP_MFD_700
+	.equiv	_DP_CTL_700,	DP_CTL_700
 
-	ldr r1, =0x00001232
-	str r1, [r0, #PLL_DP_CTL]
-1:	ldr r1, [r0, #PLL_DP_CTL]
-	ands r1, r1, #0x1
+	.equiv	_DP_OP_665,	DP_OP_665
+	.equiv	_DP_MFN_665,	DP_MFN_665
+	.equiv	_DP_MFD_665,	DP_MFD_665
+	.equiv	_DP_CTL_665,	DP_CTL_665
+
+	.equiv	_DP_OP_600,	DP_OP_600
+	.equiv	_DP_MFN_600,	DP_MFN_600
+	.equiv	_DP_MFD_600,	DP_MFD_600
+	.equiv	_DP_CTL_600,	DP_CTL_600
+
+	.equiv	_DP_OP_532,	DP_OP_532
+	.equiv	_DP_MFN_532,	DP_MFN_532
+	.equiv	_DP_MFD_532,	DP_MFD_532
+	.equiv	_DP_CTL_532,	DP_CTL_532
+
+	.equiv	_DP_OP_400,	DP_OP_400
+	.equiv	_DP_MFN_400,	DP_MFN_400
+	.equiv	_DP_MFD_400,	DP_MFD_400
+	.equiv	_DP_CTL_400,	DP_CTL_400
+
+	.equiv	_DP_OP_216,	DP_OP_216
+	.equiv	_DP_MFN_216,	DP_MFN_216
+	.equiv	_DP_MFD_216,	DP_MFD_216
+	.equiv	_DP_CTL_216,	DP_CTL_216
+
+.macro pll_op_mfd_mfn r_pll, dp_op, dp_mfd, dp_mfn
+	mov r0, #\dp_op
+	str r0, [\r_pll, #PLL_DP_OP]
+	str r0, [\r_pll, #PLL_DP_HFS_OP]
+
+	mov r0, #\dp_mfd
+	str r0, [\r_pll, #PLL_DP_MFD]
+	str r0, [\r_pll, #PLL_DP_HFS_MFD]
+
+	mov r0, #\dp_mfn
+	str r0, [\r_pll, #PLL_DP_MFN]
+	str r0, [\r_pll, #PLL_DP_HFS_MFN]
+.endm
+
+.macro pll_op r_pll, freq
+	pll_op_mfd_mfn \r_pll, _DP_OP_\freq, _DP_MFD_\freq, _DP_MFN_\freq
+.endm
+
+.macro start_pll r_pll, dp_ctl
+	ldr r0, =\dp_ctl
+	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
+1:	ldr r0, [\r_pll, #PLL_DP_CTL]
+	tst r0, #0x1
 	beq 1b
 .endm
 
+.macro start_pllf r_pll, freq
+	start_pll \r_pll, _DP_CTL_\freq
+.endm
+
+.macro divisor_change_wait r_clk
+	/* make sure divider effective */
+1:	ldr r0, [\r_clk, #CLKCTL_CDHIPR]
+	cmp r0, #0x0
+	bne 1b
+.endm
+
+#define rPLL1 r4
+#define rPLL2 r5
+#define rPLL3 r6
+#define rClk  r7
+
 .macro init_clock
-	ldr r0, CCM_BASE_ADDR_W
+	ldr	rClk, =CCM_BASE_ADDR
+
+        /* Disable IPU handshake */
+//	mov	r0, #(1<<21)
+//	str	r0, [rClk, #CLKCTL_CCDR]
+//	print_debug_ch '1'
+
+	ldr	rPLL1, =PLL1_BASE_ADDR
+	ldr	rPLL2, =PLL2_BASE_ADDR
+	ldr	rPLL3, =PLL3_BASE_ADDR
+
+//disable auto restart
+	mov	r0, #0
+	str     r0, [rPLL1, #PLL_DP_CONFIG]
+	str     r0, [rPLL2, #PLL_DP_CONFIG]
+	str     r0, [rPLL3, #PLL_DP_CONFIG]
 
 	/* Switch ARM to step clock */
 	mov r1, #0x4
-	str r1, [r0, #CLKCTL_CCSR]
+	str r1, [rClk, #CLKCTL_CCSR]
 
-	setup_pll PLL1_BASE_ADDR, CONFIG_SYS_PLL1_FREQ
+	pll_op	rPLL1, CONFIG_SYS_PLL1_FREQ
+	start_pllf rPLL1,CONFIG_SYS_PLL1_FREQ
 
-        setup_pll PLL3_BASE_ADDR, 400
+	pll_op	rPLL3, 400
+	start_pllf rPLL3, 400
 
         /* Switch peripheral to PLL3 */
-        ldr r0, CCM_BASE_ADDR_W
         ldr r1, =0x0001515c		//periph_apm_sel - 01(pll3_sw_clk)
-        str r1, [r0, #CLKCTL_CBCMR]
+        str r1, [rClk, #CLKCTL_CBCMR]
         ldr r1, CCM_VAL_0x02888945
         orr r1, r1, #(1 << 16)
-	ldr r2, [r0, #CLKCTL_CBCDR]
-        str r1, [r0, #CLKCTL_CBCDR]
+	ldr r2, [rClk, #CLKCTL_CBCDR]
+        str r1, [rClk, #CLKCTL_CBCDR]
         /* make sure change is effective */
-1:      ldr r1, [r0, #CLKCTL_CDHIPR]
+1:      ldr r1, [rClk, #CLKCTL_CDHIPR]
         cmp r1, #0x0
         bne 1b
 
 #if 0
-	setup_pll PLL2_BASE_ADDR, CONFIG_SYS_PLL2_FREQ
+	pll_op	rPLL2, CONFIG_SYS_PLL2_FREQ
+	start_pllf rPLL2, CONFIG_SYS_PLL2_FREQ
 
 	/* Switch peripheral to PLL2 */
-	ldr r0, CCM_BASE_ADDR_W
 	ldr r1, CCM_VAL_0x00808145
 	orr r1, r1, #(CONFIG_SYS_AHB_PODF << 10)
 	orr r1, r1, #(CONFIG_SYS_AXIA_PODF << 16)
 	orr r1, r1, #(CONFIG_SYS_AXIB_PODF << 19)
-	str r1, [r0, #CLKCTL_CBCDR]
+	str r1, [rClk, #CLKCTL_CBCDR]
 #else
 	ldr r1, CCM_VAL_0x00808145
 	orr r1, r1, #(CONFIG_SYS_AHB_PODF << 10)
 	orr r1, r1, #(CONFIG_SYS_AXIB_PODF << 19)
 //	orr r1, r1, #(CONFIG_SYS_AXIA_PODF << 16)	//keep same AXI_A_PODF
-	ldr r0, CCM_BASE_ADDR_W
 	and r2, r2, #(7 << 16)				//keep same AXI_A_PODF
 	orr r1, r1, r2
-	str r1, [r0, #CLKCTL_CBCDR]
+	str r1, [rClk, #CLKCTL_CBCDR]
 #endif
 	ldr r1, =0x00016154		//periph_apm_sel - 2(lp_apm)
-	str r1, [r0, #CLKCTL_CBCMR]
+	str r1, [rClk, #CLKCTL_CBCMR]
 
 	/* make sure change is effective */
-1:      ldr r1, [r0, #CLKCTL_CDHIPR]
+1:      ldr r1, [rClk, #CLKCTL_CDHIPR]
 	cmp r1, #0x0
 	bne 1b
 
-        setup_pll PLL3_BASE_ADDR, 216
+	pll_op	rPLL3, 216
+	start_pllf rPLL3, 216
 
 	/* Set the platform clock dividers */
 	ldr r0, PLATFORM_BASE_ADDR_W
 	ldr r1, PLATFORM_CLOCK_DIV_W
 	str r1, [r0, #PLATFORM_ICGC]
 
-	ldr r0, CCM_BASE_ADDR_W
 	mov r1, #1
-	str r1, [r0, #CLKCTL_CACRR]
+	str r1, [rClk, #CLKCTL_CACRR]
 
 	/* Switch ARM back to PLL 1. */
 	mov r1, #0x0
-	str r1, [r0, #CLKCTL_CCSR]
+	str r1, [rClk, #CLKCTL_CCSR]
 
-	ldr r1, [r0, #CLKCTL_CSCDR1]
+	ldr r1, [rClk, #CLKCTL_CSCDR1]
 	orr r1, r1, #0x3f
 	eor r1, r1, #0x3f
 	orr r1, r1, #0x21
-	str r1, [r0, #CLKCTL_CSCDR1]
+	str r1, [rClk, #CLKCTL_CSCDR1]
 
 	/* Restore the default values in the Gate registers */
 	ldr r1, =0xFFFFFFFF
-	str r1, [r0, #CLKCTL_CCGR0]
-	str r1, [r0, #CLKCTL_CCGR1]
-	str r1, [r0, #CLKCTL_CCGR2]
-	str r1, [r0, #CLKCTL_CCGR3]
-	str r1, [r0, #CLKCTL_CCGR4]
-	str r1, [r0, #CLKCTL_CCGR5]
-	str r1, [r0, #CLKCTL_CCGR6]
-	str r1, [r0, #CLKCTL_CCGR7]
+	str r1, [rClk, #CLKCTL_CCGR0]
+	str r1, [rClk, #CLKCTL_CCGR1]
+	str r1, [rClk, #CLKCTL_CCGR2]
+	str r1, [rClk, #CLKCTL_CCGR3]
+	str r1, [rClk, #CLKCTL_CCGR4]
+	str r1, [rClk, #CLKCTL_CCGR5]
+	str r1, [rClk, #CLKCTL_CCGR6]
+	str r1, [rClk, #CLKCTL_CCGR7]
 
         mov r1, #0x00000
-        str r1, [r0, #CLKCTL_CCDR]
+        str r1, [rClk, #CLKCTL_CCDR]
 
         /* for cko - for ARM div by 8 */
         mov r1, #0x000A0000
         add r1, r1, #0x00000F0
-        str r1, [r0, #CLKCTL_CCOSR]
+        str r1, [rClk, #CLKCTL_CCOSR]
 .endm
 
 .section ".text.init", "x"
@@ -209,21 +285,5 @@ lowlevel_init:
 CCM_BASE_ADDR_W:        .word CCM_BASE_ADDR
 CCM_VAL_0x00808145:     .word 0x00808145
 CCM_VAL_0x02888945:     .word 0x02888945
-W_DP_OP_1000:		.word DP_OP_1000
-W_DP_MFD_1000:		.word DP_MFD_1000
-W_DP_MFN_1000:		.word DP_MFN_1000
-
-W_DP_OP_800:           	.word DP_OP_800
-W_DP_MFD_800:           .word DP_MFD_800
-W_DP_MFN_800:           .word DP_MFN_800
-W_DP_OP_600:            .word DP_OP_600
-W_DP_MFD_600:           .word DP_MFD_600
-W_DP_MFN_600:           .word DP_MFN_600
-W_DP_OP_400:            .word DP_OP_400
-W_DP_MFD_400:           .word DP_MFD_400
-W_DP_MFN_400:           .word DP_MFN_400
-W_DP_OP_216:            .word DP_OP_216
-W_DP_MFD_216:           .word DP_MFD_216
-W_DP_MFN_216:           .word DP_MFN_216
 PLATFORM_BASE_ADDR_W:   .word ARM_BASE_ADDR
 PLATFORM_CLOCK_DIV_W:   .word 0x00000124
