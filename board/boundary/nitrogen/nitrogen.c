@@ -1242,9 +1242,9 @@ int board_late_init(void)
 
 #ifdef CONFIG_I2C_MXC
 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
-	if (!i2c_probe(0x34))
-		setup_core_voltage_i2c();
-	else
+//	if (!i2c_probe(0x34))
+//		setup_core_voltage_i2c();
+//	else
 #endif
 #ifdef CONFIG_IMX_ECSPI
 		setup_core_voltage_spi();
