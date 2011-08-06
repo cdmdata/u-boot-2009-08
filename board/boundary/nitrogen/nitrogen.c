@@ -68,9 +68,10 @@ u32	mx51_io_base_addr;
 
 #define GPIO_DR 0
 #define GPIO_DIR 4
+#define GPIO_PSR 8
 #define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
 unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR};
-inline void Set_GPIO_output_val(unsigned gp, unsigned val)
+void Set_GPIO_output_val(unsigned gp, unsigned val)
 {
 	unsigned base = gp_base[gp >> 5];
 	unsigned mask = (1 << (gp & 0x1f));
@@ -86,7 +87,7 @@ inline void Set_GPIO_output_val(unsigned gp, unsigned val)
 	writel(reg, base + GPIO_DIR);
 }
 
-inline void Set_GPIO_input(unsigned gp)
+void Set_GPIO_input(unsigned gp)
 {
 	unsigned base = gp_base[gp >> 5];
 	unsigned mask = (1 << (gp & 0x1f));
@@ -95,6 +96,14 @@ inline void Set_GPIO_input(unsigned gp)
 	reg &= ~mask;		/* configure GPIO line as input */
 	writel(reg, base + GPIO_DIR);
 }
+
+unsigned gpio_get_value(unsigned gp)
+{
+	unsigned base = gp_base[gp >> 5];
+	unsigned reg = readl(base + GPIO_PSR);
+	return (reg >> (gp & 0x1f)) & 1;
+}
+
 
 unsigned get_srev(void);
 
@@ -512,26 +521,19 @@ static void setup_gpios(void)
 	Set_GPIO_input(MAKE_GP(2, 1));		/* Pic16F616 interrupt */
 	setup_pins(gpio_pins);
 }
+
 #ifdef CONFIG_I2C_MXC
 static void setup_i2c(unsigned int module_base)
 {
-	unsigned int reg;
-
 	switch (module_base) {
 	case I2C1_BASE_ADDR:
-		reg = IOMUXC_BASE_ADDR + 0x5c; /* i2c1 SDA */
-		writel(0x14, reg);
-		reg = IOMUXC_BASE_ADDR + 0x3f0;
-		writel(0x10d, reg);
-		reg = IOMUXC_BASE_ADDR + 0x9B4;
-		writel(0x0, reg);
+		writel(0x14, IOMUXC_BASE_ADDR + 0x5c); /* i2c1 SDA, EIM_D16 */
+		writel(0x10d, IOMUXC_BASE_ADDR + 0x3f0);
+		writel(0x0, IOMUXC_BASE_ADDR + 0x9B4);
 
-		reg = IOMUXC_BASE_ADDR + 0x68; /* i2c2 SCL */
-		writel(0x14, reg);
-		reg = IOMUXC_BASE_ADDR + 0x3fc;
-		writel(0x10d, reg);
-		reg = IOMUXC_BASE_ADDR + 0x9B0;
-		writel(0x0, reg);
+		writel(0x14, IOMUXC_BASE_ADDR + 0x68); /* i2c2 SCL, EIM_D19 */
+		writel(0x10d, IOMUXC_BASE_ADDR + 0x3fc);
+		writel(0x0, IOMUXC_BASE_ADDR + 0x9B0);
 		break;
 	case I2C2_BASE_ADDR:
 		/* dummy here*/
@@ -540,6 +542,32 @@ static void setup_i2c(unsigned int module_base)
 		printf("Invalid I2C base: 0x%x\n", module_base);
 		break;
 	}
+}
+
+void toggle_i2c(unsigned int module_base)
+{
+	unsigned i;
+	unsigned sda_gp = MAKE_GP(2, 0);
+	unsigned scl_gp = MAKE_GP(2, 3);
+	Set_GPIO_input(sda_gp);
+	Set_GPIO_input(scl_gp);
+	//gpio mode
+	writel(0x11, IOMUXC_BASE_ADDR + 0x5c); /* i2c1 SDA, EIM_D16 */
+	writel(0x11, IOMUXC_BASE_ADDR + 0x68); /* i2c2 SCL, EIM_D19 */
+
+	printf("%s sda=%i scl=%i sda.gp=0x%x scl.gp=0x%x\n", __func__, gpio_get_value(sda_gp), gpio_get_value(scl_gp), sda_gp, scl_gp);
+	/* Send high and low on the SCL line */
+	for (i = 0; i < 9; i++) {
+		Set_GPIO_output_val(scl_gp, 0);
+		udelay(20);
+		Set_GPIO_input(scl_gp);
+		udelay(10);
+		printf("%s sda=%i scl=%i\n", __func__, gpio_get_value(sda_gp), gpio_get_value(scl_gp));
+		udelay(10);
+	}
+	//back to I2C mode
+	writel(0x14, IOMUXC_BASE_ADDR + 0x5c); /* i2c1 SDA, EIM_D16 */
+	writel(0x14, IOMUXC_BASE_ADDR + 0x68); /* i2c2 SCL, EIM_D19 */
 }
 
 static void setup_core_voltage_i2c(void)
