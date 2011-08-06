@@ -21,6 +21,12 @@
 
 #include <config.h>
 #include <asm/arch/mx53.h>
+.macro print_debug_ch ch
+#if 1
+	mov	r0,#\ch
+	bl	TransmitX
+#endif
+.endm
 
 /*
  * L2CC Cache setup/invalidation/disable
@@ -159,8 +165,8 @@
 	str     r0, [rPLL3, #PLL_DP_CONFIG]
 
 	/* Switch ARM to step clock */
-	mov r1, #0x4
-	str r1, [rClk, #CLKCTL_CCSR]
+	mov	r0, #0x4
+	str	r0, [rClk, #CLKCTL_CCSR]
 
 	pll_op	rPLL1, CONFIG_SYS_PLL1_FREQ
 	start_pllf rPLL1,CONFIG_SYS_PLL1_FREQ
@@ -169,83 +175,83 @@
 	start_pllf rPLL3, 400
 
         /* Switch peripheral to PLL3 */
-        ldr r1, =0x0001515c		//periph_apm_sel - 01(pll3_sw_clk)
-        str r1, [rClk, #CLKCTL_CBCMR]
-        ldr r1, CCM_VAL_0x02888945
-        orr r1, r1, #(1 << 16)
-	ldr r2, [rClk, #CLKCTL_CBCDR]
-        str r1, [rClk, #CLKCTL_CBCDR]
+        ldr	r0, =0x0001515c		//periph_apm_sel - 01(pll3_sw_clk)
+        str	r0, [rClk, #CLKCTL_CBCMR]
+        ldr	r0, CCM_VAL_0x02888945
+        orr	r0, r0, #(1 << 16)
+	ldr	r2, [rClk, #CLKCTL_CBCDR]
+        str	r0, [rClk, #CLKCTL_CBCDR]
         /* make sure change is effective */
-1:      ldr r1, [rClk, #CLKCTL_CDHIPR]
-        cmp r1, #0x0
-        bne 1b
+1:      ldr	r0, [rClk, #CLKCTL_CDHIPR]
+        cmp	r0, #0x0
+        bne	1b
 
 #if 0
 	pll_op	rPLL2, CONFIG_SYS_PLL2_FREQ
 	start_pllf rPLL2, CONFIG_SYS_PLL2_FREQ
 
 	/* Switch peripheral to PLL2 */
-	ldr r1, CCM_VAL_0x00808145
-	orr r1, r1, #(CONFIG_SYS_AHB_PODF << 10)
-	orr r1, r1, #(CONFIG_SYS_AXIA_PODF << 16)
-	orr r1, r1, #(CONFIG_SYS_AXIB_PODF << 19)
-	str r1, [rClk, #CLKCTL_CBCDR]
+	ldr	r0, CCM_VAL_0x00808145
+	orr	r0, r0, #(CONFIG_SYS_AHB_PODF << 10)
+	orr	r0, r0, #(CONFIG_SYS_AXIA_PODF << 16)
+	orr	r0, r0, #(CONFIG_SYS_AXIB_PODF << 19)
+	str	r0, [rClk, #CLKCTL_CBCDR]
 #else
-	ldr r1, CCM_VAL_0x00808145
-	orr r1, r1, #(CONFIG_SYS_AHB_PODF << 10)
-	orr r1, r1, #(CONFIG_SYS_AXIB_PODF << 19)
-//	orr r1, r1, #(CONFIG_SYS_AXIA_PODF << 16)	//keep same AXI_A_PODF
-	and r2, r2, #(7 << 16)				//keep same AXI_A_PODF
-	orr r1, r1, r2
-	str r1, [rClk, #CLKCTL_CBCDR]
+	ldr	r0, CCM_VAL_0x00808145
+	orr	r0, r0, #(CONFIG_SYS_AHB_PODF << 10)
+	orr	r0, r0, #(CONFIG_SYS_AXIB_PODF << 19)
+//	orr	r0, r0, #(CONFIG_SYS_AXIA_PODF << 16)	//keep same AXI_A_PODF
+	and	r2, r2, #(7 << 16)				//keep same AXI_A_PODF
+	orr	r0, r0, r2
+	str	r0, [rClk, #CLKCTL_CBCDR]
 #endif
-	ldr r1, =0x00016154		//periph_apm_sel - 2(lp_apm)
-	str r1, [rClk, #CLKCTL_CBCMR]
+	ldr	r0, =0x00016154		//periph_apm_sel - 2(lp_apm)
+	str	r0, [rClk, #CLKCTL_CBCMR]
 
 	/* make sure change is effective */
-1:      ldr r1, [rClk, #CLKCTL_CDHIPR]
-	cmp r1, #0x0
+1:      ldr	r0, [rClk, #CLKCTL_CDHIPR]
+	cmp	r0, #0x0
 	bne 1b
 
 	pll_op	rPLL3, 216
 	start_pllf rPLL3, 216
 
 	/* Set the platform clock dividers */
-	ldr r0, PLATFORM_BASE_ADDR_W
-	ldr r1, PLATFORM_CLOCK_DIV_W
-	str r1, [r0, #PLATFORM_ICGC]
+	ldr	r2, PLATFORM_BASE_ADDR_W
+	ldr	r0, PLATFORM_CLOCK_DIV_W
+	str	r0, [r2, #PLATFORM_ICGC]
 
-	mov r1, #1
-	str r1, [rClk, #CLKCTL_CACRR]
+	mov	r0, #1
+	str	r0, [rClk, #CLKCTL_CACRR]
 
 	/* Switch ARM back to PLL 1. */
-	mov r1, #0x0
-	str r1, [rClk, #CLKCTL_CCSR]
+	mov	r0, #0x0
+	str	r0, [rClk, #CLKCTL_CCSR]
 
-	ldr r1, [rClk, #CLKCTL_CSCDR1]
-	orr r1, r1, #0x3f
-	eor r1, r1, #0x3f
-	orr r1, r1, #0x21
-	str r1, [rClk, #CLKCTL_CSCDR1]
+	ldr	r0, [rClk, #CLKCTL_CSCDR1]
+	orr	r0, r0, #0x3f
+	eor	r0, r0, #0x3f
+	orr	r0, r0, #0x21
+	str	r0, [rClk, #CLKCTL_CSCDR1]
 
 	/* Restore the default values in the Gate registers */
-	ldr r1, =0xFFFFFFFF
-	str r1, [rClk, #CLKCTL_CCGR0]
-	str r1, [rClk, #CLKCTL_CCGR1]
-	str r1, [rClk, #CLKCTL_CCGR2]
-	str r1, [rClk, #CLKCTL_CCGR3]
-	str r1, [rClk, #CLKCTL_CCGR4]
-	str r1, [rClk, #CLKCTL_CCGR5]
-	str r1, [rClk, #CLKCTL_CCGR6]
-	str r1, [rClk, #CLKCTL_CCGR7]
+	ldr	r0, =0xFFFFFFFF
+	str	r0, [rClk, #CLKCTL_CCGR0]
+	str	r0, [rClk, #CLKCTL_CCGR1]
+	str	r0, [rClk, #CLKCTL_CCGR2]
+	str	r0, [rClk, #CLKCTL_CCGR3]
+	str	r0, [rClk, #CLKCTL_CCGR4]
+	str	r0, [rClk, #CLKCTL_CCGR5]
+	str	r0, [rClk, #CLKCTL_CCGR6]
+	str	r0, [rClk, #CLKCTL_CCGR7]
 
-        mov r1, #0x00000
-        str r1, [rClk, #CLKCTL_CCDR]
+        mov	r0, #0x00000
+        str	r0, [rClk, #CLKCTL_CCDR]
 
         /* for cko - for ARM div by 8 */
-        mov r1, #0x000A0000
-        add r1, r1, #0x00000F0
-        str r1, [rClk, #CLKCTL_CCOSR]
+        mov	r0, #0x000A0000
+        add	r0, r0, #0x00000F0
+        str	r0, [rClk, #CLKCTL_CCOSR]
 .endm
 
 .section ".text.init", "x"
