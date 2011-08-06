@@ -39,6 +39,7 @@
 #else
 #include "mx53.h"
 #endif
+//#define DEBUG
 //
 // ARM constants
 //
@@ -123,6 +124,9 @@ header_base:
 
 	.section .text
 assem_start:
+#ifdef DEBUG
+	mov	r3, lr
+#endif
 	plug_entry_setup
 	tst	r0, #3
 	tsteq	r1, #3
@@ -273,9 +277,7 @@ uart_init_done:
 	debug_hex r0
 	subs	r6, r6, #1
 	bne	11b
-	mov	r0, #0x0d
-	bl	TransmitX
-	mov	r0, #0x0a
+	BigMov	r0, 0x0a0d
 	bl	TransmitX
 	cmp	r4, r5
 	blo	10b
@@ -361,11 +363,38 @@ ddr_setup:
 	beq	ddr_setup
 1:
 #endif
+
+#ifdef DEBUG
+	mov	r0, #' '
+	bl	TransmitX
+	ldr	r0, [sp, #13*4]
+	bl	print_hex
+	mov	r0, #' '
+	bl	TransmitX
+	ldr	r0, [sp, #3*4]
+	bl	print_hex
+	mov	r0, #' '
+	bl	TransmitX
+	add	r0, sp, #13*4
+	bl	print_hex
+	BigMov	r0, 0x0a0d
+	bl	TransmitX
+#endif
 	bl	flush_uart
 	cmp	r4, #1
 	movne	r4, #0	//anything but 1 is failure
 	str	r4, [sp, #0]
+#ifdef DEBUG
+	pop	{r0-r12, lr}
+	sub	r2, sp, #0x300
+	mvn	r1, #1
+1:	str	r1, [r2], #4
+	cmp	r2, sp
+	bne	1b
+	bx	lr
+#else
 	pop	{r0-r12, pc}
+#endif
 
 
 #ifdef mx51

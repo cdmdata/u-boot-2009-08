@@ -6,8 +6,8 @@
 #define NULL 0
 extern const int payload_offset;
 
-//#define USE_CRC32, crc32 mx51_u-boot.no-padding
-//#define USE_ADLER32 adler32 mx51_u-boot.no-padding
+//#define USE_CRC32	//crc32 mx51_u-boot.no-padding
+//#define USE_ADLER32	//adler32 mx51_u-boot.no-padding
 #ifdef USE_CRC32
 unsigned crc32(unsigned crc, const unsigned char *buf, unsigned len);
 #endif
@@ -72,6 +72,8 @@ int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 #else
 		my_printf("start=%x(%x), length=%x, adler32=%x\n", p, *((unsigned *)p), length, adler32(0, p, length));
 #endif
+		p = (void*)((((unsigned)p) & 0xfff00000) - 0x00300000 + 0x000f0000);
+		my_memset(p, 0xff, 0x4000);	//775f4000 is mx53 ttbr, 0x93cf4000 is mx51 ttbr
 	}
 #endif
 	if (ci.hdr)
