@@ -26,7 +26,7 @@
 .macro print_debug_ch ch
 #if 0
 	mov	r0,#\ch
-	bl	my_putc
+	bl	TransmitX
 #endif
 .endm
 /*
@@ -377,7 +377,6 @@ lowlevel_init:
 //	init_disable_ipu
 
 	print_debug_ch 'h'
-	bl	serial_flush
 	init_clock
 	bl	setup_uart
 
