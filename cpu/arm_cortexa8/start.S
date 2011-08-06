@@ -32,6 +32,33 @@
 
 #include <config.h>
 #include <version.h>
+#include <asm/BigMacro.h>
+//#define DEBUG		//if defined, add define to flash_header.S as well
+#ifdef DEBUG
+	.macro  debug_ch ch
+	stmdb	sp!,{r0,r1,lr}
+	mov	r0, #\ch
+	bl	TransmitX
+	ldmia	sp!,{r0,r1,lr}
+	.endm
+
+	.macro  debug_hex reg
+	stmdb   sp!,{r0,r1,r2,r3,lr}
+	str     \reg, [sp, #-4]!
+	mov     r0, #' '
+	bl      TransmitX
+	ldr     r0,[sp]
+	bl      print_hex
+	add     sp, sp, #4
+	ldmia   sp!,{r0,r1,r2,r3,lr}
+	.endm
+
+#else
+	.macro  debug_ch ch
+	.endm
+	.macro  debug_hex reg
+	.endm
+#endif
 
 .globl _start
 _start: b	reset
@@ -102,14 +129,17 @@ FIQ_STACK_START:
 
 reset:
 
-#if 1
-	sub	r2, sp, #0x400
-	mvn	r1, #0
+#ifdef DEBUG
+	bl	init_uart
+	mov	r0,#0xaa
+	sub	r2, sp, #0x200
+	mvn	r1, #2
+	str	r0, [sp, #-0x204]	//debug marker
 1:	str	r1, [r2], #4	//clear 1k of stack
 	cmp	r2, sp
 	bne	1b
-	mov	r0,#0xaa
-	str	r0, [sp, #-4]		//debug marker
+	debug_ch	'U'
+	debug_ch	'U'
 #endif
 	/*
 	 * set the cpu to SVC32 mode
@@ -147,12 +177,28 @@ next:
 	bl	cpu_init_crit
 #endif
 
+#ifdef DEBUG
+	bl	init_uart2
+	mov	r0,#0xbb
+	str	r0, [sp, #-0x204]	//debug marker
+	debug_ch	'b'
+#endif
 #ifndef CONFIG_SKIP_RELOCATE_UBOOT
 	bl	relocate
 #endif	/* CONFIG_SKIP_RELOCATE_UBOOT */
-#if 1
+#ifdef DEBUG
+	ldr	r0, [sp, #-0x204]
+	debug_hex r0
+	ldr	r0, [sp, #-0x208]
+	debug_hex r0
+	ldr	r0, [sp, #-0x20c]
+	debug_hex r0
+	ldr	r0, [sp, #-0x210]
+	debug_hex r0
+	debug_ch	' '
 	mov	r0,#0xcc
-	str	r0, [sp, #-4]		//debug marker
+	str	r0, [sp, #-0x204]	//debug marker
+	debug_ch	'c'
 #endif
 	/* Set up the stack */
 stack_setup:
@@ -196,6 +242,74 @@ clbss_l:
 	bl	board_mmu_init
 #endif
 	b	start_armboot
+
+
+#ifdef DEBUG
+	.equiv  UTXD,	0x0040
+	.equiv  UFCR,	0x0090
+	.equiv  USR2,	0x0098
+	.equiv  UBIR,	0x00a4
+	.equiv  UBMR,	0x00a8
+
+init_uart:
+	ldr	r0, TX_addr
+	adr	r1, TransmitX
+	cmp	r0, r1
+//reset divisor/multiplier if running from proper location
+//go 701000a0 for debugging will not match
+	BigMov	r1,CONFIG_UART_BASE_ADDR
+	BigMov	r0, 0x0d54		//UBIR (0xa4)
+	streq	r0, [r1, #UBIR]
+	BigMov	r0, 0x270f		//UBMR (0xa8)
+	streq	r0, [r1, #UBMR]
+	mov	pc, lr
+
+TX_addr:	.word	TransmitX
+
+init_uart2:
+	BigMov	r1,CONFIG_UART_BASE_ADDR
+	mov	r0, #(0x4 << 7)
+	str	r0, [r1, #UFCR]		@ divide input clock by 2
+	BigMov	r0, (64-1)		@UBIR (0xa4)mult=64 div=375
+	str	r0, [r1, #UBIR]
+	BigMov	r0, (375-1)		@UBMR (0xa8)
+	str	r0, [r1, #UBMR]
+	mov	pc, lr
+
+	.global	TransmitX
+//IN: r0 - character(s) to transmit
+TransmitX:
+1:
+	BigMov	r1,CONFIG_UART_BASE_ADDR
+	ldr	r1, [r1, #USR2]
+	tst	r1, #(1<<3)
+	beq	1b
+
+	BigMov	r1,CONFIG_UART_BASE_ADDR
+	str	r0, [r1, #UTXD]
+	movs	r0,r0,LSR #8
+	bne	1b
+2:
+	BigMov	r1,CONFIG_UART_BASE_ADDR
+	ldr	r1, [r1, #USR2]
+	tst	r1, #(1<<3)
+	beq	2b
+	mov	pc, lr
+
+print_hex:
+	mov	r3, lr
+	mov	r2, r0, LSL #4
+	orr	r2, r2, #1
+	mov	r0, r0, LSR #28
+1:	cmp	r0,#10
+	addcc	r0,r0,#'0'
+	addcs	r0,r0,#'a'-10
+	bl	TransmitX
+	mov	r0, r2, LSR #28
+	movs	r2, r2, LSL #4
+	bne	1b
+	mov	pc, r3
+#endif
 
 /*************************************************************************
  *

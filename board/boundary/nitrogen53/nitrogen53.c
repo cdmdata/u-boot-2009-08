@@ -30,6 +30,16 @@
 #include <asm/errno.h>
 #include <imx_spi.h>
 #include <netdev.h>
+#include <malloc.h>
+
+//#define DEBUG		//if enabled, also enable in start.S
+#ifdef DEBUG
+void TransmitX(char ch);
+#define debug_putc(ch) TransmitX(ch)
+#else
+#define debug_putc(ch)
+#endif
+
 
 #if CONFIG_I2C_MXC
 #include <i2c.h>
@@ -325,6 +335,8 @@ static void setup_uart(void)
 	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE |
 			 PAD_CTL_PUE_PULL | PAD_CTL_100K_PU | PAD_CTL_DRV_HIGH;
 #define BAUDRATE 115200
+
+	debug_putc('A');
 	writel(0x4 << 7, uart + UFCR);	/* divide input clock by 2 */
 	mult = BAUDRATE * 2 * 16;	/* 16 samples/clock */
 	div = clk_src;

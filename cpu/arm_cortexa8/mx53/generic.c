@@ -1080,9 +1080,10 @@ int cpu_eth_init(bd_t *bis)
 	return rc;
 }
 
-void my_putc(char ch);
+//#define DEBUG		//if enabled, also enable in start.S
 #ifdef DEBUG
-#define debug_putc(ch) my_putc(ch)
+void TransmitX(char ch);
+#define debug_putc(ch) TransmitX(ch)
 #else
 #define debug_putc(ch)
 #endif

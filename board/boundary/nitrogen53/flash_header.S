@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston,
  * MA 02111-1307 USA
  */
+ //#define DEBUG
 	.global relocate
 #include <config.h>
 #include <asm/arch/mx53.h>
@@ -149,15 +150,29 @@ hdr_end:
 
 
 relocate:				@ relocate U-Boot to RAM
+#ifdef DEBUG
+	mov	r0,#0xbc
+	str	r0, [sp, #-0x204]	//debug marker
+#endif
 	ldr	r1, boot_data		@ where we want to be
+#ifdef DEBUG
+	str	r1, [sp, #-0x208]	//debug marker
+#endif
 	adr	r0, _image_base + CONFIG_FLASH_HEADER_OFFSET	@ r0 <- current position of code
+#ifdef DEBUG
+	str	r0, [sp, #-0x20c]	//debug marker
+#endif
 	sub	r0, r0, #CONFIG_FLASH_HEADER_OFFSET
+#ifdef DEBUG
+	str	r0, [sp, #-0x20c]	//debug marker
+#endif
 	cmp	r0, r1
 	beq	2f
 	sub	lr, lr, r0
 	add	lr, lr, r1
 
 	ldr	r2,image_len
+	str	r2, [sp, #-0x210]	//debug marker
 	add	r2, r0, r2		@ r2 <- source end address
 
 1:					@ copy 32 bytes at a time

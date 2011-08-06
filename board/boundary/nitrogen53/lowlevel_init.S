@@ -22,7 +22,7 @@
 #include <config.h>
 #include <asm/arch/mx53.h>
 .macro print_debug_ch ch
-#if 1
+#if 0
 	mov	r0,#\ch
 	bl	TransmitX
 #endif

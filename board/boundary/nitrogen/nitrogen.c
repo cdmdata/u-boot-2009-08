@@ -264,25 +264,11 @@ static void get_best_ratio(unsigned *pnum, unsigned *pdenom, unsigned max)
 #define USR2		0x0098
 #define UBIR		0x00a4
 #define UBMR		0x00a8
-void serial_flush(void)
-{
-	unsigned usr2;
-	u32 uart = UART1_BASE;
-	do {
-		usr2 = readl(uart + USR2);
-	} while (!(usr2 & (1<<3)));
-}
 
-void my_putc(char ch)
-{
-	u32 uart = UART1_BASE;
-	serial_flush();
-	writel(ch, uart + UTXD);
-	serial_flush();
-}
-
+//#define DEBUG		//if enabled, also enable in start.S
 #ifdef DEBUG
-#define debug_putc(ch) my_putc(ch)
+void TransmitX(char ch);
+#define debug_putc(ch) TransmitX(ch)
 #else
 #define debug_putc(ch)
 #endif
