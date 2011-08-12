@@ -39,4 +39,6 @@
 	"console=ttymxc0,115200\0"	\
 	"machid=c62\0"			\
 
+#define CONFIG_POWER_KEY
+
 #endif

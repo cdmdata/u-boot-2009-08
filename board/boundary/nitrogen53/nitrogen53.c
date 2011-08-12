@@ -117,6 +117,17 @@ unsigned gpio_get_value(unsigned gp)
 	return (reg >> (gp & 0x1f)) & 1;
 }
 
+void gpio_set_value(unsigned gp,unsigned val)
+{
+	unsigned base = gp_base[gp >> 5];
+	unsigned reg = readl(base + GPIO_DR);
+	unsigned bit = (gp&31);
+	unsigned mask = 1<<bit;
+	val = (val<<bit)&mask ;
+	val |= (reg&~mask);
+	writel(val,base + GPIO_DR);
+}
+
 unsigned get_machid(void)
 {
 	char *s = getenv ("machid");
@@ -1261,3 +1272,29 @@ int checkboard(void)
 	}
 	return 0;
 }
+
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
+#include <power_key.h>
+#define POWER_KEY MAKE_GP(3,22)
+#define POWER_DOWN MAKE_GP(3,23)
+
+static int prev_power_key = -1 ;
+static unsigned long when_pressed ;
+
+void check_power_key(void)
+{
+	int newval = gpio_get_value(POWER_KEY)^1; /* high means not pressed */
+	if (newval != prev_power_key) {
+		prev_power_key = newval ;
+		if (newval)
+                        when_pressed = get_timer(0);
+	} else if (1 == prev_power_key) {
+		long long elapsed = get_timer(when_pressed);
+		if (500 <= elapsed) {
+			printf( "power down");
+			when_pressed = get_timer(0);
+			gpio_set_value(POWER_DOWN, 0);
+		}
+	}
+}
+#endif
