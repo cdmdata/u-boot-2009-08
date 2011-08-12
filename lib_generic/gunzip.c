@@ -100,7 +100,7 @@ int zunzip(void *dst, int dstlen, unsigned char *src, unsigned long *lenp,
 	s.zalloc = zalloc;
 	s.zfree = zfree;
 #if defined(CONFIG_HW_WATCHDOG) || defined(CONFIG_WATCHDOG)
-	s.outcb = (cb_func)WATCHDOG_RESET;
+	s.outcb = (cb_func)watchdog_callback ;
 #else
 	s.outcb = Z_NULL;
 #endif	/* CONFIG_HW_WATCHDOG */

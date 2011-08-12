@@ -35,16 +35,18 @@
 #  error "Configuration error: WATCHDOG_RESET inside assembler not supported for Nios platforms."
 #endif
 
+#include <power_key.h>
+
 /*
  * Hardware watchdog
  */
 #ifdef CONFIG_HW_WATCHDOG
 	#if defined(__ASSEMBLY__)
-		#define WATCHDOG_RESET bl hw_watchdog_reset
+		#define WATCHDOG_RESET bl hw_watchdog_reset ; bl check_power_key
 	#else
 		extern void hw_watchdog_reset(void);
 
-		#define WATCHDOG_RESET hw_watchdog_reset
+		#define WATCHDOG_RESET hw_watchdog_reset() ; check_power_key
 	#endif /* __ASSEMBLY__ */
 #else
 	/*
@@ -52,20 +54,20 @@
 	 */
 	#if defined(CONFIG_WATCHDOG)
 		#if defined(__ASSEMBLY__)
-			#define WATCHDOG_RESET bl watchdog_reset
+			#define WATCHDOG_RESET bl watchdog_reset ; bl check_power_key
 		#else
 			extern void watchdog_reset(void);
 
-			#define WATCHDOG_RESET watchdog_reset
+			#define WATCHDOG_RESET watchdog_reset() ; check_power_key
 		#endif
 	#else
 		/*
 		 * No hardware or software watchdog.
 		 */
 		#if defined(__ASSEMBLY__)
-			#define WATCHDOG_RESET /*XXX DO_NOT_DEL_THIS_COMMENT*/
+			#define WATCHDOG_RESET bl check_power_key /*XXX DO_NOT_DEL_THIS_COMMENT*/
 		#else
-			#define WATCHDOG_RESET() {}
+			#define WATCHDOG_RESET() check_power_key()
 		#endif /* __ASSEMBLY__ */
 	#endif /* CONFIG_WATCHDOG && !__ASSEMBLY__ */
 #endif /* CONFIG_HW_WATCHDOG */
@@ -87,6 +89,12 @@
 /* AMCC 4xx */
 #if defined(CONFIG_4xx) && !defined(__ASSEMBLY__)
 	void reset_4xx_watchdog(void);
+#endif
+
+#if !defined(__ASSEMBLY__)
+static inline void watchdog_callback(void){
+	WATCHDOG_RESET();
+}
 #endif
 
 #endif /* _WATCHDOG_H_ */
