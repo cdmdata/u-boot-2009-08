@@ -1160,6 +1160,23 @@ static struct lcd_panel_info_t const lcd_panels_[] = {
 	lower_margin: 124,
 	active: 1,
 	crt: 1
+}, {
+	name: "_1080p",  //             _1080p:130005000,1920,1080,1,0,1,0,10,100,40,2,30,3,1,1
+	pixclock: 130005000,
+	xres: 1920,
+	yres: 1080,
+	pclk_redg: 1,
+	hsyn_acth: 0,
+	vsyn_acth: 1,
+	oepol_actl: 0,
+	hsync_len: 10,
+	left_margin: 100,
+	right_margin: 40,
+	vsync_len: 2,
+	upper_margin: 30,
+	lower_margin: 3,
+	active: 1,
+	crt: 1
 }
 };
 
