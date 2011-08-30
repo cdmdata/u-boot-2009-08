@@ -244,7 +244,7 @@ static unsigned char da9052_init_data[] = {
 //And it can never be turned back on. Fixed on next board
 		0x3b, 0x6a,		/* on,  LDO10, tfp410(6a:3.3V) */
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
-//		0x34, 0x7f		/* on,  LDO3, 3.3V (7f:3.3V) */
+		0x34, 0x73,		/* on,  LDO3, 3.0V (73:3.0V) default (7f:3.3v) */
 		0x2e, 0x5d,		/* on,  VBUCKCORE, 1.225V  (0x73:1.775V) if old rev of board*/
 		0x2f, 0x61,		/* on,  VBUCK_PRO, 1.302V (61:1.325V) */
 		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
