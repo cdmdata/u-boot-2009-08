@@ -375,6 +375,15 @@ static void setup_uart(void)
 	mxc_request_iomux(MX53_PIN_ATA_DMARQ, IOMUX_CONFIG_ALT3);
 	mxc_iomux_set_pad(MX53_PIN_ATA_DMARQ, pad);
 
+	/* UART3 RXD */
+	mxc_request_iomux(MX53_PIN_EIM_D25, IOMUX_CONFIG_ALT2);
+	mxc_iomux_set_pad(MX53_PIN_EIM_D25, pad);
+	mxc_iomux_set_input(MUX_IN_UART3_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
+
+	/* UART3 TXD */
+	mxc_request_iomux(MX53_PIN_EIM_D24, IOMUX_CONFIG_ALT2);
+	mxc_iomux_set_pad(MX53_PIN_EIM_D24, pad);
+
 //	mxc_request_iomux(MX51_PIN_UART1_RTS, IOMUX_CONFIG_ALT0);
 //	mxc_iomux_set_pad(MX51_PIN_UART1_RTS, pad);
 //	mxc_request_iomux(MX51_PIN_UART1_CTS, IOMUX_CONFIG_ALT0);
