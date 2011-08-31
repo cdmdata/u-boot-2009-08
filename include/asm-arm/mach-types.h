@@ -3073,8 +3073,12 @@ extern unsigned int __machine_arch_type;
 #define MACH_TYPE_TORBRECK             3090
 #define MACH_TYPE_MX51_NITROGEN        3167
 #define MACH_TYPE_MX53_NITROGEN        3168
+#define MACH_NITROGEN_VM_IMX51         3169
 #define MACH_TYPE_MX53_NITROGEN_V1     3169
 #define MACH_TYPE_MX53_NITROGEN_A      3170
+#define MACH_NITROGEN_P_IMX51          3170
+#define MACH_NITROGEN_EJ_IMX51         3171
+#define MACH_NITROGEN_V2_IMX53         3171
 
 
 #ifdef CONFIG_ARCH_EBSA110
