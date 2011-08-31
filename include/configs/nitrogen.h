@@ -315,4 +315,6 @@
 #define CONFIG_CMD_SOURCE
 #define CONFIG_CMD_RUN
 
+#define CONFIG_MACH_TYPE	MACH_NITROGEN_VM_IMX51
+
 #endif				/* __CONFIG_H */
