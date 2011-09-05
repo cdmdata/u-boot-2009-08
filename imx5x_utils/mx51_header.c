@@ -1,5 +1,5 @@
 #include <stdarg.h>
-//#define DEBUG
+#define DEBUG
 #include "mx5x_common.h"
 #include "mx51_header.h"
 
@@ -12,19 +12,19 @@ void mx51_header_search(struct common_info *pinfo)
 		if (pdest >= pinfo->buf)
 			break;
 		if (hdr->app_barker == APP_BARKER) {
-			uint32_t dest = hdr->app_dest_ptr;
-			uint32_t offset = ((hdr->dcd_ptr_ptr - dest) > 0x400) ? 0x400 : 0;
-			uint32_t size = ((uint32_t)hdr) - ((uint32_t)pinfo->initial_buf);
-			pinfo->file_size = size;
-			dest -= size;
-			dest += offset;
-			if ( (hdr->app_start_addr - dest) > (1<<20) )
-				dest = (hdr->app_start_addr & ~0xfff);
-			pinfo->hdr = (struct app_header *)(dest + size);
-			size = pinfo->buf - pinfo->initial_buf;
-			if (dest != (uint32_t)pinfo->initial_buf)
-				my_memcpy((void*)dest, pinfo->initial_buf, size);
-			pinfo->buf = (void *)(dest + size);
+			uint32_t cvt_src_to_dest = ((uint32_t)hdr->dcd_ptr_ptr) - ((uint32_t)&hdr->dcd_ptr);
+			uint32_t initial_buf = (uint32_t)pinfo->initial_buf;
+			uint32_t dest = initial_buf + cvt_src_to_dest;
+			uint32_t buf = (uint32_t)pinfo->buf;
+			if (cvt_src_to_dest) {
+				debug_pr("dest=%x initial_buf=%x\n", dest, initial_buf);
+				if (initial_buf < buf)
+					my_memcpy((void*)dest, (void*)initial_buf, buf - initial_buf);
+			}
+			pinfo->initial_buf = (void *)dest;
+			pinfo->hdr = (struct app_header *)(((uint32_t)hdr) + cvt_src_to_dest);
+			pinfo->buf = (void *)(buf + cvt_src_to_dest);
+			debug_pr("initial_buf=%x hdr=%x buf=%x\n", pinfo->initial_buf, pinfo->hdr, pinfo->buf);
 			break;
 		}
 		pinfo->search += 0x400;	//search 1k at a time
@@ -64,16 +64,17 @@ void mx51_header_update_end(struct common_info *pinfo)
 					p = (unsigned *)(((unsigned char *)p) + p[1] + 8);
 					if (p < (unsigned *)pinfo->buf) {
 						len = *p;
+						debug_pr("len = %x, p = %p\n", len, p);
 						p = (unsigned *)&hdr->app_dest_ptr;
 						if (p < (unsigned *)pinfo->buf) {
 							unsigned end;
-							p = (unsigned *)*p;
-							debug_pr("len = %x", len);
-							end = ((unsigned)p) + len;
-							if ((unsigned)(end - ((unsigned)pinfo->buf)) > (4 << 20))
-								end = ((unsigned)pinfo->buf) + (4 << 20);
+							unsigned dest = *p;
+							debug_pr("dest = %x, p = %p\n", dest, p);
+							end = dest + len;
+							pinfo->dest = (void *)dest;
 							pinfo->end = pinfo->cur_end = (void*)end;
-							pinfo->file_size += ((uint)end) - ((uint)hdr);
+							pinfo->file_size = ((uint)end) - ((uint)pinfo->initial_buf);
+							debug_pr("end = %p, file_size = %p\n", pinfo->end, pinfo->file_size);
 						}
 					}
 				}
