@@ -66,6 +66,7 @@ void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 
 extern unsigned chain_ivt;
 extern unsigned program_end;
+extern unsigned prog_start;
 
 int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
@@ -75,9 +76,11 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	unsigned char *ram_base = (unsigned char *)get_ram_base();
 	unsigned char *destX = ram_base + 0x03f00000;
 	unsigned len;
+	void *src;
 //	my_printf("ram_base=%x ecspi_base=%x\n", ram_base, base);
 //	my_printf("pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
 	check_page_size(base);
+	my_printf("s2\n");
 
 	if (!header_present(destX)) {
 //		dump_mem(destX, 0x400, 2);
@@ -87,12 +90,15 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	}
 	ci.initial_buf = destX;
 	ci.search = destX + 0x400;
-	ci.buf = (destX + 0x80000);
+	ci.buf = src = (destX + 0x80000);
 	ci.hdr = 0;
 	ci.cur_end = ci.end = ci.dest = 0;
 	ci.file_size = 0;
 	header_search(&ci);
 	header_update_end(&ci);
+	if (ci.buf < ci.end)
+		if (ci.buf != src)
+			my_memcpy(ci.buf, src, ci.end - ci.buf);
 	rtn = common_exec_program(&ci);
 	if (pstart)
 		*pstart = ci.dest;
@@ -105,7 +111,7 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 #if 1
 	if (rtn) {
 		unsigned char *dest  = ram_base + 0x00600000;
-		reverse_word2((unsigned *)dest, (unsigned *)destX, ci.file_size >> 2);
+		reverse_word2((unsigned *)dest, (unsigned *)ci.initial_buf, ci.file_size >> 2);
 		write_ubl(base, dest, ci.file_size, 0x400);
 	}
 #endif
@@ -116,17 +122,21 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
 	unsigned char *ram_base = (unsigned char *)get_ram_base();
-	my_printf("s1: pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
+	my_printf("pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
 	if (!ram_test((unsigned *)ram_base)) {
+		my_printf("ram error\n");
 		return ERROR_MEMORY_TEST;
 	}
+	my_printf("ecspi_ram_write ram test passed!!!\n");
+
 #if 1
 	{
 		struct common_info ci;
 		int rtn;
 		unsigned bytes;
 		unsigned ivt_offset;
-		ci.search = ci.initial_buf = &chain_ivt;
+		ci.search = &chain_ivt;
+		ci.initial_buf = &prog_start;
 		ci.buf = &program_end;
 		ci.hdr = 0;
 		ci.cur_end = ci.end = ci.dest = 0;
