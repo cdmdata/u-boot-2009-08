@@ -3,6 +3,7 @@
  */
 #include <stdarg.h>
 //#define DEBUG
+#define WRITE_LEAD_PAGE		//comment out for testing purposes
 #include "mx5x_common.h"
 #include "mx5x_ecspi.h"
 
@@ -693,8 +694,10 @@ static int atmel_write_blocks(int base, unsigned page, unsigned* src, unsigned l
 			atmel_write_block(base, page, src, offset_bits, block_size);
 			my_printf(".");
 		}
+#ifdef WRITE_LEAD_PAGE
 		my_printf("\nWriting lead page\n");
 		atmel_write_block(base, page1, src1, offset_bits, block_size);
+#endif
 	}
 	my_printf("\r\n");
 #endif
@@ -818,8 +821,10 @@ static int st_write_blocks(int base, unsigned page, unsigned* src, unsigned leng
 			st_write_block(base, page, src, offset_bits, block_size);
 			my_printf(".");
 		}
+#ifdef WRITE_LEAD_PAGE
 		my_printf("\nWriting lead page\n");
 		st_write_block(base, page1, src1, offset_bits, block_size);
+#endif
 	}
 	my_printf("\r\n");
 #endif
@@ -1015,8 +1020,10 @@ static int sst_write_blocks(int base, unsigned page, unsigned* src, unsigned len
 			sst_write_block(base, page, src, offset_bits, block_size);
 			my_printf(".");
 		}
+#ifdef WRITE_LEAD_PAGE
 		my_printf("\nWriting lead page\n");
 		sst_write_block(base, page1, src1, offset_bits, block_size);
+#endif
 	}
 	my_printf("\r\n");
 #endif
