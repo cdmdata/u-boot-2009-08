@@ -41,7 +41,7 @@ int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 		flush_uart();
 		return ERROR_MEMORY_TEST;
 	}
-	ci.search = ci.buf = ci.initial_buf = (unsigned *)(ram_base +0x03f00000);
+	ci.search = ci.buf = ci.initial_buf = (unsigned *)(ram_base +0x03f00400);
 	ci.hdr = NULL;
 	ci.cur_end = (void*)(((unsigned)ci.buf) + 0x10000);
 	ci.end = NULL;
