@@ -1,5 +1,5 @@
 #include <stdarg.h>
-//#define DEBUG
+#define DEBUG
 #include "mx5x_common.h"
 #include "mx53_header.h"
 
@@ -15,31 +15,30 @@ void mx53_header_search(struct common_info *pinfo)
 		if ((void*)pself >= pinfo->buf)
 			break;
 		if (hdr->barker == barker) {
-			uint32_t dest;
-			uint32_t offset;
-			uint32_t size, max_size;
-			uint32_t self = *pself;
-			struct boot_data *pbd = (struct boot_data *)(hdr->boot_data_ptr - self + ((uint32_t)hdr));
-			uint32_t *pimage_len = &pbd->image_len;
-			if ((void*)pimage_len >= pinfo->buf)
+			uint32_t end, dest, buf, initial_buf;
+			uint32_t cvt_src_to_dest = *pself - ((uint32_t)hdr);
+			struct boot_data *pbd = (struct boot_data *)(hdr->boot_data_ptr - cvt_src_to_dest);
+			if (((void*)&pbd->image_len) >= pinfo->buf)
 				break;
-			dest = pbd->dest;
-			offset = self - dest;	//offset of ivt_header from destination
-			size = ((uint32_t)hdr) - ((uint32_t)pinfo->initial_buf);	//offset of ivt_header into file loaded
-			dest -= size;
-			dest += offset;		//new destination to include all of file
-			pinfo->hdr = (void *)(self);
-			pinfo->end = pinfo->cur_end = (void *)(pbd->dest + pbd->image_len);
+			initial_buf  = (uint32_t)pinfo->initial_buf;
+			dest = initial_buf + cvt_src_to_dest;
+			buf = (uint32_t)pinfo->buf;
+			end = (pbd->dest + pbd->image_len);
+			if (cvt_src_to_dest) {
+				uint32_t src_end = end - cvt_src_to_dest;
+				if (src_end > buf)
+					src_end = buf;
+				debug_pr("dest=%x initial_buf=%x src_end=%x\n", dest, initial_buf, src_end);
+				if (initial_buf < src_end)
+					my_memcpy((void*)dest, (void*)initial_buf, src_end - initial_buf);
+			}
+			pinfo->initial_buf = (void *)dest;
+			pinfo->hdr = (struct app_header *)(((uint32_t)hdr) + cvt_src_to_dest);
+			pinfo->buf = (void *)(buf + cvt_src_to_dest);
 			pinfo->dest = (void *)pbd->dest;
-			max_size = ((uint32_t)pinfo->end) - dest;
-			pinfo->file_size = max_size;
-			size = pinfo->buf - pinfo->initial_buf;
-			if (size > max_size)
-				size = max_size;
-			if (dest != (uint32_t)pinfo->initial_buf)
-				if (dest < 0xf0000000)
-					my_memcpy((void*)dest, pinfo->initial_buf, size);
-			pinfo->buf = (void *)(dest + size);
+			pinfo->end = pinfo->cur_end = (void *)end;
+			pinfo->file_size = end - dest;
+			debug_pr("initial_buf=%x hdr=%x buf=%x end=%x file_size=%x\n", pinfo->initial_buf, pinfo->hdr, pinfo->buf, end, pinfo->file_size);
 			break;
 		}
 		pinfo->search += 0x400;	//search 1k at a time
