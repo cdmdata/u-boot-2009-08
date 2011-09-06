@@ -123,89 +123,89 @@
  */
 #define MAKE_OP(mfi, pdf) (((mfi) << 4) | (pdf - 1))
 
-	.equiv	DP_CTL_RESTART,	0x10
-	.equiv	DP_CTL_BRMO,	0x02
-	.equiv	DP_CTL_DIV1,	0x1000
-	.equiv	DP_CTL_DIV2,	0x0
+	.equiv	_DP_CTL_RESTART, 0x10
+	.equiv	_DP_CTL_BRMO,	0x02
+	.equiv	_DP_CTL_DIV1,	0x1000
+	.equiv	_DP_CTL_DIV2,	0x0
 
 //(41/48 + 8) * 96 / 1 = 850
-	.equiv	DP_OP_850,	MAKE_OP(8, 1)
-	.equiv	DP_MFN_850,	41
-	.equiv	DP_MFD_850,	(48 - 1)
-	.equiv	DP_CTL_850,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_OP_850,	MAKE_OP(8, 1)
+	.equiv	_DP_MFN_850,	41
+	.equiv	_DP_MFD_850,	(48 - 1)
+	.equiv	_DP_CTL_850,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART | _DP_CTL_BRMO)
 
 //(1/3 + 8) * 96 / 1 = 800
-	.equiv	DP_OP_800,	MAKE_OP(8, 1)
-	.equiv	DP_MFN_800,	1
-	.equiv	DP_MFD_800,	(3 - 1)
-	.equiv	DP_CTL_800,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+	.equiv	_DP_OP_800,	MAKE_OP(8, 1)
+	.equiv	_DP_MFN_800,	1
+	.equiv	_DP_MFD_800,	(3 - 1)
+	.equiv	_DP_CTL_800,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART)
 
 //(7/24 + 7) * 96 / 1 = 700
-	.equiv	DP_OP_700,	MAKE_OP(7, 1)
-	.equiv	DP_MFN_700,	7
-	.equiv	DP_MFD_700,	(24 - 1)
-	.equiv	DP_CTL_700,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_OP_700,	MAKE_OP(7, 1)
+	.equiv	_DP_MFN_700,	7
+	.equiv	_DP_MFD_700,	(24 - 1)
+	.equiv	_DP_CTL_700,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART | _DP_CTL_BRMO)
 
 //(89/96 + 6) * 96 / 1 = 665
-	.equiv	DP_OP_665,	MAKE_OP(6, 1)
-	.equiv	DP_MFN_665,	89
-	.equiv	DP_MFD_665,	(96 - 1)
-	.equiv	DP_CTL_665,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_OP_665,	MAKE_OP(6, 1)
+	.equiv	_DP_MFN_665,	89
+	.equiv	_DP_MFD_665,	(96 - 1)
+	.equiv	_DP_CTL_665,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART | _DP_CTL_BRMO)
 
 //(1/4 + 6) * 96 / 1 = 600
-	.equiv	DP_OP_600,	MAKE_OP(6, 1)
-	.equiv	DP_MFN_600,	1
-	.equiv	DP_MFD_600,	(4 - 1)
-	.equiv	DP_CTL_600,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_OP_600,	MAKE_OP(6, 1)
+	.equiv	_DP_MFN_600,	1
+	.equiv	_DP_MFD_600,	(4 - 1)
+	.equiv	_DP_CTL_600,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART | _DP_CTL_BRMO)
 
 //(13/24 + 5) * 96 / 1 = 532
-	.equiv	DP_OP_532,	MAKE_OP(5, 1)
-	.equiv	DP_MFN_532,	13
-	.equiv	DP_MFD_532,	(24 - 1)
-	.equiv	DP_CTL_532,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_OP_532,	MAKE_OP(5, 1)
+	.equiv	_DP_MFN_532,	13
+	.equiv	_DP_MFD_532,	(24 - 1)
+	.equiv	_DP_CTL_532,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART | _DP_CTL_BRMO)
 
 //(1/3 + 8) * 96 / 2 = 400
-	.equiv	DP_OP_400,	MAKE_OP(8, 2)
-	.equiv	DP_MFN_400,	1
-	.equiv	DP_MFD_400,	(3 - 1)
-	.equiv	DP_CTL_400,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+	.equiv	_DP_OP_400,	MAKE_OP(8, 2)
+	.equiv	_DP_MFN_400,	1
+	.equiv	_DP_MFD_400,	(3 - 1)
+	.equiv	_DP_CTL_400,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART)
 
 //(0/2 + 7) * 96 / 2 = 336
-	.equiv	DP_OP_336,	MAKE_OP(7, 2)
-	.equiv	DP_MFN_336,	0
-	.equiv	DP_MFD_336,	(2 - 1)
-	.equiv	DP_CTL_336,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+	.equiv	_DP_OP_336,	MAKE_OP(7, 2)
+	.equiv	_DP_MFN_336,	0
+	.equiv	_DP_MFD_336,	(2 - 1)
+	.equiv	_DP_CTL_336,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART)
 
 //(15/16 + 6) * 96 / 2 = 333
-	.equiv	DP_OP_333,	MAKE_OP(6, 2)
-	.equiv	DP_MFN_333,	15
-	.equiv	DP_MFD_333,	(16 - 1)
-	.equiv	DP_CTL_333,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_OP_333,	MAKE_OP(6, 2)
+	.equiv	_DP_MFN_333,	15
+	.equiv	_DP_MFD_333,	(16 - 1)
+	.equiv	_DP_CTL_333,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART | _DP_CTL_BRMO)
 
 //(7/8 + 6) * 96 / 2 = 330
-	.equiv	DP_OP_330,	MAKE_OP(6, 2)
-	.equiv	DP_MFN_330,	7
-	.equiv	DP_MFD_330,	(8 - 1)
-	.equiv	DP_CTL_330,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_OP_330,	MAKE_OP(6, 2)
+	.equiv	_DP_MFN_330,	7
+	.equiv	_DP_MFD_330,	(8 - 1)
+	.equiv	_DP_CTL_330,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART | _DP_CTL_BRMO)
 
 //(0/2 + 10) * 96 / 3 = 320
-	.equiv	DP_OP_320,	MAKE_OP(10, 3)
-	.equiv	DP_MFN_320,	0
-	.equiv	DP_MFD_320,	(2 - 1)
-	.equiv	DP_CTL_320,	(0x0220 | DP_CTL_DIV1 | DP_CTL_RESTART)
+	.equiv	_DP_OP_320,	MAKE_OP(10, 3)
+	.equiv	_DP_MFN_320,	0
+	.equiv	_DP_MFD_320,	(2 - 1)
+	.equiv	_DP_CTL_320,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART)
 
 //(0/2 + 9) * 96 / 2 = 432
 // 432 / 2 = 216
-	.equiv	DP_OP_216,	MAKE_OP(9, 2)
-	.equiv	DP_MFN_216,	0
-	.equiv	DP_MFD_216,	(2 - 1)
-	.equiv	DP_CTL_216,	(0x0220 | DP_CTL_DIV2 | DP_CTL_RESTART)
+	.equiv	_DP_OP_216,	MAKE_OP(9, 2)
+	.equiv	_DP_MFN_216,	0
+	.equiv	_DP_MFD_216,	(2 - 1)
+	.equiv	_DP_CTL_216,	(0x0220 | _DP_CTL_DIV2 | _DP_CTL_RESTART)
 
 //(1/3 + 8) * 96 / 2 = 400
-	.equiv	DP_OP_200,	MAKE_OP(8, 2)
-	.equiv	DP_MFN_200,	1
-	.equiv	DP_MFD_200,	(3 - 1)
-	.equiv	DP_CTL_200,	(0x0220 | DP_CTL_DIV2 | DP_CTL_RESTART)
+	.equiv	_DP_OP_200,	MAKE_OP(8, 2)
+	.equiv	_DP_MFN_200,	1
+	.equiv	_DP_MFD_200,	(3 - 1)
+	.equiv	_DP_CTL_200,	(0x0220 | _DP_CTL_DIV2 | _DP_CTL_RESTART)
 
 
 #define PLL_DP_CTL      0x00
@@ -235,7 +235,7 @@
 	.endm
 
 	.macro pll_freq	r_pll, freq
-	pll_op_mfd_mfn	\r_pll, DP_OP_\freq, DP_MFD_\freq, DP_MFN_\freq
+	pll_op_mfd_mfn	\r_pll, _DP_OP_\freq, _DP_MFD_\freq, _DP_MFN_\freq
 	.endm
 
 	.macro start_pll r_pll, dp_ctl
@@ -247,7 +247,7 @@
 	.endm
 
 	.macro start_pll_freq r_pll, freq
-	start_pll	\r_pll, DP_CTL_\freq
+	start_pll	\r_pll, _DP_CTL_\freq
 	.endm
 
 	.macro divisor_change_wait r_clk

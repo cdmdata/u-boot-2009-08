@@ -189,8 +189,8 @@
 	.equiv	ddr_data_size, 0x18
 
 	.macro ddr_type	type, tapeout, ddr_freq, bank_bits, row_bits, column_bits, rl, wl, wr, rcd, rp, dgctrl0, dgctrl1, rddlctl, wrdlctl
-	.word	(\type) | ((\tapeout - 1) << 4) | ((\bank_bits - 2) << 5) | ((\row_bits - 11) << 6) | ((\column_bits - 9) << 9) | ((\rl - 3) << 11) | ((\wl - 2) << 13) | ((\wr - 1) << 15) | ((\rcd - 1) << 18) | ((\rp - 1) << 21) | ((DP_OP_\ddr_freq) << 24)
-	.word	(DP_MFN_\ddr_freq << 24) | (DP_MFD_\ddr_freq << 16) | DP_CTL_\ddr_freq
+	.word	(\type) | ((\tapeout - 1) << 4) | ((\bank_bits - 2) << 5) | ((\row_bits - 11) << 6) | ((\column_bits - 9) << 9) | ((\rl - 3) << 11) | ((\wl - 2) << 13) | ((\wr - 1) << 15) | ((\rcd - 1) << 18) | ((\rp - 1) << 21) | ((_DP_OP_\ddr_freq) << 24)
+	.word	(_DP_MFN_\ddr_freq << 24) | (_DP_MFD_\ddr_freq << 16) | _DP_CTL_\ddr_freq
 	.word	\dgctrl0
 	.word	\dgctrl1
 	.word	\rddlctl
