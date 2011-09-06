@@ -159,7 +159,7 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 		toggle_i2c(base);
 		__REG16(base + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX;
 		if (!wait_for_sr_state(base, ST_BUS_BUSY)) {
-			printf("%s:toggle didn't work\n", __func__, __REG16(base + I2SR));
+			printf("%s:toggle didn't work\n", __func__);
 			return -1;
 		}
 	}
