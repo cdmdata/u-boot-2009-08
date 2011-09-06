@@ -18,11 +18,11 @@
 #define UART2_BASE	0x73fc0000
 #define UART3_BASE	0x7000c000
 
-#ifdef CONFIG_UART_BASE_ADDR
-#define UART_BASE	CONFIG_UART_BASE_ADDR
-#else
-#define UART_BASE	UART1_BASE
-#endif
+#define UART_INIT_MASK	0x3	/* Initialize UARTS 1, 2 */
+#define UART_TX_MASK	0x1	/* Initialize UARTS 1 */
+#define UART_RX_MASK	0x1	/* Initialize UARTS 1 */
+#define UART_DEF_INDEX	0
+
 
 #define IPU_CM_REG_BASE		0x5E000000
 #define IPU_IDMAC_BASE		0x5E008000

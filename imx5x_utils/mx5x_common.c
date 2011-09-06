@@ -12,7 +12,7 @@
 void flush_uart(void)
 {
 	unsigned usr2;
-	uint uart = get_uart_base();
+	uint uart = uart_bases[uart_index];
 	do {
 		usr2 = IO_READ(uart, USR2);
 	} while (!(usr2 & (1<<3)));
@@ -22,7 +22,7 @@ void print_buf(char* str, int cnt)
 {
 	unsigned uts;
 	unsigned char ch;
-	uint uart = get_uart_base();
+	uint uart = uart_bases[uart_index];
 	while (cnt) {
 		ch = *str++;
 		do {
@@ -245,7 +245,12 @@ static unsigned char da9052_init_data[] = {
 		0x3b, 0x6a,		/* on,  LDO10, tfp410(6a:3.3V) */
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
 		0x34, 0x73,		/* on,  LDO3, 3.0V (73:3.0V) default (7f:3.3v) */
+#ifdef CONFIG_BOOST_VBUCKCORE
+		/* Always boost Nitrogen A */
+		0x2e, 0x73,		/* on,  VBUCKCORE (0x73:1.775V) , Nitrogen53A*/
+#else
 		0x2e, 0x5d,		/* on,  VBUCKCORE, 1.225V  (0x73:1.775V) if old rev of board*/
+#endif
 		0x2f, 0x61,		/* on,  VBUCK_PRO, 1.302V (61:1.325V) */
 		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
 		0x3c, 0x7f,		/* go:core, pro, mem, LDO2, LDO3 */
@@ -261,6 +266,8 @@ static unsigned char da9052_init_data[] = {
 		0x1a, 0x97,		/* gp11 input, usbotg id */
 		0x1b, 0x09,		/* gp12 input, no LDO9_en */
 		0x45, 0x2f,		/* charge coin cell @200uA to 3.1V */
+		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
+		0x1b, 0x09,		/* gp12 input, no LDO9_en , active low */
 };
 
 int i2c_write_byte(unsigned i2c_base, unsigned chip, unsigned reg, unsigned char val)
@@ -299,13 +306,7 @@ static const unsigned char da9052_boost_vbuckcore_data[] = {
 		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
 };
 
-#ifndef CONFIG_SKIP_DDR_VBUCKCORE_GP12_TEST
-static const unsigned char da9052_gp12_event[] = {
-		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
-		0x1b, 0x09,		/* gp12 input, no LDO9_en , active low */
-};
-#endif
-
+unsigned gp12_val = 0;
 //Return 0 if voltage was boosted
 int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 {
@@ -318,17 +319,8 @@ int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 		return ret;
 	if (ret == 0x73)
 		return 1;
-#ifndef CONFIG_SKIP_DDR_VBUCKCORE_GP12_TEST
-	ret = i2c_write_array(i2c_base, chip, da9052_gp12_event, sizeof(da9052_gp12_event));
-	if (ret)
-		return ret;
-	ret = i2c_read_byte(i2c_base, chip, 0x04);
-	if (ret < 0)
-		return ret;
-	my_printf("statusd=%x\n", ret);
-	if (!(ret & 0x10))
+	if (gp12_val == 0)
 		return ERROR_GP12_LOW;	/* gp12 is grounded (new rev), don't change voltage */
-#endif
 	ret = i2c_write_array(i2c_base, chip, da9052_boost_vbuckcore_data, sizeof(da9052_boost_vbuckcore_data));
 	delayMicro(1000);
 	return ret;
@@ -357,6 +349,18 @@ int power_up_ddr(unsigned i2c_base, unsigned chip)
 		}
 	}
 	ret = i2c_write_array(i2c_base, chip, da9052_init_data, sizeof(da9052_init_data));
+	if (!ret) {
+		ret = i2c_read_byte(i2c_base, chip, 0x04);
+		if (ret >= 0) {
+			if (ret & 0x10)
+				gp12_val = 1;
+			if (uart_index != 1)
+				uart_index = gp12_val ? 0 : 2;	/* gp12 high means old rev, uart1,  */
+								/* gp12 low means new rev, uart3 */
+			my_printf("statusd=%x\n", ret);
+		}
+	}
+//
 	delayMicro(1000);
 //	vbuckcore_boost(i2c_base, chip);
 	return ret;

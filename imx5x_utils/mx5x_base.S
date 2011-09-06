@@ -1,5 +1,4 @@
 	.global assem_start
-	.global get_uart_base
 	.global get_ecspi_base
 	.global get_mmc_base
 	.global iomuxc_setup_i2c1
@@ -30,6 +29,7 @@
 #define rFOFF r9
 #define rIIM r12
 
+#include <config.h>
 #include <asm/BigMacro.h>
 #include <asm/char.inc>
 #define ASM
@@ -209,6 +209,11 @@ wdg_reset2:
 	strh	r0,[r1, #WDOG_WCR]
 98:	b	98b
 
+#if 0
+hb:	.word	header_base
+pe:	.word	program_end
+#endif
+
 plug_start:
 	/* Save the return address and the function arguments */
 	push	{r0-r12, lr}
@@ -218,46 +223,19 @@ plug_start:
 	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE
 
 	config_uart_clocks
-	BigMov	r3,UART1_BASE	//0x28
-////////
-0:
-	adr	r6,init_tab
-	adr	r7,init_tab_end
-	add	r1,r3, #UCR1
-1:	ldrh	r0,[r6],#2
-	and	r2,r1,#0xff
-	cmp	r2,#0xac	//UBRC
-	strne	r0,[r1],#4
-	addeq	r1,r1,#4
-	cmp	r6,r7
-	bne	1b
-	BigMov	r0,UART2_BASE	//0x28
-	cmp	r3, r0
-	movne	r3, r0
-	bne	0b
-	b	uart_init_done
-init_tab:
-	.short	0x0001		//UCR1 (0x80)
-	.short	0x4027		//UCR2 (0x84)
-	.short	0x0704		//UCR3 (0x88)
-	.short	0x8000		//UCR4 (0x8c)
-	.short	0x0901		//UFCR (0x90)
-	.short	0x2050		//USR1 (0x94)
-	.short	0x5088		//USR2 (0x98)
-	.short	0x002b		//UESC (0x9c)
-	.short	0x0000		//UTIM (0xa0)
-	.short	0x0d54		//UBIR (0xa4)
-	.short	0x270f		//UBMR (0xa8)
-	.short	0x0004		//UBRC (0xac), read only
-	.short	0x0000		//ONEMS (0xb0)
-	.short	0x0060		//UTS (0xb4)
-init_tab_end:
-	.align	2
-#if 0
-hb:	.word	header_base
-pe:	.word	program_end
+#if (UART_INIT_MASK & 1 == 1)
+	BigMov	r3,UART1_BASE
+	bl	setup_uart
 #endif
-uart_init_done:
+#if (UART_INIT_MASK & 2 == 2)
+	BigMov	r3,UART2_BASE
+	bl	setup_uart
+#endif
+#if (UART_INIT_MASK & 4 == 4)
+	BigMov	r3,UART3_BASE
+	bl	setup_uart
+#endif
+////////
 	mov	r0,#0xc0000	//0x40000 gives garbage, 0x6000 garbage somtimes
 1:	subs	r0,r0,#1	//delay for UART to power up, avoiding garbage characters transmitting
 	bne	1b
@@ -396,6 +374,36 @@ ddr_setup:
 	pop	{r0-r12, pc}
 #endif
 
+setup_uart:
+	adr	r6,init_tab
+	adr	r7,init_tab_end
+	add	r1,r3, #UCR1
+1:	ldrh	r0,[r6],#2
+	and	r2,r1,#0xff
+	cmp	r2,#0xac	//UBRC
+	strne	r0,[r1],#4
+	addeq	r1,r1,#4
+	cmp	r6,r7
+	bne	1b
+	mov	pc, lr
+init_tab:
+	.short	0x0001		//UCR1 (0x80)
+	.short	0x4027		//UCR2 (0x84)
+	.short	0x0704		//UCR3 (0x88)
+	.short	0x8000		//UCR4 (0x8c)
+	.short	0x0901		//UFCR (0x90)
+	.short	0x2050		//USR1 (0x94)
+	.short	0x5088		//USR2 (0x98)
+	.short	0x002b		//UESC (0x9c)
+	.short	0x0000		//UTIM (0xa0)
+	.short	0x0d54		//UBIR (0xa4)
+	.short	0x270f		//UBMR (0xa8)
+	.short	0x0004		//UBRC (0xac), read only
+	.short	0x0000		//ONEMS (0xb0)
+	.short	0x0060		//UTS (0xb4)
+init_tab_end:
+	.align	2
+
 
 #ifdef mx51
 Basic_Init_ESD:
@@ -459,11 +467,6 @@ get_ram_size:
 	.section .text.get_tapeout_version,"x"
 get_tapeout_version:
 	ddr_get_tapeout
-	mov	pc, lr
-
-	.section .text.get_uart_base,"x"
-get_uart_base:
-	BigMov	r0,UART_BASE
 	mov	pc, lr
 
 	.section .text.get_ecspi_base,"x"
@@ -548,18 +551,89 @@ mmc_read_cd:
 	mmc_get_cd
 	mov	pc, lr
 
-	.section .text.TransmitX,"x"
+	.global uart_bases
+	.global uart_index
+	.section .text.uart_rtns,"x"
+uart_bases:
+	.word	UART1_BASE
+	.word	UART2_BASE
+	.word	UART3_BASE
+uart_index:
+	.word	UART_DEF_INDEX
 
-//IN: r0 - character(s) to transmit
+//OUT:
+//z-0 good data in r0
+//z-1 timeout, r0 is 0
+//r1 - loop cnt time remaining
+ReceiveX:
+	BigMov	r1, WDOG_BASE
+	BigMov	r0, 0x5555
+	strh	r0,[r1, #WDOG_WSR]
+	mov	r0, r0, LSL #1
+	strh	r0,[r1, #WDOG_WSR]
+	mov	r1,#0x80000
+1:
+#if (UART_RX_MASK & 1 == 1)
+	ldr	r0,uart_bases
+	ldr	r0,[r0,#USR2]
+	tst	r0,#1
+	ldrne	r0,uart_bases
+#endif
+#if (UART_RX_MASK & 2 == 2)
+	bne	2f
+	ldr	r0,uart_bases+4
+	ldr	r0,[r0,#USR2]
+	tst	r0,#1
+	ldrne	r0,uart_bases+4
+#endif
+#if (UART_RX_MASK & 4 == 4)
+	bne	2f
+	ldr	r0,uart_bases+8
+	ldr	r0,[r0,#USR2]
+	tst	r0,#1
+	ldrne	r0,uart_bases+8
+#endif
+2:
+	ldrne	r0,[r0,#URXD]
+	andne	r0,r0,#0xff
+	movne	pc,lr			//return
+	subs	r1,r1,#1
+	bne	1b
+	mov	r0,#0
+	mov	pc,lr			//return
+
+//IN: r0 - character(s) to transmit, r1 - trashed
 TransmitX:
 1:
-	BigMov	r1,UART_BASE
+#if (UART_TX_MASK & 1 == 1)
+	ldr	r1,uart_bases
 	ldr	r1, [r1, #USR2]
 	tst	r1, #(1<<3)
 	beq	1b
 
-	BigMov	r1,UART_BASE
+	ldr	r1,uart_bases
 	str	r0, [r1, #UTXD]
+#endif
+#if (UART_TX_MASK & 2 == 2)
+2:
+	ldr	r1,uart_bases+4
+	ldr	r1, [r1, #USR2]
+	tst	r1, #(1<<3)
+	beq	2b
+
+	ldr	r1,uart_bases+4
+	str	r0, [r1, #UTXD]
+#endif
+#if (UART_TX_MASK & 4 == 4)
+3:
+	ldr	r1,uart_bases+8
+	ldr	r1, [r1, #USR2]
+	tst	r1, #(1<<3)
+	beq	3b
+
+	ldr	r1,uart_bases+8
+	str	r0, [r1, #UTXD]
+#endif
 	movs	r0,r0,LSR #8
 	bne	1b
 	mov	pc, lr
@@ -586,31 +660,6 @@ hw_watchdog_reset:
 	strh	r0,[r1, #WDOG_WSR]
 	mov	r0, r0, LSL #1
 	strh	r0,[r1, #WDOG_WSR]
-	mov	pc,lr			//return
-
-	.section .text.ReceiveX,"x"
-//OUT:
-//z-0 good data in r0
-//z-1 timeout, r0 is 0
-//r1 - loop cnt time remaining
-ReceiveX:
-	BigMov	r1, WDOG_BASE
-	BigMov	r0, 0x5555
-	strh	r0,[r1, #WDOG_WSR]
-	mov	r0, r0, LSL #1
-	strh	r0,[r1, #WDOG_WSR]
-	mov	r1,#0x80000
-1:
-	BigMov	r0,UART_BASE
-	ldr	r0,[r0,#USR2]
-	tst	r0,#1
-	BigMovNe r0,UART_BASE
-	ldrne	r0,[r0,#URXD]
-	andne	r0,r0,#0xff
-	movne	pc,lr			//return
-	subs	r1,r1,#1
-	bne	1b
-	mov	r0,#0
 	mov	pc,lr			//return
 
 	.section .text.header_search,"x"

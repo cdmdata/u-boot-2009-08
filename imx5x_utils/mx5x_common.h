@@ -57,9 +57,10 @@ void reverse_word2(unsigned *dst, unsigned *src, int count);
 
 int common_load_block_of_file(struct common_info *pinfo, unsigned block_size);
 int ram_test(unsigned *ram_base);
+extern unsigned uart_bases[2];
+extern unsigned uart_index;
 
 int get_ecspi_base(void);
-uint get_uart_base(void);
 uint get_mmc_base(void);
 void ecspi_ss_active(void);
 void ecspi_ss_inactive(void);

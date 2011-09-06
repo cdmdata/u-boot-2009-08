@@ -10,7 +10,6 @@
 
 #define rTable r8
 #define rOffset r9
-#define rUART r10
 #define rIIM r12
 
 #include <asm/BigMacro.h>
@@ -31,53 +30,21 @@
 	.section .text
 assem_start:
 	BigMov	sp,STACK_HIGH
-	BigMov	rUART,UART_BASE	//0x28
 	bl	Basic_Init_IOMux
 	config_uart_clocks
-
-#if 0
-	add	r6, rUART, #UCR1
-	add	r7, rUART, #UTS+4
-1:	mov	r0,r6
-	bl	print_hex
-	BigMov	r0,L2(COLON,SPACE)
-	bl	TransmitX
-	ldr	r0,[r6], #4
-	bl	print_hex
-	bl	TransmitCRLF
-	cmp	r6,r7
-	bne	1b
-#else
-	adr	r6,init_tab
-	adr	r7,init_tab_end
-	add	r1,rUART, #UCR1
-1:	ldrh	r0,[r6],#2
-	and	r2,r1,#0xff
-	cmp	r2,#0xac	//UBRC
-	strne	r0,[r1],#4
-	addeq	r1,r1,#4
-	cmp	r6,r7
-	bne	1b
-	b	2f
-init_tab:
-	.short	0x0001		//UCR1 (0x80)
-	.short	0x4027		//UCR2 (0x84)
-	.short	0x0704		//UCR3 (0x88)
-	.short	0x8000		//UCR4 (0x8c)
-	.short	0x0901		//UFCR (0x90)
-	.short	0x2050		//USR1 (0x94)
-	.short	0x5088		//USR2 (0x98)
-	.short	0x002b		//UESC (0x9c)
-	.short	0x0000		//UTIM (0xa0)
-	.short	0x0d54		//UBIR (0xa4)
-	.short	0x270f		//UBMR (0xa8)
-	.short	0x0004		//UBRC (0xac), read only
-	.short	0x0000		//ONEMS (0xb0)
-	.short	0x0060		//UTS (0xb4)
-init_tab_end:
-	.align	2
-2:
+#if (UART_INIT_MASK & 1 == 1)
+	BigMov	r3,UART1_BASE
+	bl	setup_uart
 #endif
+#if (UART_INIT_MASK & 2 == 2)
+	BigMov	r3,UART2_BASE
+	bl	setup_uart
+#endif
+#if (UART_INIT_MASK & 4 == 4)
+	BigMov	r3,UART3_BASE
+	bl	setup_uart
+#endif
+
 	bl	TransmitCRLF
 	mov	r0,sp
 	bl	print_hex
@@ -91,7 +58,7 @@ init_tab_end:
 
 	cmp	r3,r0
 	BigMov	r0,L1(N)
-	strne	r0,[rUART,#UTXD]
+	blne	TransmitX
 //	b	Test
 	bl	TransmitCRLF
 
@@ -251,20 +218,50 @@ burn_fuse:
 
 
 //In: r0 @asciz str
-//Out: r0 past str
+//Out: r0 past str, r1-r3 trashed
 transmit_string:
-1:	ldrb	r2,[r0],#1
-	movs	r2,r2
-	moveq	pc,lr
-2:	ldr	r1,[rUART,#USR2]
-	tst	r1,#1<<3
-	beq	2b
-	str	r2,[rUART,#UTXD]
+	mov	r3, lr
+	mov	r2, r0
+1:	ldrb	r0, [r2], #1
+	movs	r0, r0
+	moveq	r0, r2
+	moveq	pc, r3
+2:	bl	TransmitX
 	b	1b
 
 Get_fuse_name_table:
 	adr	rTable,fuse_name_table
 	mov	pc, lr
+
+setup_uart:
+	adr	r6,init_tab
+	adr	r7,init_tab_end
+	add	r1,r3, #UCR1
+1:	ldrh	r0,[r6],#2
+	and	r2,r1,#0xff
+	cmp	r2,#0xac	//UBRC
+	strne	r0,[r1],#4
+	addeq	r1,r1,#4
+	cmp	r6,r7
+	bne	1b
+	mov	pc, lr
+init_tab:
+	.short	0x0001		//UCR1 (0x80)
+	.short	0x4027		//UCR2 (0x84)
+	.short	0x0704		//UCR3 (0x88)
+	.short	0x8000		//UCR4 (0x8c)
+	.short	0x0901		//UFCR (0x90)
+	.short	0x2050		//USR1 (0x94)
+	.short	0x5088		//USR2 (0x98)
+	.short	0x002b		//UESC (0x9c)
+	.short	0x0000		//UTIM (0xa0)
+	.short	0x0d54		//UBIR (0xa4)
+	.short	0x270f		//UBMR (0xa8)
+	.short	0x0004		//UBRC (0xac), read only
+	.short	0x0000		//ONEMS (0xb0)
+	.short	0x0060		//UTS (0xb4)
+init_tab_end:
+	.align	2
 
 Basic_Init_IOMux:
 	adr	r3, IOMUX_TABLE
@@ -300,22 +297,51 @@ fuse_name_table:
 	fuse_table
 
 
-	.section .text.TransmitSPACE,"x"
+
+	.section .text.uart_rtns,"x"
+
+uart_bases:
+	.word	UART1_BASE
+	.word	UART2_BASE
+	.word	UART3_BASE
 
 TransmitSPACE:
 	mov	r0,#L1(SPACE)
 //	b	TransmitX
 
-//IN: r0 - character(s) to transmit
+//IN: r0 - character(s) to transmit, r1 - trashed
 TransmitX:
 1:
-	BigMov	r1,UART_BASE
+#if (UART_TX_MASK & 1 == 1)
+
+	ldr	r1,uart_bases
 	ldr	r1, [r1, #USR2]
 	tst	r1, #(1<<3)
 	beq	1b
 
-	BigMov	r1,UART_BASE
+	ldr	r1,uart_bases
 	str	r0, [r1, #UTXD]
+#endif
+#if (UART_TX_MASK & 2 == 2)
+2:
+	ldr	r1,uart_bases+4
+	ldr	r1, [r1, #USR2]
+	tst	r1, #(1<<3)
+	beq	2b
+
+	ldr	r1,uart_bases+4
+	str	r0, [r1, #UTXD]
+#endif
+#if (UART_TX_MASK & 4 == 4)
+3:
+	ldr	r1,uart_bases+8
+	ldr	r1, [r1, #USR2]
+	tst	r1, #(1<<3)
+	beq	3b
+
+	ldr	r1,uart_bases+8
+	str	r0, [r1, #UTXD]
+#endif
 	movs	r0,r0,LSR #8
 	bne	1b
 	mov	pc, lr

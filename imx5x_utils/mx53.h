@@ -57,11 +57,25 @@
 #define UART2_BASE	(AIPS1_BASE_ADDR + 0x000c0000)
 #define UART3_BASE	0x5000c000
 
+#define UART_INIT_MASK	0x7	/* Initialize UARTS 1, 2, 3 */
+#define UART_TX_MASK	0x7	/* Initialize UARTS 1, 2, 3 */
+#define UART_RX_MASK	0x7	/* Initialize UARTS 1, 2, 3 */
+
 #ifdef CONFIG_UART_BASE_ADDR
-#define UART_BASE	CONFIG_UART_BASE_ADDR
-#else
-#define UART_BASE	UART2_BASE
+#if CONFIG_UART_BASE_ADDR == UART1_BASE
+#define UART_DEF_INDEX	0
 #endif
+#if CONFIG_UART_BASE_ADDR == UART2_BASE
+#define UART_DEF_INDEX	1
+#endif
+#if CONFIG_UART_BASE_ADDR == UART3_BASE
+#define UART_DEF_INDEX	2
+#endif
+
+#else
+#define UART_DEF_INDEX	1
+#endif
+
 #define IPU_CM_REG_BASE		0x1E000000
 #define IPU_IDMAC_BASE		0x1e008000
 
@@ -773,6 +787,16 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	_IOM+0x880, 3		//Select: UART2_IPP_UART_RXD_MUX_SELECT_INPUT
 	.word	_IOM+0x278, 3		//MUX: PATA_DMARQ - UART1_TXD
 	.word	_IOM+0x5F8, 0x1e4	//CTL: PATA_DMARQ UART1_TXD
+#if 1
+//uart3 rxd:EIM_D25, txd:EIM_D24
+	.word	_IOM+0x140, 2		//Mux: EIM_D25 - UART1_RXD
+	.word	_IOM+0x488, 0x1e4	//CTL: EIM_D25 - UART1_RXD
+//This line screws up bootloader downloads
+//when we need to download a second file via HAB_RVT_FAIL_SAFE
+//	.word	_IOM+0x888, 1		//Select: UART3_IPP_UART_RXD_MUX_SELECT_INPUT
+	.word	_IOM+0x13c, 2		//MUX: EIM_D24 - UART1_TXD
+	.word	_IOM+0x484, 0x1e4	//CTL: EIM_D24 - UART1_TXD
+#endif
 
 	.word	_IOM+0x198, 1		//EIM_EB1: mux gpio2[29]
 	.word	_IOM+0x4e8, 0x104
@@ -797,6 +821,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	0
 	.endm
 
+#define CCG1_UART_MASK	(0xfff<<(3*2))
 
 	.macro config_uart_clocks
 #if 0
@@ -807,8 +832,8 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	bl	print_hex
 #endif
 	BigMov	r1,CCM_BASE
-	ldr	r0,[r1, #CCM_CCGR1]		//index 3 & 4 is UART1, 5&6 UART2
-	bic	r0,r0,#0xff<<(3*2)
+	ldr	r0,[r1, #CCM_CCGR1]		//index 3 & 4 is UART1, 5&6 UART2, 7&8 UART3
+	BigBic2	r0,CCG1_UART_MASK
 	str	r0,[r1, #CCM_CCGR1]
 
 	ldr	r0,[r1, #CCM_CSCMR1]
@@ -822,7 +847,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	str	r0,[r1, #CCM_CSCDR1]
 
 	ldr	r0,[r1, #CCM_CCGR1]		//index 3 & 4 is UART1, 5&6 UART2
-	orr	r0,r0,#0xff<<(3*2)
+	BigOrr2	r0,CCG1_UART_MASK
 	str	r0,[r1, #CCM_CCGR1]
 #if 0
 	BigMov	r0, (' ') | ('R' << 8) | (':' << 16)
