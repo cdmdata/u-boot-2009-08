@@ -45,6 +45,7 @@ void TransmitX(char ch);
 #include <i2c.h>
 void bus_i2c_init(unsigned base, int speed, int unused);
 int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
+int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
 #endif
 
 #ifdef CONFIG_CMD_MMC
@@ -333,14 +334,45 @@ static void get_best_ratio(unsigned *pnum, unsigned *pdenom, unsigned max)
 	*pdenom = d[i];
 }
 
-#define UART_BASE	CONFIG_UART_BASE_ADDR
+#if defined(CONFIG_I2C_MXC) && defined(CONFIG_UART_DA9032_GP12)
+unsigned uart_base = 0;
+#endif
+
+unsigned get_uart_base(void)
+{
+#if defined(CONFIG_I2C_MXC) && defined(CONFIG_UART_DA9032_GP12)
+	unsigned char buf[4];
+	unsigned base;
+	if (uart_base)
+		return uart_base;
+	buf[0] = 0x09;		/* gp12 input, no LDO9_en , active low */
+
+	if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, 0x1b, 1, buf, 1)) {
+		printf("reg 27(gp12-13) of DA9053 failed\n");
+	} else {
+		if (bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR, 0x04, 1, buf, 1)) {
+			printf("reg 4(statusd) of DA9053 failed\n");
+		} else {
+			base = (buf[0] & 0x10) ? UART1_BASE_ADDR : UART3_BASE_ADDR;
+			uart_base = base;
+			return base;
+		}
+	}
+#endif
+#ifdef CONFIG_UART_BASE_ADDR
+	return CONFIG_UART_BASE_ADDR;
+#else
+	return UART1_BASE_ADDR;
+#endif
+}
 
 #define UFCR           0x0090
 #define UBIR           0x00a4
 #define UBMR           0x00a8
+
 static void setup_uart(void)
 {
-	u32 uart = UART_BASE;
+	u32 uart = get_uart_base();
 	u32 clk_src = mxc_get_clock(MXC_UART_CLK);
 	u32 mult, div;
 	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE |
@@ -999,14 +1031,16 @@ int board_init(void)
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
+#ifdef CONFIG_I2C_MXC
+	setup_i2c(I2C1_BASE_ADDR);
+	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+#endif
 	setup_uart();
 #ifdef CONFIG_MXC_FEC
 	setup_fec();
 #endif
 
 #ifdef CONFIG_I2C_MXC
-	setup_i2c(I2C1_BASE_ADDR);
-	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_i2c(I2C2_BASE_ADDR);
 	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_i2c(I2C3_BASE_ADDR);

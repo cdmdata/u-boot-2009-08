@@ -26,8 +26,10 @@
 #warning "MXC driver does not support MULTI serials."
 #endif
 
+unsigned get_uart_base(void);
+
 #ifdef CONFIG_UART_BASE_ADDR
-#define UART_PHYS CONFIG_UART_BASE_ADDR
+
 /* Register definitions */
 #define URXD  0x0  /* Receiver Register */
 #define UTXD  0x40 /* Transmitter Register */
@@ -142,22 +144,24 @@ DECLARE_GLOBAL_DATA_PTR;
 void serial_setbrg (void)
 {
 	u32 clk = mxc_get_clock(MXC_UART_CLK);
+	unsigned base = get_uart_base();
 
 	if (!gd->baudrate)
 		gd->baudrate = CONFIG_BAUDRATE;
 
-	__REG(UART_PHYS + UFCR) = 4 << 7; /* divide input clock by 2 */
-	__REG(UART_PHYS + UBIR) = 0xf;
-	__REG(UART_PHYS + UBMR) = clk / (2 * gd->baudrate);
+	__REG(base + UFCR) = 4 << 7; /* divide input clock by 2 */
+	__REG(base + UBIR) = 0xf;
+	__REG(base + UBMR) = clk / (2 * gd->baudrate);
 
 }
 
 int serial_getc (void)
 {
-	while (__REG(UART_PHYS + UTS) & UTS_RXEMPTY) {
+	unsigned base = get_uart_base();
+	while (__REG(base + UTS) & UTS_RXEMPTY) {
 		WATCHDOG_RESET();
 	}
-	return (__REG(UART_PHYS + URXD) & URXD_RX_DATA); /* mask out status from upper word */
+	return (__REG(base + URXD) & URXD_RX_DATA); /* mask out status from upper word */
 }
 
 /* flush output queue. returns 0 on success or negative error number
@@ -166,19 +170,21 @@ int serial_getc (void)
 int serial_flush_output(void)
 {
 	unsigned usr2;
+	unsigned base = get_uart_base();
 	/* wait until the transmitter is no longer busy */
 	do {
-		usr2 = __REG(UART_PHYS + USR2);
+		usr2 = __REG(base + USR2);
 	} while (!(usr2 & (1<<3)));
 	return 0;
 }
 
 void serial_putc (const char c)
 {
-	__REG(UART_PHYS + UTXD) = c;
+	unsigned base = get_uart_base();
+	__REG(base + UTXD) = c;
 
 	/* wait for transmitter to be ready */
-	while(!(__REG(UART_PHYS + UTS) & UTS_TXEMPTY));
+	while(!(__REG(base + UTS) & UTS_TXEMPTY));
 
 	/* If \n, also do \r */
 	if (c == '\n')
@@ -190,8 +196,9 @@ void serial_putc (const char c)
  */
 int serial_tstc (void)
 {
+	unsigned base = get_uart_base();
 	/* If receive fifo is empty, return false */
-	if (__REG(UART_PHYS + UTS) & UTS_RXEMPTY)
+	if (__REG(base + UTS) & UTS_RXEMPTY)
 		return 0;
 	return 1;
 }
@@ -211,23 +218,24 @@ serial_puts (const char *s)
  */
 int serial_init (void)
 {
-	__REG(UART_PHYS + UCR1) = 0x0;
-	__REG(UART_PHYS + UCR2) = 0x0;
+	unsigned base = get_uart_base();
+	__REG(base + UCR1) = 0x0;
+	__REG(base + UCR2) = 0x0;
 
-	while (!(__REG(UART_PHYS + UCR2) & UCR2_SRST));
+	while (!(__REG(base + UCR2) & UCR2_SRST));
 
-	__REG(UART_PHYS + UCR3) = 0x0704;
-	__REG(UART_PHYS + UCR4) = 0x8000;
-	__REG(UART_PHYS + UESC) = 0x002b;
-	__REG(UART_PHYS + UTIM) = 0x0;
+	__REG(base + UCR3) = 0x0704;
+	__REG(base + UCR4) = 0x8000;
+	__REG(base + UESC) = 0x002b;
+	__REG(base + UTIM) = 0x0;
 
-	__REG(UART_PHYS + UTS) = 0x0;
+	__REG(base + UTS) = 0x0;
 
 	serial_setbrg();
 
-	__REG(UART_PHYS + UCR2) = UCR2_WS | UCR2_IRTS | UCR2_RXEN | UCR2_TXEN | UCR2_SRST;
+	__REG(base + UCR2) = UCR2_WS | UCR2_IRTS | UCR2_RXEN | UCR2_TXEN | UCR2_SRST;
 
-	__REG(UART_PHYS + UCR1) = UCR1_UARTEN;
+	__REG(base + UCR1) = UCR1_UARTEN;
 
 	return 0;
 }

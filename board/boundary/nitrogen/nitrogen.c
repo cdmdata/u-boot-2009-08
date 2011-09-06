@@ -267,13 +267,6 @@ static void get_best_ratio(unsigned *pnum, unsigned *pdenom, unsigned max)
 	*pdenom = d[i];
 }
 
-#define UART1_BASE 0x73fbc000
-#define UTXD		0x0040
-#define UFCR		0x0090
-#define USR2		0x0098
-#define UBIR		0x00a4
-#define UBMR		0x00a8
-
 //#define DEBUG		//if enabled, also enable in start.S
 #ifdef DEBUG
 void TransmitX(char ch);
@@ -282,9 +275,24 @@ void TransmitX(char ch);
 #define debug_putc(ch)
 #endif
 
+unsigned get_uart_base(void)
+{
+#ifdef CONFIG_UART_BASE_ADDR
+	return CONFIG_UART_BASE_ADDR;
+#else
+	return UART1_BASE_ADDR;
+#endif
+}
+
+#define UTXD		0x0040
+#define UFCR		0x0090
+#define USR2		0x0098
+#define UBIR		0x00a4
+#define UBMR		0x00a8
+
 void setup_uart(void)
 {
-	u32 uart = UART1_BASE;
+	u32 uart = get_uart_base();
 	u32 clk_src = mxc_get_clock(MXC_UART_CLK);
 	u32 mult, div;
 	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE |
