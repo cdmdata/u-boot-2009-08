@@ -353,8 +353,10 @@ unsigned get_uart_base(void)
 		if (bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR, 0x04, 1, buf, 1)) {
 			printf("reg 4(statusd) of DA9053 failed\n");
 		} else {
-			base = (buf[0] & 0x10) ? UART1_BASE_ADDR : UART3_BASE_ADDR;
+			int i = (buf[0] >> 4) & 1;
+			base =  i ? UART1_BASE_ADDR : UART3_BASE_ADDR;
 			uart_base = base;
+			system_rev |= ((i ^ 1) + 1) << 8;
 			return base;
 		}
 	}
