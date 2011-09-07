@@ -573,24 +573,34 @@ ReceiveX:
 	strh	r0,[r1, #WDOG_WSR]
 	mov	r1,#0x80000
 1:
-#if (UART_RX_MASK & 1 == 1)
+#if (UART_RX_MASK & 1 != 0)
 	ldr	r0,uart_bases
 	ldr	r0,[r0,#USR2]
 	tst	r0,#1
+	movne	r0,#0
+	strne	r0,uart_index
 	ldrne	r0,uart_bases
-#endif
-#if (UART_RX_MASK & 2 == 2)
+#if (UART_RX_MASK & 6 != 0)
 	bne	2f
+#endif
+#endif
+#if (UART_RX_MASK & 2 != 0)
 	ldr	r0,uart_bases+4
 	ldr	r0,[r0,#USR2]
 	tst	r0,#1
+	movne	r0,#1
+	strne	r0,uart_index
 	ldrne	r0,uart_bases+4
-#endif
-#if (UART_RX_MASK & 4 == 4)
+#if (UART_RX_MASK & 4 != 0)
 	bne	2f
+#endif
+#endif
+#if (UART_RX_MASK & 4 != 0)
 	ldr	r0,uart_bases+8
 	ldr	r0,[r0,#USR2]
 	tst	r0,#1
+	movne	r0,#2
+	strne	r0,uart_index
 	ldrne	r0,uart_bases+8
 #endif
 2:
