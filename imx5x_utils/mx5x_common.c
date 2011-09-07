@@ -357,7 +357,7 @@ int power_up_ddr(unsigned i2c_base, unsigned chip)
 			if (uart_index != 1)
 				uart_index = gp12_val ? 0 : 2;	/* gp12 high means old rev, uart1,  */
 								/* gp12 low means new rev, uart3 */
-			my_printf("statusd=%x\n", ret);
+			debug_pr("statusd=%x\n", ret);
 		}
 	}
 //
