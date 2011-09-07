@@ -204,7 +204,6 @@
 
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
 	"ethprime=FEC0\0"		\
-	"console=ttymxc1,115200\0"	\
 
 #define CONFIG_ARP_TIMEOUT	200UL
 

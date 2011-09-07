@@ -37,7 +37,6 @@
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
 	"ethprime=FEC0\0"		\
-	"console=ttymxc0,115200\0"	\
 	"machid=c62\0"			\
 
 #define CONFIG_POWER_KEY
