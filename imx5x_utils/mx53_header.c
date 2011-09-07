@@ -1,5 +1,5 @@
 #include <stdarg.h>
-#define DEBUG
+//#define DEBUG
 #include "mx5x_common.h"
 #include "mx53_header.h"
 
