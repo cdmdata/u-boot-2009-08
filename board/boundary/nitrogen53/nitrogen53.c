@@ -409,15 +409,35 @@ static void setup_uart(void)
 	mxc_request_iomux(MX53_PIN_ATA_DMARQ, IOMUX_CONFIG_ALT3);
 	mxc_iomux_set_pad(MX53_PIN_ATA_DMARQ, pad);
 
-	/* UART3 RXD */
-	mxc_request_iomux(MX53_PIN_EIM_D25, IOMUX_CONFIG_ALT2);
-	mxc_iomux_set_pad(MX53_PIN_EIM_D25, pad);
-	mxc_iomux_set_input(MUX_IN_UART3_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
+	/* UART2 CTS */
+	mxc_request_iomux(MX53_PIN_ATA_INTRQ, IOMUX_CONFIG_ALT3);
+	mxc_iomux_set_pad(MX53_PIN_ATA_INTRQ, pad);
 
-	/* UART3 TXD */
-	mxc_request_iomux(MX53_PIN_EIM_D24, IOMUX_CONFIG_ALT2);
-	mxc_iomux_set_pad(MX53_PIN_EIM_D24, pad);
+	/* UART2 RTS */
+	mxc_request_iomux(MX53_PIN_ATA_DIOR, IOMUX_CONFIG_ALT3);
+	mxc_iomux_set_pad(MX53_PIN_ATA_DIOR, pad);
+	mxc_iomux_set_input(MUX_IN_UART2_IPP_UART_RTS_B_SELECT_INPUT, 0x3);
 
+	if ((system_rev & 0xf00) == 0x100) {
+		/* Nitrogen A rev 1 */
+		/* UART3 RXD */
+		mxc_request_iomux(MX53_PIN_ATA_CS_1, IOMUX_CONFIG_ALT4);
+		mxc_iomux_set_pad(MX53_PIN_ATA_CS_1, pad);
+		mxc_iomux_set_input(MUX_IN_UART3_IPP_UART_RXD_MUX_SELECT_INPUT, 0x3);
+
+		/* UART3 TXD */
+		mxc_request_iomux(MX53_PIN_ATA_CS_0, IOMUX_CONFIG_ALT4);
+		mxc_iomux_set_pad(MX53_PIN_ATA_CS_0, pad);
+	} else {
+		/* UART3 RXD */
+		mxc_request_iomux(MX53_PIN_EIM_D25, IOMUX_CONFIG_ALT2);
+		mxc_iomux_set_pad(MX53_PIN_EIM_D25, pad);
+		mxc_iomux_set_input(MUX_IN_UART3_IPP_UART_RXD_MUX_SELECT_INPUT, 0x1);
+
+		/* UART3 TXD */
+		mxc_request_iomux(MX53_PIN_EIM_D24, IOMUX_CONFIG_ALT2);
+		mxc_iomux_set_pad(MX53_PIN_EIM_D24, pad);
+	}
 //	mxc_request_iomux(MX51_PIN_UART1_RTS, IOMUX_CONFIG_ALT0);
 //	mxc_iomux_set_pad(MX51_PIN_UART1_RTS, pad);
 //	mxc_request_iomux(MX51_PIN_UART1_CTS, IOMUX_CONFIG_ALT0);
