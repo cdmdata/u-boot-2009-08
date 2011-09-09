@@ -1049,7 +1049,6 @@ int board_init(void)
 	setup_spi();
 #endif
 
-	gd->bd->bi_arch_number = CONFIG_MACH_TYPE;	/* board id for linux */
 	/* address of boot parameters */
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
@@ -1058,6 +1057,11 @@ int board_init(void)
 	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
 	setup_uart();
+	gd->bd->bi_arch_number = CONFIG_MACH_TYPE;	/* board id for linux */
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
+	if ((system_rev & 0xf00) == 0x100)
+		gd->bd->bi_arch_number = MACH_TYPE_MX53_NITROGEN_AP;
+#endif
 #ifdef CONFIG_MXC_FEC
 	setup_fec();
 #endif
