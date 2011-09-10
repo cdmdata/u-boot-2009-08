@@ -692,6 +692,7 @@ unsigned gpio_get_value(unsigned gp);
 void gpio_set_value(unsigned gp, unsigned val);
 void gpio_set_output_val(unsigned gp, unsigned val);
 
+void mx6_setup_i2c(unsigned i2c_index, int speed, int slave_addr, void *p);
 #endif /* __ASSEMBLER__*/
 
 #endif /*  __ASM_ARCH_MXC_MX6_H__ */
