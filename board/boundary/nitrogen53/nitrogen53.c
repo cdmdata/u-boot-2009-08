@@ -1264,6 +1264,7 @@ int board_late_init(void)
 {
 	char buf[20];
 	int i = 1;
+	unsigned uart;
 #ifdef CONFIG_I2C_MXC
 	char *pmic_regs ;
 	if (0 != (pmic_regs = getenv("PMICREGS"))) {
@@ -1297,9 +1298,10 @@ int board_late_init(void)
 	mxc_iomux_set_pad(MX53_PIN_EIM_D23, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 	Set_GPIO_output_val(MAKE_GP(3, 23), 1);
 
-	if (get_uart_base() == UART1_BASE_ADDR) {
+	uart = get_uart_base();
+	if (uart == UART1_BASE_ADDR) {
 		i = 0;	/* Nitrogen53_a rev 1 */
-	} else if (get_uart_base() == UART3_BASE_ADDR) {
+	} else if (uart == UART3_BASE_ADDR) {
 		i = 2;	/* Nitrogen53_a rev 2 */
 	}
 	sprintf(buf, "ttymxc%d,115200", i);
