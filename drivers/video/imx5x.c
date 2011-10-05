@@ -948,7 +948,7 @@ printf("mask == %x, wgen == %x\n", mask, wgen);
 
 	/* EBA is 8-byte aligned */
 	address = end_of_ram - screen_size ;
-        lcd->fbAddr = (void *)address ;
+        lcd->fbAddr = ioremap_nocache(address,screen_size);
 	end_of_ram = address ;
 	DEBUG( "screen size is %u\n", screen_size );
 	DEBUG( "frame buffer at 0x%08x/0x%08x -> 0x%08x/0x%08x\n", address, address, address>>3, address>>3 );
