@@ -1078,6 +1078,8 @@ int board_init(void)
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
 	if ((system_rev & 0xf00) == 0x100)
 		gd->bd->bi_arch_number = MACH_TYPE_MX53_NITROGEN_AP;
+	if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, 0x3a, 1, (uchar *)"\x5e", 1))
+		printf("reg 0x3a (LDO9) of DA9053 failed\n");
 #endif
 #ifdef CONFIG_MXC_FEC
 	setup_fec();
