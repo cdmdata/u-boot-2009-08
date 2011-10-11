@@ -397,8 +397,8 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.word	ESD_BASE + ESD_DLY2, 0x00f48c00	// D8-D15 read delay
 	.word	ESD_BASE + ESD_DLY3, 0x00f48c00	// D16-D23 read delay
 	.word	ESD_BASE + ESD_DLY4, 0x00f48c00	// D24-D31 read delay
-	.word	ESD_BASE + ESD_DLY5, 0x00f49000	// D0-D31 write delay
-	.word	ESD_BASE + ESD_GPR, 0x90000000	// DQS gating delays
+	.word	ESD_BASE + ESD_DLY5, 0x00f48000	// D0-D31 write delay
+	.word	ESD_BASE + ESD_GPR, 0x88000000	// DQS gating delays
 	.word	ESD_BASE + ESD_SCR, 0x00000000	//ESDSCR, AXI address readies normal operation
 	.word	0
 //CSD0 DDR - 0x90000000 (256M), CSD1 DDR - 0xa0000000 (256M)
