@@ -31,6 +31,7 @@
 
 #define CONFIG_MXC		1
 #define CONFIG_MX51_BBG		1	/* in a mx51 */
+#define CONFIG_MX51	1
 #define CONFIG_VIDEO_IMX5X	1
 #define CONFIG_FLASH_HEADER	1
 #define CONFIG_FLASH_HEADER_OFFSET 0x400

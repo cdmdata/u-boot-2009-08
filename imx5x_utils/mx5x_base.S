@@ -34,7 +34,7 @@
 #include <asm/char.inc>
 #define ASM
 #include "mx5x.h"
-#ifdef mx51
+#ifdef CONFIG_MX51
 #include "mx51.h"
 #else
 #include "mx53.h"
