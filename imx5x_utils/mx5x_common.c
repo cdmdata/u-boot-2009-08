@@ -239,6 +239,7 @@ int ram_test(unsigned *ram_base)
 	return 0;
 }
 
+#ifdef CONFIG_MX53
 static unsigned char da9052_init_data[] = {
 //If LDO10 is turned off then DA9053 accesses will fail
 //And it can never be turned back on. Fixed on next board
@@ -365,3 +366,4 @@ int power_up_ddr(unsigned i2c_base, unsigned chip)
 //	vbuckcore_boost(i2c_base, chip);
 	return ret;
 }
+#endif
