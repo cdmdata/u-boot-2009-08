@@ -393,11 +393,11 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.word	ESD_BASE + ESD_CTL1, 0xb2a20000
 #endif
 	.word	ESD_BASE + ESD_MISC, ESDMISC_RUN_DEFAULT
-	.word	ESD_BASE + ESD_DLY1, 0x00f48c00	// D0-D7 read delay
-	.word	ESD_BASE + ESD_DLY2, 0x00f48c00	// D8-D15 read delay
-	.word	ESD_BASE + ESD_DLY3, 0x00f48c00	// D16-D23 read delay
-	.word	ESD_BASE + ESD_DLY4, 0x00f48c00	// D24-D31 read delay
-	.word	ESD_BASE + ESD_DLY5, 0x00f48000	// D0-D31 write delay
+	.word	ESD_BASE + ESD_DLY1, 0x00f48900	// D0-D7 read delay
+	.word	ESD_BASE + ESD_DLY2, 0x00f48900	// D8-D15 read delay
+	.word	ESD_BASE + ESD_DLY3, 0x00f48900	// D16-D23 read delay
+	.word	ESD_BASE + ESD_DLY4, 0x00f48900	// D24-D31 read delay
+	.word	ESD_BASE + ESD_DLY5, 0x00f47e00	// D0-D31 write delay
 	.word	ESD_BASE + ESD_GPR, 0x88000000	// DQS gating delays
 	.word	ESD_BASE + ESD_SCR, 0x00000000	//ESDSCR, AXI address readies normal operation
 	.word	0
