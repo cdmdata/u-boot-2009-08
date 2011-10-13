@@ -227,9 +227,6 @@
 #define CONFIG_SYS_MAXARGS	16	/* max number of command args */
 #define CONFIG_SYS_BARGSIZE CONFIG_SYS_CBSIZE /* Boot Argument Buffer Size */
 
-#define CONFIG_SYS_MEMTEST_START	0	/* memtest works on */
-#define CONFIG_SYS_MEMTEST_END		0x10000
-
 #undef	CONFIG_SYS_CLKS_IN_HZ		/* everything, incl board info, in Hz */
 
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
@@ -317,5 +314,10 @@
 #define CONFIG_CMD_RUN
 
 #define CONFIG_MACH_TYPE	MACH_NITROGEN_VM_IMX51
+
+#define CONFIG_SYS_MEMTEST_START	0x92000000	/* memtest works on */
+#define CONFIG_SYS_MEMTEST_END		0x94000000
+#define CONFIG_SYS_ALT_MEMTEST
+#define CONFIG_SYS_MEMTEST_SCRATCH 	0x91000000
 
 #endif				/* __CONFIG_H */
