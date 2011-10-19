@@ -35,7 +35,9 @@ unsigned long do_go_exec (ulong (*entry)(int, char *[]), int argc, char *argv[])
 	return entry (argc, argv);
 }
 
+#ifdef CONFIG_UART_BASE_ADDR
 int serial_flush_output(void);
+#endif
 
 int do_go (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
@@ -50,7 +52,10 @@ int do_go (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	addr = simple_strtoul(argv[1], NULL, 16);
 
 	printf ("## Starting application at 0x%08lX ...\n", addr);
+
+#ifdef CONFIG_UART_BASE_ADDR
 	serial_flush_output();
+#endif
 	/*
 	 * pass address parameter as argv[0] (aka command name),
 	 * and all remaining args
