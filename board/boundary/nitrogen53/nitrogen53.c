@@ -1389,7 +1389,7 @@ void check_power_key(void)
                         when_pressed = get_timer(0);
 	} else if (1 == prev_power_key) {
 		long long elapsed = get_timer(when_pressed);
-		if (500 <= elapsed) {
+		if (5000 <= elapsed) {
 			printf( "power down");
 			when_pressed = get_timer(0);
 			gpio_set_value(POWER_DOWN, 0);
