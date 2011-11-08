@@ -83,6 +83,9 @@ static enum boot_device boot_dev;
 
 #define GPIO_DIR 4
 #define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
+
+#define N53_I2C_CONNECTOR_BUFFER_ENABLE		MAKE_GP(3, 10)
+
 unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR,
 		GPIO5_BASE_ADDR, GPIO6_BASE_ADDR, GPIO7_BASE_ADDR};
 void Set_GPIO_output_val(unsigned gp, unsigned val)
@@ -597,6 +600,7 @@ void init_display_pins(void)
 {
 	unsigned machid = get_machid();
 	unsigned tfp410_bus = I2C2_BASE_ADDR;
+	unsigned tfp410_i2c_addr = 0x38;
 	unsigned char buf[4];
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
 	int const *pins = di0_prgb_pins ;
@@ -646,6 +650,10 @@ void init_display_pins(void)
 		printf("LDO10 reg of DA9053 failed\n");
 	udelay(500);
 
+	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 0);	//disable external i2c connector
+	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+
 	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
 	udelay(5);
 	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
@@ -654,9 +662,17 @@ void init_display_pins(void)
 
 	/* Init tfp410 */
 	buf[0] = 0xbd;
-	if (bus_i2c_write(tfp410_bus, 0x38, 0x8, 1, buf, 1)) {
-		printf("tfp410 init failed, machid = %x\n", machid);
-		Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
+	for (;;) {
+		if (!bus_i2c_write(tfp410_bus, tfp410_i2c_addr, 0x8, 1, buf, 1)) {
+			printf("tfp410 found at 0x%x\n", tfp410_i2c_addr);
+			break;
+		}
+		tfp410_i2c_addr++;
+		if (tfp410_i2c_addr > 0x39) {
+			printf("tfp410 init failed, machid = %x\n", machid);
+			Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
+			break;
+		}
 	}
 }
 
