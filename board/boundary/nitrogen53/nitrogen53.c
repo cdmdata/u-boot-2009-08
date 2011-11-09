@@ -627,6 +627,11 @@ void init_display_pins(void)
 	mxc_request_iomux(MX53_PIN_EIM_A22, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_A22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
+	/* backlight power enable for GE board, rts on UART3 for nitrogen53 */
+	Set_GPIO_input(MAKE_GP(3, 31));
+	mxc_request_iomux(MX53_PIN_EIM_D31, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_D31, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL);
+
 	/* gpio2[20] - Display enable for chimei 7" panel */
 	Set_GPIO_output_val(MAKE_GP(2, 20), 1);
 	mxc_request_iomux(MX53_PIN_EIM_A18, IOMUX_CONFIG_ALT1);
