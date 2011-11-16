@@ -39,6 +39,65 @@
 
 #include <usb/regs-usbphy-mx6.h>
 
+unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR,
+	GPIO4_BASE_ADDR, GPIO5_BASE_ADDR, GPIO6_BASE_ADDR, GPIO7_BASE_ADDR};
+
+void gpio_set_input(unsigned gp)
+{
+	unsigned reg, base;
+	unsigned mask = (1 << (gp & 0x1f));
+	if ((gp >> 5) >= ARRAY_SIZE(gp_base))
+		return;
+	base = gp_base[gp >> 5];
+	reg = readl(base + GPIO_GDIR);
+	reg &= ~mask;           /* configure GPIO line as input */
+	writel(reg, base + GPIO_GDIR);
+}
+
+unsigned gpio_get_value(unsigned gp)
+{
+	unsigned reg, base;
+	if ((gp >> 5) >= ARRAY_SIZE(gp_base))
+		return 0;
+	base = gp_base[gp >> 5];
+	reg = readl(base + GPIO_PSR);
+	return (reg >> (gp & 0x1f)) & 1;
+}
+
+void gpio_set_value(unsigned gp, unsigned val)
+{
+	unsigned reg, base;
+	unsigned mask = 1 << (gp & 0x1f);
+	if ((gp >> 5) >= ARRAY_SIZE(gp_base))
+		return;
+	base = gp_base[gp >> 5];
+	reg = readl(base + GPIO_DR);
+	if (val & 1)
+		reg |= mask;    /* set high */
+	else
+		reg &= ~mask;   /* clear low */
+	writel(reg, base + GPIO_DR);
+}
+
+void gpio_set_output_val(unsigned gp, unsigned val)
+{
+	unsigned reg, base;
+	unsigned mask = (1 << (gp & 0x1f));
+	if ((gp >> 5) >= ARRAY_SIZE(gp_base))
+		return;
+	base = gp_base[gp >> 5];
+	reg = readl(base + GPIO_DR);
+	if (val & 1)
+		reg |= mask;    /* set high */
+	else
+		reg &= ~mask;   /* clear low */
+	writel(reg, base + GPIO_DR);
+
+	reg = readl(base + GPIO_GDIR);
+	reg |= mask;            /* configure GPIO line as output */
+	writel(reg, base + GPIO_GDIR);
+}
+
 enum pll_clocks {
 	CPU_PLL1,	/* System PLL */
 	BUS_PLL2,	/* System Bus PLL*/
