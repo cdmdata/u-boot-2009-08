@@ -69,20 +69,6 @@ DECLARE_GLOBAL_DATA_PTR;
 static u32 system_rev;
 static enum boot_device boot_dev;
 
-static void set_gpio_output_val(unsigned base, unsigned mask, unsigned val)
-{
-	unsigned reg = readl(base + GPIO_DR);
-	if (val & 1)
-		reg |= mask;	/* set high */
-	else
-		reg &= ~mask;	/* clear low */
-	writel(reg, base + GPIO_DR);
-
-	reg = readl(base + GPIO_GDIR);
-	reg |= mask;		/* configure GPIO line as output */
-	writel(reg, base + GPIO_GDIR);
-}
-
 static inline void setup_boot_device(void)
 {
 	uint soc_sbmr = readl(SRC_BASE_ADDR + 0x4);
@@ -445,7 +431,9 @@ int board_init(void)
 	mxc_iomux_v3_init((void *)IOMUXC_BASE_ADDR);
 	setup_boot_device();
 	/* Disable wl1271 For Nitrogen6w */
-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 15) | (1 << 16), 0);
+	gpio_set_input(GPIO_NUMBER(6, 14));
+	gpio_set_output_val(GPIO_NUMBER(6, 15), 0);
+	gpio_set_output_val(GPIO_NUMBER(6, 16), 0);
 	mxc_iomux_v3_setup_multiple_pads(wl12xx_pads, ARRAY_SIZE(wl12xx_pads));
 	clk_config_cko1(8000000);
 
@@ -704,23 +692,22 @@ int mx6_rgmii_rework(char *phydev, int phy_addr)
 void enet_board_init(void)
 {
 	/* Sabrelite phy reset: gpio3-23 */
-	set_gpio_output_val(GPIO3_BASE_ADDR, (1 << 23), 0);
+	gpio_set_output_val(GPIO_NUMBER(3, 23), 0);
 	/* Nitrogen6w phy reset: gpio1-27 */
-	set_gpio_output_val(GPIO1_BASE_ADDR, (1 << 27), 0);
-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 30),
-			    (CONFIG_FEC0_PHY_ADDR >> 2));
-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 25), 1);
-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 27), 1);
-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 28), 1);
-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 29), 1);
+	gpio_set_output_val(GPIO_NUMBER(1, 27), 0);
+	gpio_set_output_val(GPIO_NUMBER(6, 30), (CONFIG_FEC0_PHY_ADDR >> 2));
+	gpio_set_output_val(GPIO_NUMBER(6, 25), 1);
+	gpio_set_output_val(GPIO_NUMBER(6, 27), 1);
+	gpio_set_output_val(GPIO_NUMBER(6, 28), 1);
+	gpio_set_output_val(GPIO_NUMBER(6, 29), 1);
 	mxc_iomux_v3_setup_multiple_pads(enet_pads, ARRAY_SIZE(enet_pads));
-	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 24), 1);
+	gpio_set_output_val(GPIO_NUMBER(6, 24), 1);
 
 	udelay(500);
 	/* Sabrelite phy reset: gpio3-23 */
-	set_gpio_output_val(GPIO3_BASE_ADDR, (1 << 23), 1);
+	gpio_set_output_val(GPIO_NUMBER(3, 23), 1);
 	/* Nitrogen6w phy reset: gpio1-27 */
-	set_gpio_output_val(GPIO1_BASE_ADDR, (1 << 27), 1);
+	gpio_set_output_val(GPIO_NUMBER(1, 27), 1);
 	mxc_iomux_v3_setup_multiple_pads(enet_pads_final,
 					 ARRAY_SIZE(enet_pads_final));
 }
