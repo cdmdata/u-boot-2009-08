@@ -421,8 +421,12 @@ static void setup_uart(void)
 	mxc_iomux_set_pad(MX53_PIN_ATA_DIOR, pad);
 	mxc_iomux_set_input(MUX_IN_UART2_IPP_UART_RTS_B_SELECT_INPUT, 0x3);
 
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
 	if ((system_rev & 0xf00) == 0x100) {
-		/* Nitrogen A rev 1 */
+#else
+	if (1) {
+#endif
+		/* Nitrogen53/ Nitrogen A rev 1 */
 		/* UART3 RXD */
 		mxc_request_iomux(MX53_PIN_ATA_CS_1, IOMUX_CONFIG_ALT4);
 		mxc_iomux_set_pad(MX53_PIN_ATA_CS_1, pad);
