@@ -58,9 +58,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int
 #include <asm/arch/mmu.h>
 #endif
 
-#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
 #include <asm/imx_iim.h>
-#endif
 
 #ifdef CONFIG_CMD_CLOCK
 #include <asm/clock.h>
@@ -792,22 +790,6 @@ void setup_spi(void)
 
 #ifdef CONFIG_MXC_FEC
 
-#ifdef CONFIG_GET_FEC_MAC_ADDR_FROM_IIM
-
-int fec_get_mac_addr(unsigned char *mac)
-{
-	u32 *iim1_mac_base =
-		(u32 *)(IIM_BASE_ADDR + IIM_BANK_AREA_1_OFFSET +
-			CONFIG_IIM_MAC_ADDR_OFFSET);
-	int i;
-
-	for (i = 0; i < 6; ++i, ++iim1_mac_base)
-		mac[i] = (u8)readl(iim1_mac_base);
-
-	return 0;
-}
-#endif
-
 static void setup_fec(void)
 {
 	/* gp7[13] - low active reset pin*/
@@ -1262,12 +1244,11 @@ int parse_mac(char const *cmac, unsigned char *mac)
 	return ret;
 }
 
-static int get_rom_mac(unsigned char *mac)
+static int get_env_mac(unsigned char *mac)
 {
 	char *cmac = getenv("ethaddr");
 	if (cmac) {
 		if (!parse_mac(cmac, mac)) {
-			mxc_fec_eth_set_mac_addr(mac);
 			return 0;
 		}
 	}
@@ -1276,14 +1257,44 @@ static int get_rom_mac(unsigned char *mac)
 
 int misc_init_r(void)
 {
-	unsigned char macAddr[6];
-	if (!get_rom_mac(macAddr)) {
-		printf( "Mac address %02x:%02x:%02x:%02x:%02x:%02x\n",
-				macAddr[0], macAddr[1], macAddr[2],
-				macAddr[3], macAddr[4], macAddr[5] );
-	} else
-		printf( "No mac address assigned\n" );
-	return 0;
+	unsigned char macAddrROM[6];
+	unsigned char macAddrEnv[6];
+	unsigned found = 0 ;
+	int rv = iim_read_mac_addr(macAddrROM);
+	if (rv) {
+		printf( "ROM mac address %02x:%02x:%02x:%02x:%02x:%02x\n",
+			macAddrROM[0], macAddrROM[1], macAddrROM[2],
+			macAddrROM[3], macAddrROM[4], macAddrROM[5] );
+		found++ ;
+	}
+	else
+		printf("Mac not programmed in IIM\n");
+	rv = get_env_mac (macAddrEnv);
+	if (0 == rv) {
+		printf( "Env mac address %02x:%02x:%02x:%02x:%02x:%02x\n",
+			macAddrEnv[0], macAddrEnv[1], macAddrEnv[2],
+			macAddrEnv[3], macAddrEnv[4], macAddrEnv[5] );
+		found++ ;
+		memcpy (macAddrROM, macAddrEnv,sizeof (macAddrROM));
+	} else {
+		printf( "No mac address assigned in environment\n" );
+		if (found) {
+			char cMac[32];
+			sprintf (cMac,
+				 "%02x:%02x:%02x:%02x:%02x:%02x",
+				 macAddrROM[0], macAddrROM[1], macAddrROM[2],
+				 macAddrROM[3], macAddrROM[4], macAddrROM[5] );
+			setenv ("ethaddr", cMac);
+		}
+	}
+	if (found > 0) {
+		printf ("setting mac address to %02x:%02x:%02x:%02x:%02x:%02x\n",
+                        macAddrROM[0], macAddrROM[1], macAddrROM[2],
+			macAddrROM[3], macAddrROM[4], macAddrROM[5] );
+		mxc_fec_eth_set_mac_addr(macAddrROM);
+		return 0 ;
+	}
+	return -1 ;
 }
 extern void setup_display(void);
 
@@ -1396,6 +1407,35 @@ int checkboard(void)
 	}
 	return 0;
 }
+
+int do_macafter(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	int i ;
+	unsigned char macAddress[6];
+	if ((3 == argc) && (0 == parse_mac(argv[1],macAddress))) {
+		char cMac[32];
+		for (i = sizeof(macAddress); i > 0 ;) {
+			--i ;
+			if (0 != ++macAddress[i])
+				break;
+		}
+		sprintf (cMac,
+			 "%02x:%02x:%02x:%02x:%02x:%02x",
+			 macAddress[0], macAddress[1], macAddress[2],
+			 macAddress[3], macAddress[4], macAddress[5] );
+		printf("%s => %s\n", argv[2],cMac);
+		setenv (argv[2], cMac);
+	} else
+		cmd_usage(cmdtp);
+	return 0 ;
+}
+
+U_BOOT_CMD(
+	macafter, 3, 0, do_macafter,
+	"Generate a mac address based on another",
+	"Usage: macafter 00:01:02:03:04:05 mymac\n"
+	"This example will set 'mymac' to 00:01:02:03:04:06\n"
+);
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
 #include <power_key.h>
