@@ -67,5 +67,6 @@ struct iim_regs {
 int iim_read(int bank, char row);
 int iim_blow(int bank, int row, int val);
 int iim_blow_func(char *func_name, char *func_val);
+int iim_read_mac_addr(u8 *data);
 
 #endif

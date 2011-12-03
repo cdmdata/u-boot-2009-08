@@ -235,7 +235,7 @@ int iim_blow(int bank, int row, int val)
 	return err;
 }
 
-static int iim_read_mac_addr(u8 *data)
+int iim_read_mac_addr(u8 *data)
 {
 	s32 bank = CONFIG_IIM_MAC_BANK;
 	s32 row  = CONFIG_IIM_MAC_ROW;
