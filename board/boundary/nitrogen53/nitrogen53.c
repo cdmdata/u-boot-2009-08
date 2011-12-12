@@ -566,6 +566,127 @@ void toggle_i2c(unsigned int module_base)
 }
 #endif
 
+#ifdef CONFIG_W3
+#define W3_CS	MAKE_GP(3, 24)	/* EIM_D24 */
+#define W3_SCL	MAKE_GP(2, 20)	/* EIM_A18 */
+#define W3_SDA	MAKE_GP(2, 19)	/* EIM_A19 */
+
+void w3_setup(void)
+{
+	Set_GPIO_output_val(W3_CS, 1);
+	Set_GPIO_input(W3_SCL);
+	Set_GPIO_input(W3_SDA);
+	mxc_iomux_set_pad(MX53_PIN_EIM_D24, 0x1ec);
+	mxc_iomux_set_pad(MX53_PIN_EIM_A18, 0x1ec);
+	mxc_iomux_set_pad(MX53_PIN_EIM_A19, 0x1ec);
+	mxc_request_iomux(MX53_PIN_EIM_D24, 1 | IOMUX_CONFIG_SION);
+	mxc_request_iomux(MX53_PIN_EIM_A18, 1 | IOMUX_CONFIG_SION);
+	mxc_request_iomux(MX53_PIN_EIM_A19, 1 | IOMUX_CONFIG_SION);
+}
+
+void w3_write(unsigned reg, unsigned data)
+{
+	int i;
+	unsigned val = (reg << 10) | (data & 0xff);
+	Set_GPIO_output_val(W3_SCL, 1);
+	Set_GPIO_output_val(W3_SDA, 1);
+	Set_GPIO_output_val(W3_CS, 0);
+	for (i = 0; i < 16; i++) {
+		Set_GPIO_output_val(W3_SCL, 0);
+		Set_GPIO_output_val(W3_SDA, (val >> 15) & 1);
+		udelay(10);
+		Set_GPIO_output_val(W3_SCL, 1);
+		val <<= 1;
+		udelay(10);
+	}
+	Set_GPIO_output_val(W3_CS, 1);
+	Set_GPIO_input(W3_SCL);
+	Set_GPIO_input(W3_SDA);
+	udelay(20);
+}
+
+unsigned w3_read(unsigned reg)
+{
+	int i;
+	unsigned val = (reg << 10) | 0x3ff;
+	Set_GPIO_output_val(W3_SCL, 1);
+	Set_GPIO_output_val(W3_SDA, 1);
+	Set_GPIO_output_val(W3_CS, 0);
+	for (i = 0; i < 16; i++) {
+		Set_GPIO_output_val(W3_SCL, 0);
+		if (i >= 7)
+			Set_GPIO_input(W3_SDA);
+		else
+			Set_GPIO_output_val(W3_SDA, (val >> 15) & 1);
+		udelay(10);
+		Set_GPIO_output_val(W3_SCL, 1);
+		val <<= 1;
+		if (i >= 7)
+			val |= gpio_get_value(W3_SDA);
+		udelay(10);
+	}
+	Set_GPIO_output_val(W3_CS, 1);
+	Set_GPIO_input(W3_SCL);
+	Set_GPIO_input(W3_SDA);
+	udelay(20);
+	return val & 0xff;
+}
+
+void w3_enable_panel(void)
+{
+	w3_setup();
+	w3_write(0x00, 0x29);
+	w3_write(0x00, 0x25);
+	w3_write(0x02, 0x40);
+	w3_write(0x01, 0x30);
+	w3_write(0x0e, 0x5f);
+	w3_write(0x0f, 0xa4);
+	w3_write(0x0d, 0x09);
+	w3_write(0x10, 0x41);
+	udelay(100*1000);
+	w3_write(0x00, 0xad);
+}
+
+int do_w3read(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	if (2 == argc) {
+		unsigned reg = simple_strtoul(argv[1], NULL, 16);
+		unsigned val;
+		w3_setup();
+		val = w3_read(reg);
+		printf("reg(%02x) = 0x%02x\n", reg, val);
+	} else
+		cmd_usage(cmdtp);
+	return 0 ;
+}
+
+U_BOOT_CMD(
+	w3read, 3, 0, do_w3read,
+	"3-wire spi read",
+	"Usage: w3read 1f\n"
+	"This example will read reg 0x1f\n"
+);
+
+int do_w3write(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	if (3 == argc) {
+		unsigned reg = simple_strtoul(argv[1], NULL, 16);
+		unsigned val = simple_strtoul(argv[2], NULL, 16);
+		w3_setup();
+		w3_write(reg, val);
+	} else
+		cmd_usage(cmdtp);
+	return 0 ;
+}
+
+U_BOOT_CMD(
+	w3write, 3, 0, do_w3write,
+	"3-wire spi write",
+	"Usage: w3write 1f 02\n"
+	"This example will set reg 0x1f to 0x02\n"
+);
+#endif
+
 static int const di0_prgb_pins[] = {
 	MX53_PIN_DISP0_DAT0,
 	MX53_PIN_DISP0_DAT1,
@@ -723,6 +844,10 @@ void init_lvds_pins(int ch,int lvds)
 			pins++ ;
 		}
 	}
+#ifdef CONFIG_W3
+	if (!ch)
+		w3_enable_panel();
+#endif
 }
 
 void setup_core_voltages(void)
