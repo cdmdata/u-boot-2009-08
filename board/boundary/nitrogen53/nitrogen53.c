@@ -773,11 +773,12 @@ void init_display_pins(void)
 	writel(0x03c20001, pwm_base + PWMCR);
 
 	/* Power up LDO10 of DA9053 for tfp410 */
+#ifdef CONFIG_TFP410_LDO10
 	buf[0] = 0x6a;
 	if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, 0x3b, 1, buf, 1))
 		printf("LDO10 reg of DA9053 failed\n");
 	udelay(500);
-
+#endif
 	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 0);	//disable external i2c connector
 	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled

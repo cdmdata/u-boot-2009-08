@@ -29,6 +29,7 @@
 #define CONFIG_BOARD_NAME	"MX53-Nitrogen_K"
 
 #define CONFIG_LDO10_OFF
+#undef CONFIG_TFP410_LDO10
 #define CONFIG_W3
 
 #undef CONFIG_UART_BASE_ADDR
