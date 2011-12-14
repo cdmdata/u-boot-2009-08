@@ -3080,6 +3080,7 @@ extern unsigned int __machine_arch_type;
 #define MACH_NITROGEN_P_IMX51          3170
 #define MACH_NITROGEN_EJ_IMX51         3171
 #define MACH_NITROGEN_V2_IMX53         3171
+#define MACH_TYPE_MX53_NITROGEN_K      3909
 
 
 #ifdef CONFIG_ARCH_EBSA110
