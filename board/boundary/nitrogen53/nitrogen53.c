@@ -768,8 +768,8 @@ void init_display_pins(void)
 #define PWMCNR	0x14
 	writel(0x03c20000, pwm_base + PWMCR);
 	writel(0, pwm_base + PWMIR);
-	writel(0xc8, pwm_base + PWMSAR);
-	writel(0x0190, pwm_base + PWMPR);
+	writel((CONFIG_PWM2_PERIOD * CONFIG_PWM2_DUTY) >> 8, pwm_base + PWMSAR);
+	writel(CONFIG_PWM2_PERIOD - 2, pwm_base + PWMPR);
 	writel(0x03c20001, pwm_base + PWMCR);
 
 	/* Power up LDO10 of DA9053 for tfp410 */

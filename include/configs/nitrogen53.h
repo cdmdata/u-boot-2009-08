@@ -69,6 +69,9 @@
 /* size in bytes reserved for initial data */
 #define CONFIG_SYS_GBL_DATA_SIZE	128
 
+#define CONFIG_PWM2_PERIOD	0xf4	/* 32768 Hz */
+#define CONFIG_PWM2_DUTY	128	/* 128 out of 256 */
+
 /*
  * Hardware drivers
  */
