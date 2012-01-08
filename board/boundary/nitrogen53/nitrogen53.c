@@ -1668,3 +1668,396 @@ void check_power_key(void)
 	}
 }
 #endif
+
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+
+#define DA9052_ADC_VDDOUT				0
+#define DA9052_ADC_ICH					1
+#define DA9052_ADC_TBAT					2
+#define DA9052_ADC_VBAT					3
+#define DA9052_ADC_ADCIN4				4
+#define DA9052_ADC_ADCIN5				5
+#define DA9052_ADC_ADCIN6				6
+#define DA9052_ADC_TSI					7
+#define DA9052_ADC_TJUNC				8
+#define DA9052_ADC_VBBAT				9
+
+/* EVENT REGISTER B */
+#define DA9052_EVENTB_ETSIREADY			(1<<7)
+#define DA9052_EVENTB_EPENDOWN			(1<<6)
+#define DA9052_EVENTB_EADCEOM			(1<<5)
+#define DA9052_EVENTB_ETBAT			(1<<4)
+#define DA9052_EVENTB_ECHGEND			(1<<3)
+#define DA9052_EVENTB_EIDGND			(1<<2)
+#define DA9052_EVENTB_EIDFLOAT			(1<<1)
+#define DA9052_EVENTB_ENONKEY			(1<<0)
+
+#define DA9052_PAGECON0_REG			0
+#define DA9052_STATUSA_REG			1
+#define DA9052_STATUSB_REG			2
+#define DA9052_STATUSC_REG			3
+#define DA9052_STATUSD_REG			4
+#define DA9052_EVENTA_REG			5
+#define DA9052_EVENTB_REG			6
+#define DA9052_EVENTC_REG			7
+#define DA9052_EVENTD_REG			8
+#define DA9052_FAULTLOG_REG			9
+#define DA9052_IRQMASKA_REG			10
+#define DA9052_IRQMASKB_REG			11
+#define DA9052_IRQMASKC_REG			12
+#define DA9052_IRQMASKD_REG			13
+#define DA9052_CONTROLA_REG			14
+#define DA9052_CONTROLB_REG			15
+#define DA9052_CONTROLC_REG			16
+#define DA9052_CONTROLD_REG			17
+#define DA9052_PDDIS_REG			18
+#define DA9052_INTERFACE_REG			19
+#define DA9052_RESET_REG			20
+#define DA9052_GPIO0001_REG			21
+#define DA9052_GPIO0203_REG			22
+#define DA9052_GPIO0405_REG			23
+#define DA9052_GPIO0607_REG			24
+#define DA9052_GPIO0809_REG			25
+#define DA9052_GPIO1011_REG			26
+#define DA9052_GPIO1213_REG			27
+#define DA9052_GPIO1415_REG			28
+#define DA9052_ID01_REG				29
+#define DA9052_ID23_REG				30
+#define DA9052_ID45_REG				31
+#define DA9052_ID67_REG				32
+#define DA9052_ID89_REG				33
+#define DA9052_ID1011_REG			34
+#define DA9052_ID1213_REG			35
+#define DA9052_ID1415_REG			36
+#define DA9052_ID1617_REG			37
+#define DA9052_ID1819_REG			38
+#define DA9052_ID2021_REG			39
+#define DA9052_SEQSTATUS_REG			40
+#define DA9052_SEQA_REG				41
+#define DA9052_SEQB_REG				42
+#define DA9052_SEQTIMER_REG			43
+#define DA9052_BUCKA_REG			44
+#define DA9052_BUCKB_REG			45
+#define DA9052_BUCKCORE_REG			46
+#define DA9052_BUCKPRO_REG			47
+#define DA9052_BUCKMEM_REG			48
+#define DA9052_BUCKPERI_REG			49
+#define DA9052_LDO1_REG				50
+#define DA9052_LDO2_REG				51
+#define DA9052_LDO3_REG				52
+#define DA9052_LDO4_REG				53
+#define DA9052_LDO5_REG				54
+#define DA9052_LDO6_REG				55
+#define DA9052_LDO7_REG				56
+#define DA9052_LDO8_REG				57
+#define DA9052_LDO9_REG				58
+#define DA9052_LDO10_REG			59
+#define DA9052_SUPPLY_REG			60
+#define DA9052_PULLDOWN_REG			61
+#define DA9052_CHGBUCK_REG			62
+#define DA9052_WAITCONT_REG			63
+#define DA9052_ISET_REG				64
+#define DA9052_BATCHG_REG			65
+#define DA9052_CHGCONT_REG			66
+#define DA9052_INPUTCONT_REG			67
+#define DA9052_CHGTIME_REG			68
+#define DA9052_BBATCONT_REG			69
+#define DA9052_BOOST_REG			70
+#define DA9052_LEDCONT_REG			71
+#define DA9052_LEDMIN123_REG			72
+#define DA9052_LED1CONF_REG			73
+#define DA9052_LED2CONF_REG			74
+#define DA9052_LED3CONF_REG			75
+#define DA9052_LED1CONT_REG			76
+#define DA9052_LED2CONT_REG			77
+#define DA9052_LED3CONT_REG			78
+#define DA9052_LED4CONT_REG			79
+#define DA9052_LED5CONT_REG			80
+#define DA9052_ADCMAN_REG			81
+#define DA9052_ADCCONT_REG			82
+#define DA9052_ADCRESL_REG			83
+#define DA9052_ADCRESH_REG			84
+#define DA9052_VDDRES_REG			85
+#define DA9052_VDDMON_REG			86
+#define DA9052_ICHGAV_REG			87
+#define DA9052_ICHGTHD_REG			88
+#define DA9052_ICHGEND_REG			89
+#define DA9052_TBATRES_REG			90
+#define DA9052_TBATHIGHP_REG			91
+#define DA9052_TBATHIGHIN_REG			92
+#define DA9052_TBATLOW_REG			93
+#define DA9052_TOFFSET_REG			94
+#define DA9052_ADCIN4RES_REG			95
+#define DA9052_AUTO4HIGH_REG			96
+#define DA9052_AUTO4LOW_REG			97
+#define DA9052_ADCIN5RES_REG			98
+#define DA9052_AUTO5HIGH_REG			99
+#define DA9052_AUTO5LOW_REG			100
+#define DA9052_ADCIN6RES_REG			101
+#define DA9052_AUTO6HIGH_REG			102
+#define DA9052_AUTO6LOW_REG			103
+#define DA9052_TJUNCRES_REG			104
+#define DA9052_TSICONTA_REG			105
+#define DA9052_TSICONTB_REG			106
+#define DA9052_TSIXMSB_REG			107
+#define DA9052_TSIYMSB_REG			108
+#define DA9052_TSILSB_REG			109
+#define DA9052_TSIZMSB_REG			110
+#define DA9052_COUNTS_REG			111
+#define DA9052_COUNTMI_REG			112
+#define DA9052_COUNTH_REG			113
+#define DA9052_COUNTD_REG			114
+#define DA9052_COUNTMO_REG			115
+#define DA9052_COUNTY_REG			116
+#define DA9052_ALARMMI_REG			117
+#define DA9052_ALARMH_REG			118
+#define DA9052_ALARMD_REG			119
+#define DA9052_ALARMMO_REG			120
+#define DA9052_ALARMY_REG			121
+#define DA9052_SECONDA_REG			122
+#define DA9052_SECONDB_REG			123
+#define DA9052_SECONDC_REG			124
+#define DA9052_SECONDD_REG			125
+#define DA9052_PAGECON128_REG			128
+#define DA9052_CHIPID_REG			129
+#define DA9052_CONFIGID_REG			130
+#define DA9052_OTPCONT_REG			131
+#define DA9052_OSCTRIM_REG			132
+#define DA9052_GPID0_REG			133
+#define DA9052_GPID1_REG			134
+#define DA9052_GPID2_REG			135
+#define DA9052_GPID3_REG			136
+#define DA9052_GPID4_REG			137
+#define DA9052_GPID5_REG			138
+#define DA9052_GPID6_REG			139
+#define DA9052_GPID7_REG			140
+#define DA9052_GPID8_REG			141
+#define DA9052_GPID9_REG			142
+
+/* ADC COUNT regsisters */
+#define DA9052_ADCCONT_COMP1V2EN		(1<<7)
+#define DA9052_ADCCONT_ADCMODE			(1<<6)
+#define DA9052_ADCCONT_TBATISRCEN		(1<<5)
+#define DA9052_ADCCONT_AD4ISRCEN		(1<<4)
+#define DA9052_ADCCONT_AUTOAD6EN		(1<<3)
+#define DA9052_ADCCONT_AUTOAD5EN		(1<<2)
+#define DA9052_ADCCONT_AUTOAD4EN		(1<<1)
+#define DA9052_ADCCONT_AUTOVDDEN		(1<<0)
+
+#define DA9052_ADCMAN_MANCONV			(1<<4)
+
+struct da90_regname_t {
+	char const *name ;
+	int 	    regnum ;
+	int	    bit ;
+	int	    invert ;
+	int	    default_val ;
+};
+
+static struct da90_regname_t const da90_regs[] = {
+	{ "dcdet", 0x01, 5, 1, 0 }
+,	{ "vbus",  0x01, 4, 1, 0 }
+};
+
+static int da90_readbit(char const *which) {
+	int i ;
+	for (i = 0 ; i < ARRAY_SIZE(da90_regs); i++) {
+		struct da90_regname_t const *reg = da90_regs+i;
+		if (0 == strcmp(which,reg->name)) {
+			unsigned char buf[1];
+			int ret = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR, reg->regnum, 1, buf, sizeof (buf));
+			if (0 == ret)
+				return (0 != (buf[0]&(1<<reg->bit))) ^ reg->invert ;
+			else
+				printf("reg %d(%s) of DA9053 failed\n",reg->regnum,which);
+			return reg->default_val ;
+		}
+	}
+	printf("Invalid da90 register %s\n", which);
+	return 0 ;
+}
+
+int do_readbit(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	return da90_readbit(argv[0]);
+}
+
+U_BOOT_CMD(
+	dcdet, 3, 0, do_readbit,
+	"Detect DCIN",
+	"Usage: dcdet\n"
+	"Returns 0 (true) if DCIN is present\n"
+);
+
+U_BOOT_CMD(
+	vbus, 3, 0, do_readbit,
+	"Detect VBUS",
+	"Usage: vbus\n"
+	"Returns 0 (true) if VBUS is present\n"
+);
+
+struct da90_adc_name_t {
+	char const *name ;
+	unsigned    channel ;
+};
+
+static struct da90_adc_name_t const da90_adc_names[] = {
+	{ "ADC_VDDOUT",	0}
+,	{ "ADC_ICH",	1}
+,	{ "ADC_TBAT",	2}
+,	{ "ADC_VBAT",	3}
+,	{ "ADC_ADCIN4",	4}
+,	{ "ADC_ADCIN5",	5}
+,	{ "ADC_ADCIN6",	6}
+,	{ "ADC_TSI",	7}
+,	{ "ADC_TJUNC",	8}
+,	{ "ADC_VBBAT",	9}
+};
+
+/*
+ * returns 0 on failure
+ */
+int do_read_adc (unsigned channel)
+{
+	int rval ;
+	u8 buf[1] = { 0 };
+
+	rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+			    DA9052_EVENTB_REG, 1,
+			    buf, sizeof (buf));
+	if (0 != rval)
+		printf("%s: error %d reading EVENTB\n", __func__, rval );
+	if (0 != (buf[0]&DA9052_EVENTB_EADCEOM)) {
+                rval = bus_i2c_write (DA90_I2C_BUS, DA90_I2C_ADDR,
+                                      DA9052_EVENTB_REG,  1,
+				      buf, sizeof (buf));
+		if (0 != rval)
+			printf("%s: error %d clearing EVENTB\n", __func__, rval );
+	}
+	buf[0] = channel | DA9052_ADCMAN_MANCONV ;
+	rval = bus_i2c_write (DA90_I2C_BUS, DA90_I2C_ADDR,
+			      DA9052_ADCMAN_REG, 1,
+			      buf, sizeof(buf));
+	if (0 == rval) {
+		int loops = 0 ;
+		do {
+			udelay(1000);
+			rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+					    DA9052_ADCMAN_REG,  1,
+					    buf, sizeof (buf));
+			if (0 == rval) {
+				if (0 == (buf[0]&DA9052_ADCMAN_MANCONV)) {
+					break;
+				}
+			} else
+				printf("%s: error %d reading ADCMAN\n", __func__, rval);
+		} while ( 10 > ++loops );
+		if (10 > loops) {
+			rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+					    DA9052_ADCRESH_REG,  1,
+					    buf, sizeof (buf));
+			if (0 == rval) {
+				unsigned short adc = buf[0] << 2 ;
+				rval = bus_i2c_read (DA90_I2C_BUS, DA90_I2C_ADDR,
+						     DA9052_ADCRESL_REG,  1,
+						     buf, sizeof (buf));
+				if (0 == rval) {
+					adc |= (buf[0]&3);
+					return adc ;
+				} else
+					printf("%s: error %d reading ADCRESL\n", __func__, rval);
+			} else
+                                printf("%s: error %d reading ADCRESH\n", __func__, rval);
+		} else
+			printf("%s: timeout waiting for ADC result\n", __func__ );
+	} else
+		printf ("%s: error %d writing ADCMAN_REG\n", __func__, rval);
+	return 0 ;
+}
+
+int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	char const *which = argv[0];
+	int i ;
+	for (i = 0 ; i < ARRAY_SIZE(da90_adc_names); i++) {
+		if (0 == strcmp(which,da90_adc_names[i].name)) {
+			printf("ADC channel(%s) == 0x%04x\n", which,
+			       do_read_adc(da90_adc_names[i].channel));
+			return 0 ;
+		}
+	}
+	printf("%s: adc channel %s is not valid\n", __func__, which);
+	return -1 ;
+}
+
+U_BOOT_CMD(
+	ADC_VBAT, 3, 0, do_adc,
+	"Read ADC_VBAT",
+	"Usage: ADC_VBAT\n"
+	"Displays value of ADC_VBAT\n"
+);
+
+U_BOOT_CMD(
+	   ADC_VDDOUT, 3, 0, do_adc,
+	   "Read ADC_VDDOUT",
+	   "Usage: ADC_VDDOUT\n"
+	   "Displays value of ADC_VDDOUT\n"
+);
+
+U_BOOT_CMD(
+	   ADC_ICH, 3, 0, do_adc,
+	   "Read ADC_ICH",
+	   "Usage: ADC_ICH\n"
+	   "Displays value of ADC_ICH\n"
+);
+
+U_BOOT_CMD(
+	   ADC_TBAT, 3, 0, do_adc,
+	   "Read ADC_TBAT",
+	   "Usage: ADC_TBAT\n"
+	   "Displays value of ADC_TBAT\n"
+);
+
+U_BOOT_CMD(
+	   ADC_ADCIN4, 3, 0, do_adc,
+	   "Read ADC_ADCIN4",
+	   "Usage: ADC_ADCIN4\n"
+	   "Displays value of ADC_ADCIN4\n"
+);
+
+U_BOOT_CMD(
+	   ADC_ADCIN5, 3, 0, do_adc,
+	   "Read ADC_ADCIN5",
+	   "Usage: ADC_ADCIN5\n"
+	   "Displays value of ADC_ADCIN5\n"
+);
+
+U_BOOT_CMD(
+	   ADC_ADCIN6, 3, 0, do_adc,
+	   "Read ADC_ADCIN6",
+	   "Usage: ADC_ADCIN6\n"
+	   "Displays value of ADC_ADCIN6\n"
+);
+
+U_BOOT_CMD(
+	   ADC_TSI, 3, 0, do_adc,
+	   "Read ADC_TSI",
+	   "Usage: ADC_TSI\n"
+	   "Displays value of ADC_TSI\n"
+);
+
+U_BOOT_CMD(
+	   ADC_TJUNC, 3, 0, do_adc,
+	   "Read ADC_TJUNC",
+	   "Usage: ADC_TJUNC\n"
+	   "Displays value of ADC_TJUNC\n"
+);
+
+U_BOOT_CMD(
+	   ADC_VBBAT, 3, 0, do_adc,
+	   "Read ADC_VBBAT",
+	   "Usage: ADC_VBBAT\n"
+	   "Displays value of ADC_VBBAT\n"
+);
+
+#endif
