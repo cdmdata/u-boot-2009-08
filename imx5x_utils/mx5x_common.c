@@ -268,6 +268,12 @@ static unsigned char da9052_init_data[] = {
 /* LDO8 - leave on 1.8V, serial port messed up otherwise on newest board */
 //		0x39, 0x0c,		/* off, LDO8, camera db(4c:1.8V) */
 		0x3a, 0x1f,		/* off, LDO9, 2.8V camera(5f:2.75V) */
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+		0x3e, 0x9f,		/* turn charger on */
+		0x40, 0xff,		/* max current for DCIN, USB in */
+		0x41, 0xff,		/* max current for ICHG_BAT, ICHG_PRE */
+		0x43, 0x0f,		/* max 450 minutes */
+#endif
 		0x1a, 0x97,		/* gp11 input, usbotg id */
 		0x1b, 0x09,		/* gp12 input, no LDO9_en */
 		0x45, 0x2f,		/* charge coin cell @200uA to 3.1V */
