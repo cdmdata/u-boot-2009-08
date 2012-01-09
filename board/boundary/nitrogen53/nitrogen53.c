@@ -452,6 +452,11 @@ static void setup_uart(void)
 //	writel(0x00000004, 0x73fa83e8);
 //	writel(0x00000004, 0x73fa83ec);
 
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+	mxc_request_iomux(MX53_PIN_EIM_DA2, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA2, PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | PAD_CTL_360K_PD);
+#endif
+
 	udelay(10);
 	printf("setup_uart clk_src=%i mult=%i div=%i\n", clk_src, mult, div);
 }
