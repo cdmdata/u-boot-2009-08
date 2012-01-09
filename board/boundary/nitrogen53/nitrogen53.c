@@ -2101,4 +2101,36 @@ U_BOOT_CMD(
 	   "Usage: poweroff\n"
 );
 
+#include <power_key.h>
+
+static int prev_power_key = -1 ;
+static unsigned long when_pressed ;
+
+void check_power_key(void)
+{
+	int rval ;
+	u8 buf[1] = { 0 };
+
+	rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+			    DA9052_STATUSA_REG, 1,
+			    buf, sizeof (buf));
+	if (0 != rval)
+		return ;
+
+	int newval = (buf[0]&1)^1; /* high means not pressed */
+	if (newval != prev_power_key) {
+		printf("power key %d\n", newval );
+		prev_power_key = newval ;
+		if (newval)
+                        when_pressed = get_timer(0);
+	} else if (1 == prev_power_key) {
+		long long elapsed = get_timer(when_pressed);
+		if (500 <= elapsed) {
+			printf( "power down");
+			when_pressed = get_timer(0);
+			poweroff(0,0,0,0);
+		}
+	}
+}
+
 #endif

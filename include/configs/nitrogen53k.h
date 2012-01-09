@@ -45,4 +45,6 @@
 /* Indicate to esdhc driver which ports support 8-bit data */
 #define CONFIG_MMC_8BIT_PORTS           0x2   /* dev1 esdhc4 */
 
+#define CONFIG_POWER_KEY
+
 #endif
