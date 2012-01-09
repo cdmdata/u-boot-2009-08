@@ -1899,19 +1899,31 @@ U_BOOT_CMD(
 struct da90_adc_name_t {
 	char const *name ;
 	unsigned    channel ;
+	char	    units ;
+	long	    (*conversion)(unsigned short val);
 };
 
+static long convert_vbat(unsigned short val)
+{
+	return ((val+1280)*1000)/512;
+}
+
+static long convert_tjunc(unsigned short val)
+{
+        return (((1708 * val)/10) - 10600);
+}
+
 static struct da90_adc_name_t const da90_adc_names[] = {
-	{ "ADC_VDDOUT",	0}
-,	{ "ADC_ICH",	1}
-,	{ "ADC_TBAT",	2}
-,	{ "ADC_VBAT",	3}
-,	{ "ADC_ADCIN4",	4}
-,	{ "ADC_ADCIN5",	5}
-,	{ "ADC_ADCIN6",	6}
-,	{ "ADC_TSI",	7}
-,	{ "ADC_TJUNC",	8}
-,	{ "ADC_VBBAT",	9}
+	{ "ADC_VDDOUT",	0, 'V',  convert_vbat}
+,	{ "ADC_ICH",	1, '\0', 0}
+,	{ "ADC_TBAT",	2, '\0', 0}
+,	{ "ADC_VBAT",	3, 'V',	 convert_vbat}
+,	{ "ADC_ADCIN4",	4, '\0', 0}
+,	{ "ADC_ADCIN5",	5, '\0', 0}
+,	{ "ADC_ADCIN6",	6, '\0', 0}
+,	{ "ADC_TSI",	7, '\0', 0}
+,	{ "ADC_TJUNC",	8, 'C',  convert_tjunc}
+,	{ "ADC_VBBAT",	9, 'V',	 convert_vbat}
 };
 
 /*
@@ -1981,8 +1993,16 @@ int do_adc(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 	int i ;
 	for (i = 0 ; i < ARRAY_SIZE(da90_adc_names); i++) {
 		if (0 == strcmp(which,da90_adc_names[i].name)) {
-			printf("ADC channel(%s) == 0x%04x\n", which,
-			       do_read_adc(da90_adc_names[i].channel));
+			struct da90_adc_name_t const *adc = &da90_adc_names[i];
+			unsigned short val = do_read_adc(adc->channel);
+			printf("ADC channel(%s) == 0x%04x", which, val);
+			if (adc->units && adc->conversion) {
+				long milli = adc->conversion(val);
+				int whole = milli/1000 ;
+				int frac = (milli/10)%100 ;
+				printf(" (%u.%02u%c)\n", whole, frac, adc->units);
+			} else
+				putc ('\n');
 			return 0 ;
 		}
 	}
@@ -2058,6 +2078,22 @@ U_BOOT_CMD(
 	   "Read ADC_VBBAT",
 	   "Usage: ADC_VBBAT\n"
 	   "Displays value of ADC_VBBAT\n"
+);
+
+int poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	u8 buf[1] = { 0 };
+
+	buf[0] = 0x68 ;
+	return bus_i2c_write (DA90_I2C_BUS, DA90_I2C_ADDR,
+			      DA9052_CONTROLB_REG, 1,
+			      buf, sizeof(buf));
+}
+
+U_BOOT_CMD(
+	   poweroff, 3, 0, poweroff,
+	   "Power system off",
+	   "Usage: poweroff\n"
 );
 
 #endif
