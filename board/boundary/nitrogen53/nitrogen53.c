@@ -1918,9 +1918,14 @@ static long convert_tjunc(unsigned short val)
         return (((1708 * val)/10) - 10600);
 }
 
+static long convert_ichg(unsigned short val)
+{
+	return ((3900*val)/1000);
+}
+
 static struct da90_adc_name_t const da90_adc_names[] = {
 	{ "ADC_VDDOUT",	0, 'V',  convert_vbat}
-,	{ "ADC_ICH",	1, '\0', 0}
+,	{ "ADC_ICH",	1, 'A',  convert_ichg}
 ,	{ "ADC_TBAT",	2, '\0', 0}
 ,	{ "ADC_VBAT",	3, 'V',	 convert_vbat}
 ,	{ "ADC_ADCIN4",	4, '\0', 0}
