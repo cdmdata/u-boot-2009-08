@@ -1648,6 +1648,23 @@ U_BOOT_CMD(
 	"This example will set 'mymac' to 00:01:02:03:04:06\n"
 );
 
+int pwm(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	if (2 == argc) {
+		unsigned long val = simple_strtoul(argv[1],0,0);
+		if (255 >= val)
+			writel(val, PWM2_BASE_ADDR + PWMSAR);
+	} else
+		cmd_usage(cmdtp);
+	return 0 ;
+}
+
+U_BOOT_CMD(
+	   pwm, 3, 0, pwm,
+	   "Set PWM (backlight) value",
+	   "Usage: pwm 0..255\n"
+);
+
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
 #include <power_key.h>
 #define POWER_KEY MAKE_GP(3,22)
