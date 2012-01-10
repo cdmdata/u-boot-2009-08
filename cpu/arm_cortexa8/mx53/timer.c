@@ -112,8 +112,8 @@ void udelay(unsigned long usec)
 	setup_gpt();
 
 	tmo = usec * (CONFIG_MX53_CLK32 / 1000) / 1000;
-	if (!tmo)
-		tmo = 1;
+	if (1 >= tmo)
+		tmo = 2;
 
 	now = start = GPTCNT;
 
