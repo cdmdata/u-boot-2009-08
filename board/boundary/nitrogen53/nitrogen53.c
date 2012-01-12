@@ -947,11 +947,11 @@ static void setup_fec(void)
 	 /* FEC TXD2, output */
 	mxc_request_iomux(MX53_PIN_KEY_ROW2, IOMUX_CONFIG_ALT6);
 	mxc_iomux_set_pad(MX53_PIN_KEY_ROW2, 0x004);
-	
+
 	 /* FEC TXD3, output */
 	mxc_request_iomux(MX53_PIN_GPIO_19, IOMUX_CONFIG_ALT6);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_19, 0x004);
-	
+
 	/* FEC TX_ER - unused output from mx53 */
 
 	/* FEC COL, input */
@@ -1683,9 +1683,12 @@ void check_power_key(void)
 	} else if (1 == prev_power_key) {
 		long long elapsed = get_timer(when_pressed);
 		if (5000 <= elapsed) {
-			printf( "power down");
+			printf("power down\n");
 			when_pressed = get_timer(0);
 			gpio_set_value(POWER_DOWN, 0);
+			/* 1/2 sec delay so that no device is in use */
+			udelay(500000);
+			printf("!!Should not get here\n");
 		}
 	}
 }
@@ -2109,12 +2112,38 @@ U_BOOT_CMD(
 
 int poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-	u8 buf[1] = { 0 };
+	int ret;
+	u8 buf[3] = { 0 };
 
-	buf[0] = 0x68 ;
-	return bus_i2c_write (DA90_I2C_BUS, DA90_I2C_ADDR,
-			      DA9052_CONTROLB_REG, 1,
-			      buf, sizeof(buf));
+	ret = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+			DA9052_CONTROLB_REG, 1,
+			buf, 1);
+	if (ret) {
+		printf("Cannot read control_b\n");
+		return ret;
+	}
+	if (!(buf[0] & (1 << 5))) {
+		/* enable repeated write mode */
+		buf[0] |= (1 << 5);
+		buf[0] |= ~(1 << 7);
+		ret = bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR,
+				DA9052_CONTROLB_REG, 1,
+				buf, 1);
+		if (ret) {
+			printf("Cannot set repeated write\n");
+			return ret;
+		}
+	}
+	buf[0] |= (1 << 7);
+	/* Work around reset bug, last access should not be to CONTROLB */
+	buf[1] = 0xff; /* dummy reg */
+	ret = bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR,
+			DA9052_CONTROLB_REG, 1,
+			buf, 2);
+	/* 1/2 sec delay so that no device is in use */
+	udelay(500000);
+	printf("!!Should not get here\n");
+	return ret;
 }
 
 U_BOOT_CMD(
@@ -2148,7 +2177,7 @@ void check_power_key(void)
 	} else if (1 == prev_power_key) {
 		long long elapsed = get_timer(when_pressed);
 		if (500 <= elapsed) {
-			printf( "power down");
+			printf("power down\n");
 			when_pressed = get_timer(0);
 			poweroff(0,0,0,0);
 		}
