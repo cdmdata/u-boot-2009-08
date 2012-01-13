@@ -947,11 +947,11 @@ static void setup_fec(void)
 	 /* FEC TXD2, output */
 	mxc_request_iomux(MX53_PIN_KEY_ROW2, IOMUX_CONFIG_ALT6);
 	mxc_iomux_set_pad(MX53_PIN_KEY_ROW2, 0x004);
-	
+
 	 /* FEC TXD3, output */
 	mxc_request_iomux(MX53_PIN_GPIO_19, IOMUX_CONFIG_ALT6);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_19, 0x004);
-	
+
 	/* FEC TX_ER - unused output from mx53 */
 
 	/* FEC COL, input */
@@ -1683,7 +1683,7 @@ void check_power_key(void)
 	} else if (1 == prev_power_key) {
 		long long elapsed = get_timer(when_pressed);
 		if (5000 <= elapsed) {
-			printf( "power down");
+			printf( "power down\n");
 			when_pressed = get_timer(0);
 			gpio_set_value(POWER_DOWN, 0);
 		}
@@ -2148,7 +2148,7 @@ void check_power_key(void)
 	} else if (1 == prev_power_key) {
 		long long elapsed = get_timer(when_pressed);
 		if (500 <= elapsed) {
-			printf( "power down");
+			printf( "power down\n");
 			when_pressed = get_timer(0);
 			poweroff(0,0,0,0);
 		}
