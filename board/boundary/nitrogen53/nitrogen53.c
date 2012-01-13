@@ -2127,6 +2127,7 @@ U_BOOT_CMD(
 
 static int prev_power_key = -1 ;
 static unsigned long when_pressed ;
+static int do_power_down = 0 ;
 
 void check_power_key(void)
 {
@@ -2141,15 +2142,18 @@ void check_power_key(void)
 
 	int newval = (buf[0]&1)^1; /* high means not pressed */
 	if (newval != prev_power_key) {
-		printf("power key %d\n", newval );
 		prev_power_key = newval ;
 		if (newval)
                         when_pressed = get_timer(0);
 	} else if (1 == prev_power_key) {
 		long long elapsed = get_timer(when_pressed);
-		if (500 <= elapsed) {
+		if (200 <= elapsed) {
+			do_power_down = 1 ;
+		}
+	} else if (do_power_down) {
+		long long elapsed = get_timer(when_pressed);
+		if (10 <= elapsed) {
 			printf( "power down\n");
-			when_pressed = get_timer(0);
 			poweroff(0,0,0,0);
 		}
 	}
