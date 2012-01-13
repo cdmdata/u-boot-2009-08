@@ -2107,14 +2107,45 @@ U_BOOT_CMD(
 	   "Displays value of ADC_VBBAT\n"
 );
 
+static unsigned char const poweroff_regs[] = {
+	5, 0xff,	/* clear events */
+	6, 0xff,
+	7, 0xff,
+	8, 0xff,
+	9, 0xff,
+	10, 0xff,	/* mask interrupts */
+	11, 0xfe,	/* except nONKEY */
+	12, 0xff,
+	13, 0xff,
+	15, 0xaa,	/* power-off */
+	0		/* end-of-list */
+};
+
 int poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
-	u8 buf[1] = { 0 };
+	int rval ;
+	u8 const *regs = poweroff_regs ;
+	u8 buf[1];
 
-	buf[0] = 0x68 ;
-	return bus_i2c_write (DA90_I2C_BUS, DA90_I2C_ADDR,
-			      DA9052_CONTROLB_REG, 1,
-			      buf, sizeof(buf));
+	while (*regs) {
+		buf[0] = regs[1];
+		while ( 0 > (rval = bus_i2c_write (DA90_I2C_BUS, DA90_I2C_ADDR,
+						   *regs, 1, buf, 1))) {
+			printf("%s: error writing power-down register %02x\n", __func__, *regs);
+		}
+		regs += 2 ;
+	}
+
+	while (0 > (rval = bus_i2c_read (DA90_I2C_BUS, DA90_I2C_ADDR,
+                                          DA9052_STATUSA_REG, 1,
+                                          buf, sizeof(buf)))) {
+		printf("%s: error reading statusa\n", __func__);
+	}
+
+	/* 1/2 sec delay so that no device is in use */
+	udelay(500000);
+	printf("!!Should not get here\n");
+	return 0;
 }
 
 U_BOOT_CMD(
