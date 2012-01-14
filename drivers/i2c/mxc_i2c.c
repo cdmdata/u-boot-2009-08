@@ -46,9 +46,6 @@
 #define I2SR_IIF	(1 << 1)
 #define I2SR_RX_NO_AK	(1 << 0)
 
-#define I2C_MAX_TIMEOUT		100000
-#define I2C_TIMEOUT_TICKET	1
-
 #undef DEBUG
 
 #ifdef DEBUG
@@ -97,17 +94,18 @@ void bus_i2c_init(unsigned base, int speed, int unused)
 #define ST_BYTE_PENDING 0, I2SR_ICF
 static unsigned wait_for_sr_state(unsigned base, unsigned state, unsigned mask)
 {
-	int timeout = I2C_MAX_TIMEOUT;
 	unsigned sr;
+	ulong elapsed;
+	ulong start_time = get_timer(0);
 	for (;;) {
 		sr = __REG16(base + I2SR);
 		if ((sr & mask) == state)
 			break;
-		if (!(--timeout)) {
+		elapsed = get_timer(start_time);
+		if (elapsed > 100) {
 			printf("%s: failed sr=%x cr=%x state=%x mask=%x\n", __func__, sr, __REG16(base + I2CR), state, mask);
 			return 0;
 		}
-		udelay(I2C_TIMEOUT_TICKET);
 	}
 	DPRINTF("%s:%x\n", __func__, sr);
 	return sr | 0x10000;
@@ -162,6 +160,7 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 			return -1;
 		}
 	}
+	udelay(10);
 	if (tx_byte(base, chip << 1, 0)) {
 		printf("%s:chip address cycle fail(%x)\n",
 		       __func__, __REG16(base + I2SR));
@@ -220,7 +219,6 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int
 		*buf++ = ret;
 		if (!(--len))
 			break;
-		
 	}
 	if (!wait_for_sr_state(base, ST_BUS_IDLE))
 		printf("%s:trigger stop fail\n", __func__);
@@ -261,8 +259,8 @@ int bus_i2c_probe(unsigned base, uchar chip)
 
 int i2c_bus;
 const unsigned i2c_bases[] = {
-	I2C1_BASE_ADDR, 
-	I2C2_BASE_ADDR, 
+	I2C1_BASE_ADDR,
+	I2C2_BASE_ADDR,
 #ifdef CONFIG_MX53
 	I2C3_BASE_ADDR
 #endif
