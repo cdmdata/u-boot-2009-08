@@ -116,7 +116,7 @@ static void toggle_i2c(unsigned base);
 
 static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 {
-	int i, retry = 0;
+	int retry = 0;
 	for (retry = 0; retry < 3; retry++) {
 		if (wait_for_sr_state(base, ST_BUS_IDLE))
 			break;
@@ -217,8 +217,8 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf,
 	return 0;
 }
 
-int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf,
-		int len)
+int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen,
+		const uchar *buf, int len)
 {
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
 		__func__, chip, addr, alen, len);
