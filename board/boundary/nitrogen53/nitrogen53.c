@@ -44,7 +44,7 @@ void TransmitX(char ch);
 #if CONFIG_I2C_MXC
 #include <i2c.h>
 void bus_i2c_init(unsigned base, int speed, int unused);
-int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
+int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, const uchar *buf, int len);
 int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
 #endif
 
