@@ -2118,34 +2118,48 @@ static unsigned char const poweroff_regs[] = {
 	12, 0xff,
 	13, 0xff,
 	15, 0xaa,	/* power-off */
-	0		/* end-of-list */
+	0xff, 0xff	/* dummy register */
 };
 
 int poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 {
 	int rval ;
-	u8 const *regs = poweroff_regs ;
 	u8 buf[1];
 
-	while (*regs) {
-		buf[0] = regs[1];
-		while ( 0 > (rval = bus_i2c_write (DA90_I2C_BUS, DA90_I2C_ADDR,
-						   *regs, 1, buf, 1))) {
-			printf("%s: error writing power-down register %02x\n", __func__, *regs);
+	rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+			DA9052_CONTROLB_REG, 1,
+			buf, 1);
+	if (rval) {
+		printf("%s: Cannot read control_b\n", __func__);
+		return rval;
+	}
+	if (!(buf[0] & (1 << 5))) {
+		/* enable repeated write mode */
+		buf[0] |= (1 << 5);
+		buf[0] &= ~(1 << 7);
+		rval = bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR,
+				DA9052_CONTROLB_REG, 1,
+				buf, 1);
+		if (rval) {
+			printf("%s: Cannot set repeated write\n", __func__);
+			return rval;
 		}
-		regs += 2 ;
 	}
 
-	while (0 > (rval = bus_i2c_read (DA90_I2C_BUS, DA90_I2C_ADDR,
-                                          DA9052_STATUSA_REG, 1,
-                                          buf, sizeof(buf)))) {
+	rval = bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, poweroff_regs[0], 1,
+			&poweroff_regs[1], sizeof(poweroff_regs) - 1);
+	if (rval)
+		printf("%s: error writing power-down sequence\n", __func__);
+
+	while (0 > (rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+					DA9052_STATUSA_REG, 1,
+					buf, sizeof(buf)))) {
 		printf("%s: error reading statusa\n", __func__);
 	}
-
 	/* 1/2 sec delay so that no device is in use */
 	udelay(500000);
 	printf("!!Should not get here\n");
-	return 0;
+	return rval;
 }
 
 U_BOOT_CMD(
