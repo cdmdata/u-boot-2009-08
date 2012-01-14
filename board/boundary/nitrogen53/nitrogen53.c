@@ -2118,7 +2118,7 @@ static unsigned char const poweroff_regs[] = {
 	12, 0xff,
 	13, 0xff,
 	15, 0xaa,	/* power-off */
-	0xff, 0xff	/* dummy register */
+	DA9052_STATUSA_REG, 0	/* select status_a register */
 };
 
 int poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
@@ -2150,12 +2150,6 @@ int poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			&poweroff_regs[1], sizeof(poweroff_regs) - 1);
 	if (rval)
 		printf("%s: error writing power-down sequence\n", __func__);
-
-	while (0 > (rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
-					DA9052_STATUSA_REG, 1,
-					buf, sizeof(buf)))) {
-		printf("%s: error reading statusa\n", __func__);
-	}
 	/* 1/2 sec delay so that no device is in use */
 	udelay(500000);
 	printf("!!Should not get here\n");
