@@ -123,8 +123,7 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 		if (wait_for_sr_state(base, ST_BUS_IDLE))
 			break;
 		i2c_reset(base);
-		for (i = 0; i < I2C_MAX_TIMEOUT; i++)
-			udelay(I2C_TIMEOUT_TICKET);
+		udelay(100000);
 		toggle_i2c(base);
 	}
 	if (retry >= 3) {
