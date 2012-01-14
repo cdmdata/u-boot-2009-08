@@ -18,9 +18,6 @@
 #define I2SR_IIF	(1 << 1)
 #define I2SR_RX_NO_AK	(1 << 0)
 
-#define I2C_MAX_TIMEOUT		100000
-#define I2C_TIMEOUT_TICKET	1
-
 #if 0
 #define DPRINTF(args...)  my_printf(args)
 #else
@@ -63,7 +60,7 @@ void i2c_init(unsigned i2c_base, unsigned speed)
 #define ST_BYTE_PENDING 0, I2SR_ICF
 static unsigned wait_for_sr_state(unsigned i2c_base, unsigned state, unsigned mask)
 {
-	int timeout = I2C_MAX_TIMEOUT;
+	int timeout = 10000;
 	unsigned sr;
 	for (;;) {
 		sr = IO_READ16(i2c_base, I2SR);
@@ -73,7 +70,7 @@ static unsigned wait_for_sr_state(unsigned i2c_base, unsigned state, unsigned ma
 			my_printf("%s: failed sr=%x cr=%x state=%x mask=%x\n", __func__, sr, IO_READ16(i2c_base, I2CR), state, mask);
 			return 0;
 		}
-		delayMicro(I2C_TIMEOUT_TICKET);
+		delayMicro(1);
 	}
 	DPRINTF("%s:%x\n", __func__, sr);
 	return sr | 0x10000;
@@ -115,13 +112,12 @@ int i2c_probe(unsigned i2c_base, uint8_t chip)
 
 static int i2c_addr(unsigned i2c_base, uint8_t chip, uint addr, int alen)
 {
-	int i, retry = 0;
+	int retry = 0;
 	for (retry = 0; retry < 3; retry++) {
 		if (wait_for_sr_state(i2c_base, ST_BUS_IDLE))
 			break;
 		i2c_reset(i2c_base);
-		for (i = 0; i < I2C_MAX_TIMEOUT; i++)
-			delayMicro(I2C_TIMEOUT_TICKET);
+		delayMicro(100000);
 	}
 	if (retry >= 3) {
 		my_printf("%s:bus is busy(%x)\n",
@@ -134,6 +130,7 @@ static int i2c_addr(unsigned i2c_base, uint8_t chip, uint addr, int alen)
 		       __func__, IO_READ16(i2c_base, I2SR));
 		return -1;
 	}
+	delayMicro(10);
 	if (tx_byte(i2c_base, chip << 1, 0)) {
 		my_printf("%s:chip address cycle fail(%x)\n",
 		       __func__, IO_READ16(i2c_base, I2SR));
@@ -148,6 +145,25 @@ static int i2c_addr(unsigned i2c_base, uint8_t chip, uint addr, int alen)
 	return 0;
 }
 
+static int i2c_addr_retry(unsigned i2c_base, uint8_t chip, uint addr, int alen)
+{
+	int retry;
+	int ret;
+	for (retry = 0; retry < 5; retry++) {
+		ret = i2c_addr(i2c_base, chip, addr, alen);
+		if (!ret) {
+			if (retry)
+				my_printf("%s:recovered\n", __func__);
+			break;
+		}
+		IO_WRITE16(i2c_base, I2CR, I2CR_IEN);
+		delayMicro(1000);
+		i2c_reset(i2c_base);
+		delayMicro(1000);
+	}
+	return ret;
+}
+
 int i2c_read(unsigned i2c_base, uint8_t chip, uint addr, int alen, uint8_t *buf, int len)
 {
 	uint ret;
@@ -155,8 +171,7 @@ int i2c_read(unsigned i2c_base, uint8_t chip, uint addr, int alen, uint8_t *buf,
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
 		__func__, chip, addr, alen, len);
 
-	if (i2c_addr(i2c_base, chip, addr, alen)) {
-		my_printf("i2c_addr failed\n");
+	if (i2c_addr_retry(i2c_base, chip, addr, alen)) {
 		return -1;
 	}
 
@@ -202,10 +217,8 @@ int i2c_write(unsigned i2c_base, uint8_t chip, uint addr, int alen, uint8_t *buf
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
 		__func__, chip, addr, alen, len);
 
-	if (i2c_addr(i2c_base, chip, addr, alen)) {
-		my_printf("%s: i2c_addr failed\n", __func__);
+	if (i2c_addr_retry(i2c_base, chip, addr, alen))
 		return -1;
-	}
 
 	while (len--)
 		if (tx_byte(i2c_base, *buf++, 0)) {
