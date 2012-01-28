@@ -1289,7 +1289,7 @@ int board_init(void)
 
 #ifdef CONFIG_I2C_MXC
 	setup_i2c(I2C1_BASE_ADDR);
-	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C1_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
 	setup_uart();
 	gd->bd->bi_arch_number = CONFIG_MACH_TYPE;	/* board id for linux */
@@ -1305,9 +1305,9 @@ int board_init(void)
 
 #ifdef CONFIG_I2C_MXC
 	setup_i2c(I2C2_BASE_ADDR);
-	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C2_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_i2c(I2C3_BASE_ADDR);
-	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C3_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_core_voltages();
 #endif
 	return 0;
