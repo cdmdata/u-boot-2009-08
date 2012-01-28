@@ -808,6 +808,7 @@ void init_display_pins(void)
 			break;
 		}
 	}
+	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 1);	//reenable external i2c connector
 }
 
 static int const di0_lvds_pins[] = {
