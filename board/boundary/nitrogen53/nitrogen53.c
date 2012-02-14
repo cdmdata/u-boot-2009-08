@@ -494,7 +494,8 @@ static int i2c_get_index(unsigned module_base)
 		i = 1;
 		break;
 	case I2C3_BASE_ADDR:
-		i = (get_machid() == MACH_TYPE_MX53_NITROGEN_A) ? 3 : 2;
+		/* only boards no longer supported use gpio6 for sda */
+		i = 3;
 		break;
 	default:
 		printf("Invalid I2C base: 0x%x\n", module_base);
