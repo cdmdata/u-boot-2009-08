@@ -574,41 +574,37 @@ void toggle_i2c(unsigned int module_base)
 #endif
 
 #ifdef CONFIG_W3
-#define W3_CS	MAKE_GP(3, 24)	/* EIM_D24 */
-#define W3_SCL	MAKE_GP(2, 20)	/* EIM_A18 */
-#define W3_SDA	MAKE_GP(2, 19)	/* EIM_A19 */
-
 void w3_setup(void)
 {
-	Set_GPIO_output_val(W3_CS, 1);
-	Set_GPIO_input(W3_SCL);
-	Set_GPIO_input(W3_SDA);
-	mxc_iomux_set_pad(MX53_PIN_EIM_D24, 0x1ec);
-	mxc_iomux_set_pad(MX53_PIN_EIM_A18, 0x1ec);
-	mxc_iomux_set_pad(MX53_PIN_EIM_A19, 0x1ec);
-	mxc_request_iomux(MX53_PIN_EIM_D24, 1 | IOMUX_CONFIG_SION);
-	mxc_request_iomux(MX53_PIN_EIM_A18, 1 | IOMUX_CONFIG_SION);
-	mxc_request_iomux(MX53_PIN_EIM_A19, 1 | IOMUX_CONFIG_SION);
+	Set_GPIO_output_val(CONFIG_W3_CS, 1);
+	Set_GPIO_input(CONFIG_W3_SCL);
+	Set_GPIO_input(CONFIG_W3_SDA);
+	mxc_iomux_set_pad(CONFIG_W3_CS_PIN, 0x1ec);
+	mxc_iomux_set_pad(CONFIG_W3_SCL_PIN, 0x1ec);
+	mxc_iomux_set_pad(CONFIG_W3_SDA_PIN, 0x1ec);
+	mxc_request_iomux(CONFIG_W3_CS_PIN, 1 | IOMUX_CONFIG_SION);
+	mxc_request_iomux(CONFIG_W3_SCL_PIN, 1 | IOMUX_CONFIG_SION);
+	mxc_request_iomux(CONFIG_W3_SDA_PIN, 1 | IOMUX_CONFIG_SION);
 }
 
 void w3_write(unsigned reg, unsigned data)
 {
 	int i;
 	unsigned val = (reg << 10) | (data & 0xff);
-	Set_GPIO_output_val(W3_SCL, 1);
-	Set_GPIO_output_val(W3_SDA, 1);
-	Set_GPIO_output_val(W3_CS, 0);
+	Set_GPIO_output_val(CONFIG_W3_SCL, 1);
+	Set_GPIO_output_val(CONFIG_W3_SDA, 1);
+	Set_GPIO_output_val(CONFIG_W3_CS, 0);
 	for (i = 0; i < 16; i++) {
-		Set_GPIO_output_val(W3_SCL, 0);
-		Set_GPIO_output_val(W3_SDA, (val >> 15) & 1);
+		Set_GPIO_output_val(CONFIG_W3_SCL, 0);
+		Set_GPIO_output_val(CONFIG_W3_SDA, (val >> 15) & 1);
 		udelay(10);
-		Set_GPIO_output_val(W3_SCL, 1);
+		Set_GPIO_output_val(CONFIG_W3_SCL, 1);
 		val <<= 1;
 		udelay(10);
 	}
-	Set_GPIO_output_val(W3_CS, 1);
-	Set_GPIO_input(W3_SCL);
-	Set_GPIO_input(W3_SDA);
+	Set_GPIO_output_val(CONFIG_W3_CS, 1);
+	Set_GPIO_input(CONFIG_W3_SCL);
+	Set_GPIO_input(CONFIG_W3_SDA);
 	udelay(20);
 }
 
@@ -616,25 +612,25 @@ unsigned w3_read(unsigned reg)
 {
 	int i;
 	unsigned val = (reg << 10) | 0x3ff;
-	Set_GPIO_output_val(W3_SCL, 1);
-	Set_GPIO_output_val(W3_SDA, 1);
-	Set_GPIO_output_val(W3_CS, 0);
+	Set_GPIO_output_val(CONFIG_W3_SCL, 1);
+	Set_GPIO_output_val(CONFIG_W3_SDA, 1);
+	Set_GPIO_output_val(CONFIG_W3_CS, 0);
 	for (i = 0; i < 16; i++) {
-		Set_GPIO_output_val(W3_SCL, 0);
+		Set_GPIO_output_val(CONFIG_W3_SCL, 0);
 		if (i >= 7)
-			Set_GPIO_input(W3_SDA);
+			Set_GPIO_input(CONFIG_W3_SDA);
 		else
-			Set_GPIO_output_val(W3_SDA, (val >> 15) & 1);
+			Set_GPIO_output_val(CONFIG_W3_SDA, (val >> 15) & 1);
 		udelay(10);
-		Set_GPIO_output_val(W3_SCL, 1);
+		Set_GPIO_output_val(CONFIG_W3_SCL, 1);
 		val <<= 1;
 		if (i >= 7)
-			val |= gpio_get_value(W3_SDA);
+			val |= gpio_get_value(CONFIG_W3_SDA);
 		udelay(10);
 	}
-	Set_GPIO_output_val(W3_CS, 1);
-	Set_GPIO_input(W3_SCL);
-	Set_GPIO_input(W3_SDA);
+	Set_GPIO_output_val(CONFIG_W3_CS, 1);
+	Set_GPIO_input(CONFIG_W3_SCL);
+	Set_GPIO_input(CONFIG_W3_SDA);
 	udelay(20);
 	return val & 0xff;
 }
