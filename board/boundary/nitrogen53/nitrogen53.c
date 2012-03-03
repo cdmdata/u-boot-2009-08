@@ -336,13 +336,13 @@ static void get_best_ratio(unsigned *pnum, unsigned *pdenom, unsigned max)
 	*pdenom = d[i];
 }
 
-#if defined(CONFIG_I2C_MXC) && defined(CONFIG_UART_DA9032_GP12)
+#if defined(CONFIG_I2C_MXC) && defined(CONFIG_UART_DA9052_GP12)
 unsigned uart_base = 0;
 #endif
 
 unsigned get_uart_base(void)
 {
-#if defined(CONFIG_I2C_MXC) && defined(CONFIG_UART_DA9032_GP12)
+#if defined(CONFIG_I2C_MXC) && defined(CONFIG_UART_DA9052_GP12)
 	unsigned char buf[4];
 	unsigned base;
 	if (uart_base)

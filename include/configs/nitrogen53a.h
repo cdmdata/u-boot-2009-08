@@ -32,7 +32,7 @@
 
 #undef CONFIG_UART_BASE_ADDR
 #define CONFIG_UART_BASE_ADDR		UART1_BASE_ADDR
-#define CONFIG_UART_DA9032_GP12		/* Low means new board - UART3, high means old board - UART1 */
+#define CONFIG_UART_DA9052_GP12		/* Low means new board - UART3, high means old board - UART1 */
 
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
