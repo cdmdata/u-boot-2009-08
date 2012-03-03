@@ -223,15 +223,15 @@ plug_start:
 	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE
 
 	config_uart_clocks
-#if (UART_INIT_MASK & 1 == 1)
+#if ((UART_INIT_MASK & 1) == 1)
 	BigMov	r3,UART1_BASE
 	bl	setup_uart
 #endif
-#if (UART_INIT_MASK & 2 == 2)
+#if ((UART_INIT_MASK & 2) == 2)
 	BigMov	r3,UART2_BASE
 	bl	setup_uart
 #endif
-#if (UART_INIT_MASK & 4 == 4)
+#if ((UART_INIT_MASK & 4) == 4)
 	BigMov	r3,UART3_BASE
 	bl	setup_uart
 #endif
@@ -573,29 +573,29 @@ ReceiveX:
 	strh	r0,[r1, #WDOG_WSR]
 	mov	r1,#0x80000
 1:
-#if (UART_RX_MASK & 1 != 0)
+#if ((UART_RX_MASK & 1) != 0)
 	ldr	r0,uart_bases
 	ldr	r0,[r0,#USR2]
 	tst	r0,#1
 	movne	r0,#0
 	strne	r0,uart_index
 	ldrne	r0,uart_bases
-#if (UART_RX_MASK & 6 != 0)
+#if ((UART_RX_MASK & 6) != 0)
 	bne	2f
 #endif
 #endif
-#if (UART_RX_MASK & 2 != 0)
+#if ((UART_RX_MASK & 2) != 0)
 	ldr	r0,uart_bases+4
 	ldr	r0,[r0,#USR2]
 	tst	r0,#1
 	movne	r0,#1
 	strne	r0,uart_index
 	ldrne	r0,uart_bases+4
-#if (UART_RX_MASK & 4 != 0)
+#if ((UART_RX_MASK & 4) != 0)
 	bne	2f
 #endif
 #endif
-#if (UART_RX_MASK & 4 != 0)
+#if ((UART_RX_MASK & 4) != 0)
 	ldr	r0,uart_bases+8
 	ldr	r0,[r0,#USR2]
 	tst	r0,#1
@@ -615,7 +615,7 @@ ReceiveX:
 //IN: r0 - character(s) to transmit, r1 - trashed
 TransmitX:
 1:
-#if (UART_TX_MASK & 1 == 1)
+#if ((UART_TX_MASK & 1) == 1)
 	ldr	r1,uart_bases
 	ldr	r1, [r1, #USR2]
 	tst	r1, #(1<<3)
@@ -624,7 +624,7 @@ TransmitX:
 	ldr	r1,uart_bases
 	str	r0, [r1, #UTXD]
 #endif
-#if (UART_TX_MASK & 2 == 2)
+#if ((UART_TX_MASK & 2) == 2)
 2:
 	ldr	r1,uart_bases+4
 	ldr	r1, [r1, #USR2]
@@ -634,7 +634,7 @@ TransmitX:
 	ldr	r1,uart_bases+4
 	str	r0, [r1, #UTXD]
 #endif
-#if (UART_TX_MASK & 4 == 4)
+#if ((UART_TX_MASK & 4) == 4)
 3:
 	ldr	r1,uart_bases+8
 	ldr	r1, [r1, #USR2]
