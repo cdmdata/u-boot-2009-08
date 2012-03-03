@@ -726,10 +726,14 @@ static int const di0_prgb_pins[] = {
 	0
 };
 
+#ifndef CONFIG_TFP410_BUS
+#define CONFIG_TFP410_BUS I2C2_BASE_ADDR
+#endif
+
 void init_display_pins(void)
 {
 	unsigned machid = get_machid();
-	unsigned tfp410_bus = I2C2_BASE_ADDR;
+	unsigned tfp410_bus = CONFIG_TFP410_BUS;
 	unsigned tfp410_i2c_addr = 0x38;
 	unsigned char buf[4];
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
