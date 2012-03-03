@@ -423,7 +423,11 @@ static void setup_uart(void)
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
 	if ((system_rev & 0xf00) == 0x100) {
 #else
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+	if (0) {
+#else
 	if (1) {
+#endif
 #endif
 		/* Nitrogen53/ Nitrogen A rev 1 */
 		/* UART3 RXD */
