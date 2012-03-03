@@ -19,8 +19,8 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __NITROGEN53A_H
-#define __NITROGEN53A_H
+#ifndef __NITROGEN53K_H
+#define __NITROGEN53K_H
 
 #include <configs/nitrogen53.h>
 #undef CONFIG_MACH_TYPE
