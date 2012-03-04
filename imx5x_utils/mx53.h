@@ -64,8 +64,18 @@
 #define UART3_BASE	0x5000c000
 
 #define UART_INIT_MASK	0x7	/* Initialize UARTS 1, 2, 3 */
-#define UART_TX_MASK	0x7	/* Initialize UARTS 1, 2, 3 */
-#define UART_RX_MASK	0x7	/* Initialize UARTS 1, 2, 3 */
+
+#ifdef CONFIG_UART_TX_MASK
+#define UART_TX_MASK	CONFIG_UART_TX_MASK
+#else
+#define UART_TX_MASK	0x7	/* Tx UARTS 1, 2, 3 */
+#endif
+
+#ifdef CONFIG_UART_RX_MASK
+#define UART_RX_MASK	CONFIG_UART_RX_MASK
+#else
+#define UART_RX_MASK	0x7	/* Rx UARTS 1, 2, 3 */
+#endif
 
 #ifdef CONFIG_UART_BASE_ADDR
 #if CONFIG_UART_BASE_ADDR == UART1_BASE
