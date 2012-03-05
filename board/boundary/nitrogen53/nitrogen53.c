@@ -756,10 +756,8 @@ void init_display_pins(void)
 	mxc_request_iomux(MX53_PIN_GPIO_1, IOMUX_CONFIG_ALT4);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_1, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
-	/* Some boards enable backlight power supply with this */
+	/* Some boards enable backlight power supply with this (NitrogenA) */
 	Set_GPIO_output_val(MAKE_GP(2, 16), 1);
-	mxc_request_iomux(MX53_PIN_EIM_A22, IOMUX_CONFIG_ALT1);
-	mxc_iomux_set_pad(MX53_PIN_EIM_A22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
 	/* backlight power enable for GE board, rts on UART3 for nitrogen53 */
 	Set_GPIO_input(MAKE_GP(3, 31));
@@ -1274,7 +1272,12 @@ int board_mmc_init(bd_t *bis)
 
 int board_init(void)
 {
-#ifdef CONFIG_MFG
+	/* Nitrogen A, disable 12V display power */
+	Set_GPIO_output_val(MAKE_GP(2, 16), 0);
+	mxc_request_iomux(MX53_PIN_EIM_A22, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_A22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+
+	#ifdef CONFIG_MFG
 /* MFG firmware need reset usb to avoid host crash firstly */
 #define USBCMD 0x140
 	int val = readl(OTG_BASE_ADDR + USBCMD);
@@ -1549,6 +1552,10 @@ int board_late_init(void)
 #ifdef CONFIG_VIDEO_IMX5X
 	setup_display();
 #endif
+	/* gpio3[22] - Power button */
+	mxc_request_iomux(MX53_PIN_EIM_D22, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_D22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+	Set_GPIO_input(MAKE_GP(3, 22));
 	/* gpio3[23] - KEEPON */
 	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D23, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
