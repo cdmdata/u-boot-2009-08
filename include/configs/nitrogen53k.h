@@ -50,16 +50,16 @@
 #define CONFIG_TFP410_BUS	I2C3_BASE_ADDR
 #define CONFIG_W3_CS_PIN	MX53_PIN_EIM_DA3
 #define CONFIG_W3_CS		MAKE_GP(3, 3)	/* EIM_DA3 */
-#define UART_TX_MASK	0x4	/* UART 3 only */
-#define UART_RX_MASK	0x4	/* UART 3 only */
+#define CONFIG_UART_TX_MASK	0x4	/* UART 3 only */
+#define CONFIG_UART_RX_MASK	0x4	/* UART 3 only */
 
 #else
 #define CONFIG_UART_BASE_ADDR	UART1_BASE_ADDR
 #define CONFIG_TFP410_BUS	I2C2_BASE_ADDR
 #define CONFIG_W3_CS_PIN	MX53_PIN_EIM_D24
 #define CONFIG_W3_CS		MAKE_GP(3, 24)	/* EIM_D24 */
-#define UART_TX_MASK	0x1	/* UART 1 only */
-#define UART_RX_MASK	0x1	/* UART 1 only */
+#define CONFIG_UART_TX_MASK	0x1	/* UART 1 only */
+#define CONFIG_UART_RX_MASK	0x1	/* UART 1 only */
 #define CONFIG_DA9052_CHARGER_ENABLE
 #endif
 
