@@ -365,9 +365,11 @@ int power_up_ddr(unsigned i2c_base, unsigned chip)
 		if (ret >= 0) {
 			if (ret & 0x10)
 				gp12_val = 1;
+#ifdef CONFIG_GP12_UART_SELECT
 			if (uart_index != 1)
 				uart_index = gp12_val ? 0 : 2;	/* gp12 high means old rev, uart1,  */
 								/* gp12 low means new rev, uart3 */
+#endif
 			debug_pr("statusd=%x\n", ret);
 		}
 	}
