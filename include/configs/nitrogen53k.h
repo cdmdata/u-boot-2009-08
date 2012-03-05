@@ -60,6 +60,7 @@
 #define CONFIG_W3_CS		MAKE_GP(3, 24)	/* EIM_D24 */
 #define UART_TX_MASK	0x1	/* UART 1 only */
 #define UART_RX_MASK	0x1	/* UART 1 only */
+#define CONFIG_DA9052_CHARGER_ENABLE
 #endif
 
 //#define CONFIG_POWER_KEY
