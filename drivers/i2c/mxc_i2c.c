@@ -176,7 +176,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf,
 	__REG16(base + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX | I2CR_RSTA;
 
 	if (tx_byte(base, chip << 1 | 1, 1)) {
-		printf("%s:Send 2th chip address fail(%x)\n",
+		printf("%s:Send 2nd chip address fail(%x)\n",
 		       __func__, __REG16(base + I2SR));
 		/* send stop */
 		__REG16(base + I2CR) = I2CR_IEN | I2CR_TX_NO_AK;
