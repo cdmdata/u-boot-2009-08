@@ -23,7 +23,10 @@ include $(TOPDIR)/config.mk
 
 LIB	= $(obj)lib$(BOARD).a
 
-COBJS	:= nitrogen53.o
+COBJS-y	:= nitrogen53.o
+COBJS-$(CONFIG_BQ2416X_CHARGER) += bq2416x.o
+COBJS   := $(COBJS-y)
+
 SOBJS	:= lowlevel_init.o flash_header.o
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)

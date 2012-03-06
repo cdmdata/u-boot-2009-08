@@ -32,6 +32,7 @@
 #include <netdev.h>
 #include <malloc.h>
 #include "da9052.h"
+#include "bq2416x.h"
 
 //#define DEBUG		//if enabled, also enable in start.S
 #ifdef DEBUG
@@ -82,8 +83,6 @@ static enum boot_device boot_dev;
 
 #define GPIO_DIR 4
 #define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
-
-#define N53_I2C_CONNECTOR_BUFFER_ENABLE		MAKE_GP(3, 10)
 
 unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR,
 		GPIO5_BASE_ADDR, GPIO6_BASE_ADDR, GPIO7_BASE_ADDR};
@@ -788,10 +787,11 @@ void init_display_pins(void)
 		printf("LDO10 reg of DA9053 failed\n");
 	udelay(500);
 #endif
+#ifdef N53_I2C_CONNECTOR_BUFFER_ENABLE
 	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 0);	//disable external i2c connector
-	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
-	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
-
+	mxc_request_iomux(PIN_N53_I2C_CONNECTOR_BUFFER, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(PIN_N53_I2C_CONNECTOR_BUFFER, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+#endif
 	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
 	udelay(5);
 	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
@@ -812,7 +812,9 @@ void init_display_pins(void)
 			break;
 		}
 	}
+#ifdef N53_I2C_CONNECTOR_BUFFER_ENABLE
 	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 1);	//reenable external i2c connector
+#endif
 }
 
 static int const di0_lvds_pins[] = {
@@ -1338,13 +1340,37 @@ int board_init(void)
 	if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, 0x3a, 1, (uchar *)"\x5f", 1))
 		printf("reg 0x3a (LDO9) of DA9053 failed\n");
 #endif
+
+#ifdef CONFIG_I2C_MXC
+	setup_i2c(I2C2_BASE_ADDR);
+	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C2_SPEED, CONFIG_SYS_I2C_SLAVE);
+#endif
+
+#ifdef CONFIG_BQ2416X_CHARGER
+#define I2C2_HUB_EDID				MAKE_GP(3, 8)		/* EIM_DA8 */
+#define I2C2_HUB_BQ24163			MAKE_GP(3, 9)		/* EIM_DA9 */
+#define I2C2_HUB_AMBIENT			MAKE_GP(3, 10)		/* EIM_DA10 */
+#define I2C2_HUB_CAMERA				MAKE_GP(6, 10)		/* NANDF_RB0 */
+	Set_GPIO_output_val(I2C2_HUB_EDID, 0);		/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_BQ24163, 1);	/* Enable */
+	Set_GPIO_output_val(I2C2_HUB_AMBIENT, 0);	/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_CAMERA, 0);	/* Disable */
+	mxc_request_iomux(MX53_PIN_EIM_DA8, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA8, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
+	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
+	bq2416x_init();
+#endif
+
 #ifdef CONFIG_MXC_FEC
 	setup_fec();
 #endif
 
 #ifdef CONFIG_I2C_MXC
-	setup_i2c(I2C2_BASE_ADDR);
-	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C2_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_i2c(I2C3_BASE_ADDR);
 	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C3_SPEED, CONFIG_SYS_I2C_SLAVE);
 	setup_core_voltages();
@@ -2034,35 +2060,45 @@ U_BOOT_CMD(
 #include <power_key.h>
 
 static int prev_power_key = -1 ;
-static unsigned long when_pressed ;
+static unsigned long when_pressed;
+static unsigned long when_tested;
 static int do_power_down = 0 ;
 
 void check_power_key(void)
 {
-	int rval ;
+	int rval;
+	int newval;
+	unsigned long cur_time = get_timer(0);
 	u8 buf[1] = { 0 };
 
+	if ((unsigned long)(cur_time - when_tested) < 10)
+		return;
 	rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
 			    DA9052_STATUSA_REG, 1,
 			    buf, sizeof (buf));
 	if (0 != rval)
-		return ;
+		return;
 
-	int newval = (buf[0]&1)^1; /* high means not pressed */
-	if (newval != prev_power_key) {
-		prev_power_key = newval ;
+#ifdef CONFIG_BQ2416X_WATCHDOG
+	bq2416x_watchdog(cur_time);
+#endif
+	when_tested = cur_time;
+	newval = (buf[0] & 1) ^ 1;	/* high means not pressed */
+	if (prev_power_key != newval) {
+		prev_power_key = newval;
 		if (newval)
-                        when_pressed = get_timer(0);
+                        when_pressed = cur_time;
 	} else if (1 == prev_power_key) {
-		long long elapsed = get_timer(when_pressed);
-		if (200 <= elapsed) {
-			do_power_down = 1 ;
+		if ((unsigned long)(cur_time - when_pressed) >= 200) {
+			do_power_down = 1;
+			when_pressed = cur_time;
 		}
 	} else if (do_power_down) {
-		long long elapsed = get_timer(when_pressed);
-		if (10 <= elapsed) {
+		/* Debounce so that power is not switching on and off */
+		if ((unsigned long)(cur_time - when_pressed) >= 100) {
 			printf( "power down\n");
 			poweroff(0,0,0,0);
+			do_power_down = 0;
 		}
 	}
 }
