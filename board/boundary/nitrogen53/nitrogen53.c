@@ -1107,13 +1107,21 @@ int esdhc_gpio_init(bd_t *bis)
  * WL1271(TiWi) wireless LAN/BT,
  */
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+#ifdef CONFIG_K2
+#define N53_WL1271_WL_EN	MAKE_GP(2, 3)	/* ATA_DATA3, high active en */
+#define N53_WL1271_BT_EN	MAKE_GP(2, 2)	/* ATA_DATA2, high active en */
+#define N53_WL1271_BT_FUNC5	MAKE_GP(2, 0)	/* ATA_DATA0, input (HOST_WU) */
+#define N53_WL1271_INT		MAKE_GP(2, 1)	/* ATA_DATA1 - wlan_irq */
+#define N53_EMMC_RESET		MAKE_GP(7, 10)	/* ATA_CS_1 - eMMC reset */
+#else
 #define N53_WL1271_WL_EN	MAKE_GP(3, 0)	/* EIM_DA0, high active en */
 #define N53_WL1271_BT_EN	MAKE_GP(3, 1)	/* EIM_DA1, high active en */
 #define N53_WL1271_BT_FUNC2	MAKE_GP(1, 9)	/* GPIO_9, output (BT_WU) */
 #define N53_WL1271_BT_FUNC5	MAKE_GP(3, 9)	/* EIM_DA9, input (HOST_WU) */
 #define N53_WL1271_INT		MAKE_GP(7, 9)	/* ATA_CS_0 - wlan_irq */
-
 #define N53_EMMC_RESET		MAKE_GP(3, 8)	/* EIM_DA8 - eMMC reset */
+#endif
+
 #else
 #define N53_WL1271_WL_EN	MAKE_GP(3, 0)	/* EIM_DA0, high active en */
 #define N53_WL1271_BT_EN	MAKE_GP(3, 1)	/* EIM_DA1, high active en */
@@ -1129,9 +1137,32 @@ int esdhc_gpio_init(bd_t *bis)
 			Set_GPIO_output_val(N53_WL1271_WL_EN, 0);
 			Set_GPIO_output_val(N53_WL1271_BT_EN, 0);
 			Set_GPIO_input(N53_WL1271_BT_FUNC5);
+#ifdef N53_WL1271_BT_FUNC2
 			Set_GPIO_output_val(N53_WL1271_BT_FUNC2, 0);
+#endif
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+#ifdef CONFIG_K2
+			/* EMMC Reset */
+			mxc_request_iomux(MX53_PIN_ATA_CS_1, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_ATA_CS_1, 0);
+			/* wl1271 wl_irq */
+			mxc_request_iomux(MX53_PIN_ATA_DATA1, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA1, WL12XX_IRQ_PAD_CTL);
+			/* wl1271 wl_en */
+			mxc_request_iomux(MX53_PIN_ATA_DATA3, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA3, 0x0);
+			/* wl1271 bt_en */
+			mxc_request_iomux(MX53_PIN_ATA_DATA2, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA2, 0x0);
+			/* wl1271 btfunc5 */
+			mxc_request_iomux(MX53_PIN_ATA_DATA0, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_ATA_DATA0, WL12XX_BTFUNC5_PAD_CTL);
+			/* osc 32.768 */
+			mxc_request_iomux(MX53_PIN_GPIO_10, IOMUX_CONFIG_ALT1);
+			mxc_iomux_set_pad(MX53_PIN_GPIO_10, 0);
+#else
+			/* EMMC Reset */
 			mxc_request_iomux(MX53_PIN_EIM_DA8, IOMUX_CONFIG_ALT1);
 			mxc_iomux_set_pad(MX53_PIN_EIM_DA8, 0);
 
@@ -1150,9 +1181,7 @@ int esdhc_gpio_init(bd_t *bis)
 			/* wl1271 btfunc2 */
 			mxc_request_iomux(MX53_PIN_GPIO_9, IOMUX_CONFIG_ALT1);
 			mxc_iomux_set_pad(MX53_PIN_GPIO_9, WL12XX_BTFUNC2_PAD_CTL);
-			/* osc 32.768 */
-			mxc_request_iomux(MX53_PIN_GPIO_10, IOMUX_CONFIG_ALT1);
-			mxc_iomux_set_pad(MX53_PIN_GPIO_10, 0);
+#endif
 #else
 			mxc_request_iomux(MX53_PIN_EIM_A25, IOMUX_CONFIG_ALT1);
 			mxc_iomux_set_pad(MX53_PIN_EIM_A25, 0);
