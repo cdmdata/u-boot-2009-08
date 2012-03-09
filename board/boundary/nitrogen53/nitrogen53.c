@@ -1346,11 +1346,13 @@ int board_init(void)
 	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C2_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
 
+#define PAD_CTL_NORMAL_LOW_OUT	PAD_CTL_360K_PD		/* pull down disabled */
+
 #ifdef CONFIG_BQ2416X_CHARGER
-#define I2C2_HUB_EDID				MAKE_GP(3, 8)		/* EIM_DA8 */
-#define I2C2_HUB_BQ24163			MAKE_GP(3, 9)		/* EIM_DA9 */
-#define I2C2_HUB_AMBIENT			MAKE_GP(3, 10)		/* EIM_DA10 */
-#define I2C2_HUB_CAMERA				MAKE_GP(6, 10)		/* NANDF_RB0 */
+#define I2C2_HUB_EDID		MAKE_GP(3, 8)		/* EIM_DA8 */
+#define I2C2_HUB_BQ24163	MAKE_GP(3, 9)		/* EIM_DA9 */
+#define I2C2_HUB_AMBIENT	MAKE_GP(3, 10)		/* EIM_DA10 */
+#define I2C2_HUB_CAMERA		MAKE_GP(6, 10)		/* NANDF_RB0 */
 	Set_GPIO_output_val(I2C2_HUB_EDID, 0);		/* Disable */
 	Set_GPIO_output_val(I2C2_HUB_BQ24163, 0);	/* Disable */
 	Set_GPIO_output_val(I2C2_HUB_AMBIENT, 0);	/* Disable */
@@ -1359,11 +1361,35 @@ int board_init(void)
 	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
-	mxc_iomux_set_pad(MX53_PIN_EIM_DA8, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
-	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
-	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
-	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	/* pullup disabled */
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA8, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
 	bq2416x_init();
+#endif
+
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
+#define I2C2_HUB_PIC16F616_TOUCH	MAKE_GP(3, 7)		/* EIM_DA7 */
+#define I2C2_HUB_BATT_EDID		MAKE_GP(6, 11)		/* NANDF_CS0 */
+#define I2C2_HUB_SC16IS7XX		MAKE_GP(3, 9)		/* EIM_DA9 */
+/* This is also N53_I2C_CONNECTOR_BUFFER_ENABLE same as Nitrogen53 board */
+#define I2C2_HUB_TFP410_ACCEL		MAKE_GP(3, 10)		/* EIM_DA10 */
+#define I2C2_HUB_CAMERA			MAKE_GP(6, 10)		/* NANDF_RB0 */
+	Set_GPIO_output_val(I2C2_HUB_PIC16F616_TOUCH, 0);	/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_BATT_EDID, 0);		/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_SC16IS7XX, 0);		/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_TFP410_ACCEL, 0);		/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_CAMERA, 0);		/* Disable */
+	mxc_request_iomux(MX53_PIN_EIM_DA7, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_NANDF_CS0, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA7, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_NANDF_CS0, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
 #endif
 
 #ifdef CONFIG_MXC_FEC
