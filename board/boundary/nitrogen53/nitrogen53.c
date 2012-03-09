@@ -1352,7 +1352,7 @@ int board_init(void)
 #define I2C2_HUB_AMBIENT			MAKE_GP(3, 10)		/* EIM_DA10 */
 #define I2C2_HUB_CAMERA				MAKE_GP(6, 10)		/* NANDF_RB0 */
 	Set_GPIO_output_val(I2C2_HUB_EDID, 0);		/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_BQ24163, 1);	/* Enable */
+	Set_GPIO_output_val(I2C2_HUB_BQ24163, 0);	/* Disable */
 	Set_GPIO_output_val(I2C2_HUB_AMBIENT, 0);	/* Disable */
 	Set_GPIO_output_val(I2C2_HUB_CAMERA, 0);	/* Disable */
 	mxc_request_iomux(MX53_PIN_EIM_DA8, IOMUX_CONFIG_ALT1);
