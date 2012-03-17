@@ -23,6 +23,7 @@
 #define __NITROGEN53K_H
 
 #include <configs/nitrogen53.h>
+#define CONFIG_H5PS2G83AFR_S6	/* 1G total memory */
 #define CONFIG_K2	/* Next rev of Nitrogenk */
 
 #undef CONFIG_MACH_TYPE
