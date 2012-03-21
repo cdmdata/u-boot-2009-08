@@ -19,8 +19,8 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __NITROGEN53A_H
-#define __NITROGEN53A_H
+#ifndef __NITROGEN53_1G_H
+#define __NITROGEN53_1G_H
 
 #include <configs/nitrogen53.h>
 #define CONFIG_H5PS2G83AFR_S6	/* 1G total memory */
