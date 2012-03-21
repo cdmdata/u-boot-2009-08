@@ -725,15 +725,13 @@ static int const di0_prgb_pins[] = {
 	0
 };
 
-#ifndef CONFIG_TFP410_BUS
-#define CONFIG_TFP410_BUS I2C2_BASE_ADDR
-#endif
-
 void init_display_pins(void)
 {
 	unsigned machid = get_machid();
+#ifdef CONFIG_TFP410_BUS
 	unsigned tfp410_bus = CONFIG_TFP410_BUS;
 	unsigned tfp410_i2c_addr = 0x38;
+#endif
 	unsigned char buf[4];
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
 	int const *pins = di0_prgb_pins ;
@@ -780,6 +778,7 @@ void init_display_pins(void)
 	writel(CONFIG_PWM2_PERIOD - 2, pwm_base + PWMPR);
 	writel(0x03c20001, pwm_base + PWMCR);
 
+#ifdef CONFIG_TFP410_BUS
 	/* Power up LDO10 of DA9053 for tfp410 */
 #ifdef CONFIG_TFP410_LDO10
 	buf[0] = 0x6a;
@@ -814,6 +813,7 @@ void init_display_pins(void)
 	}
 #ifdef N53_I2C_CONNECTOR_BUFFER_ENABLE
 	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 1);	//reenable external i2c connector
+#endif
 #endif
 }
 

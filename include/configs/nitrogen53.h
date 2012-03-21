@@ -78,6 +78,7 @@
 #define CONFIG_MXC_UART 1
 #define CONFIG_UART_BASE_ADDR   UART2_BASE_ADDR
 #define CONFIG_TFP410_LDO10
+#define CONFIG_TFP410_BUS I2C2_BASE_ADDR
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE

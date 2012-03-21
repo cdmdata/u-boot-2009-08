@@ -24,4 +24,7 @@
 
 #include <configs/nitrogen53.h>
 #define CONFIG_H5PS2G83AFR_S6	/* 1G total memory */
+#undef CONFIG_TFP410_LDO10
+#undef CONFIG_TFP410_BUS
+
 #endif
