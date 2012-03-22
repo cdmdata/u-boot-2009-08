@@ -306,8 +306,11 @@
 	//H5PS2G83AFR_S6  DDR2-800(400Mhz), RL=6, WR=15ns, tRCD=6, tRP=6
 	//1GB   = 3 bank bits(8 banks) + 15 row bits + 10 column bits + 2 bits(32 bit width) = 30 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	H5PS2G83AFR_S6,        2, 400, 3, 15, 10, 6, 5, 6, 6, 6, 0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
-
+						//dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+#ifndef CONFIG_H5PS2G83AFR_S6_CALIBRATION
+#define CONFIG_H5PS2G83AFR_S6_CALIBRATION	0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
+#endif
+	ddr_type	H5PS2G83AFR_S6,        2, 400, 3, 15, 10, 6, 5, 6, 6, 6, CONFIG_H5PS2G83AFR_S6_CALIBRATION
 	//H5PS2G83AFR_S5  DDR2-800(400Mhz), RL=5, WR=15ns, tRCD=5, tRP=5
 	//1GB   = 3 bank bits(8 banks) + 15 row bits + 10 column bits + 2 bits(32 bit width) = 30 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
