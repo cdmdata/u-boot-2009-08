@@ -567,49 +567,9 @@
 	.equiv	IIM_BASE,	0x63f98000	//weird 0x53ffc000 in documentation
 	.equiv	SRC_BASE,	0x53fd0000	//System reset controller
 
-	.equiv	I_STAT,		0x0000
-	.equiv	I_STATM,	0x0004
-	.equiv	I_ERR,		0x0008
-	.equiv	I_EMASK,	0x000c
-	.equiv	I_FCTL,		0x0010
-	.equiv	I_UA,		0x0014		//top 6 bits of fuse bit #, (3 bits bank #, 11 bits within bank)
-	.equiv	I_LA,		0x0018		//bottom 8 bits of 14 bit fuse #
-	.equiv	I_SDAT,		0x001c
-	.equiv	I_PREV,		0x0020
-	.equiv	I_SREV,		0x0024
-	.equiv	I_PREG_P,	0x0028
 	.equiv	PREV_EXPECTED,	0xfa
 
 	.equiv	I_SI_REV,	0x081c		//fuse 0x38-0x3f (56-63)
-//below same as mx51
-	.equiv	I_UID7,		0x0820
-	.equiv	I_UID6,		0x0824
-	.equiv	I_UID5,		0x0828
-	.equiv	I_UID4,		0x082c
-	.equiv	I_UID3,		0x0830
-	.equiv	I_UID2,		0x0834
-	.equiv	I_UID1,		0x0838
-	.equiv	I_UID0,		0x083c
-
-	.equiv	I_FBAC1,	0x0c00		//bank 1, FUSE bank Access Protection register, fuse 256-263
-	.equiv	I_SJC_RESP6,	0x0c08
-	.equiv	I_SJC_RESP5,	0x0c0c
-	.equiv	I_SJC_RESP4,	0x0c10
-	.equiv	I_SJC_RESP3,	0x0c14
-	.equiv	I_SJC_RESP2,	0x0c18
-	.equiv	I_SJC_RESP1,	0x0c1c
-	.equiv	I_SJC_RESP0,	0x0c20
-	.equiv	I_MAC_ADDR5,	0x0c24
-	.equiv	I_MAC_ADDR4,	0x0c28
-	.equiv	I_MAC_ADDR3,	0x0c2c
-	.equiv	I_MAC_ADDR2,	0x0c30
-	.equiv	I_MAC_ADDR1,	0x0c34
-	.equiv	I_MAC_ADDR0,	0x0c38
-//
-	//(SRC) System reset controller
-	.equiv	SRC_SCR,	0x000
-	.equiv	SRC_SBMR,	0x004
-	.equiv	SRC_SRSR,	0x008
 
 	.macro fuse_table
 	fentry "PREV", I_PREV
