@@ -624,6 +624,7 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.word	0x73fa83a8, MUX_SD1_DATA3	//SW_MUX_CTL_PAD_SD1_DATA3
 	.word	0x73fa83ac, MUX_SD1_CD		//SW_MUX_CTL_PAD_CD, GPIO1_0 is card detect
 	.word	0x73fa83b0, MUX_SD1_WP		//SW_MUX_CTL_PAD_WP, GPIO1_1 is write protect
+	.word	0
 	.endm
 
 	.macro mmc_get_cd

@@ -1031,6 +1031,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	_IOM+0x2f0, 0			//SW_MUX_CTL_PAD_SD1_DATA2
 	.word	_IOM+0x2f4, 0			//SW_MUX_CTL_PAD_SD1_CLK
 	.word	_IOM+0x2f8, 0			//SW_MUX_CTL_PAD_SD1_DATA3
+	.word	0
 	.endm
 
 	.macro mmc_get_cd
