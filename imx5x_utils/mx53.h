@@ -109,7 +109,7 @@
 #define WDOG_BASE	(AIPS1_BASE_ADDR + 0x00098000)
 #define CCM_BASE	(AIPS1_BASE_ADDR + 0x000d4000)
 #define I2C1_BASE_ADDR  (AIPS2_BASE_ADDR + 0x000C8000)
-#define I2C_BASE	I2C1_BASE_ADDR
+
 #define ESD_BASE	(AIPS2_BASE_ADDR + 0x000d9000)
 #define ESD_CTL		0x000
 #define ESD_PDC		0x004
@@ -192,6 +192,10 @@
 #define DLL_RST1  (1 << 8)
 #define SDCS0	0
 #define SDCS1	8
+
+/* Platform choices */
+#define I2C_BASE	I2C1_BASE_ADDR
+#define ECSPI_BASE	ECSPI1_BASE
 
 #ifdef ASM
 /* (4 bits) ddr type
@@ -311,6 +315,7 @@
 #define CONFIG_H5PS2G83AFR_S6_CALIBRATION	0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
 #endif
 	ddr_type	H5PS2G83AFR_S6,        2, 400, 3, 15, 10, 6, 5, 6, 6, 6, CONFIG_H5PS2G83AFR_S6_CALIBRATION
+
 	//H5PS2G83AFR_S5  DDR2-800(400Mhz), RL=5, WR=15ns, tRCD=5, tRP=5
 	//1GB   = 3 bank bits(8 banks) + 15 row bits + 10 column bits + 2 bits(32 bit width) = 30 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
