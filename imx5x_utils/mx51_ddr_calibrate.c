@@ -3,7 +3,7 @@
 #include "mx51.h"
 
 #define FAST_INDEX (1 << 10)		//test 4K of memory
-#define AGGRESSIVE_INDEX (1 << 16)
+#define AGGRESSIVE_INDEX (1 << 18)
 /*
   Perform calibration for write and read delay parameters.
   Read: DQS to DQ timing is relative to the i.MX51 internally.
