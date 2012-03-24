@@ -96,6 +96,13 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	ci.file_size = 0;
 	header_search(&ci);
 	header_update_end(&ci);
+	if (!ci.hdr) {
+		//use 1st header if no 2nd header
+		my_printf("2nd header missing, using 1st\n");
+		ci.search = destX;
+		header_search(&ci);
+		header_update_end(&ci);
+	}
 	if (ci.buf < ci.end)
 		if (ci.buf != src)
 			my_memcpy(ci.buf, src, ci.end - ci.buf);
