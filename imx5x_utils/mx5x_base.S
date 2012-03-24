@@ -315,13 +315,18 @@ init_tab:
 	.short	0x4027		//UCR2 (0x84)
 	.short	0x0704		//UCR3 (0x88)
 	.short	0x8000		//UCR4 (0x8c)
-	.short	0x0901		//UFCR (0x90)
+#if (UART_PREDIV == 7)
+#define TO_PREDIV(a)	6
+#else
+#define TO_PREDIV(a)	(6 - a)
+#endif
+	.short	0x0801 | (TO_PREDIV(UART_PREDIV) << 7)	//UFCR (0x90)
 	.short	0x2050		//USR1 (0x94)
 	.short	0x5088		//USR2 (0x98)
 	.short	0x002b		//UESC (0x9c)
 	.short	0x0000		//UTIM (0xa0)
-	.short	0x0d54		//UBIR (0xa4)
-	.short	0x270f		//UBMR (0xa8)
+	.short	UART_MULT_VAL-1	//UBIR (0xa4)
+	.short	UART_DIV_VAL-1	//UBMR (0xa8)
 	.short	0x0004		//UBRC (0xac), read only
 	.short	0x0000		//ONEMS (0xb0)
 	.short	0x0060		//UTS (0xb4)

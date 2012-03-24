@@ -11,6 +11,15 @@
 #define EMRS1_ODT_TERM_DISABLED		(0)
 
 #define EMRS1_DQS_SINGLE_BIT	10
+/*
+ * pll2/10 = 66.5 MHz
+ * 66500000 /16 /2 *16 /289 = 115051 baud
+ * pll3/10 = 21.6 MHz
+ * 21600000 /16 /4 *3413 /10000 = 115188 baud
+ */
+#define UART_PREDIV	4
+#define UART_MULT_VAL	3413	//3413 - 1 = 0x0d54
+#define UART_DIV_VAL	10000	//10000 - 1 = 0x270f
 
 #ifdef ASM
 	.macro init_l1cc
