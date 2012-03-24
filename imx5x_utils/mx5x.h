@@ -13,6 +13,19 @@
 #define EMRS1_DQS_SINGLE_BIT	10
 
 #ifdef ASM
+	.macro init_l1cc
+	.endm
+
+	/*
+	 * Disable L2 cache
+	 */
+	.macro init_l2cc
+	mrc	p15, 1, r0, c9, c0, 2		// Read L2 aux control reg
+	orr	r0, r0, #(1 << 25)		// Disable write combining (HW workaround)
+	mcr	p15, 1, r0, c9, c0, 2		// Update L2 aux control reg
+	.endm
+
+
 	.equiv	I_STAT,		0x0000
 	.equiv	I_STATM,	0x0004
 	.equiv	I_ERR,		0x0008

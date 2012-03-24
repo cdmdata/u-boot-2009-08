@@ -56,17 +56,26 @@
 	.macro hw_init aips1_base, aips2_base
 	BigMov	r0, ARM_CPSR_MODE_SVC|ARM_CPSR_IRQDISABLE|ARM_CPSR_FIQDISABLE|ARM_CPSR_PRECISE
 	msr	cpsr_xc, r0			// update CPSR control bits
+	/*
+	 * Invalidate L1 I/D
+	 */
+	mov	r0, #0			@ set up for MCR
+	mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs
+	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
 
-	mrc	p15, 1, r0, c9, c0, 2		// Read L2 aux control reg
-	orr	r0, r0, #(1 << 25)		// Disable write combining (HW workaround)
-	mcr	p15, 1, r0, c9, c0, 2		// Update L2 aux control reg
-
-// Disable MMU and both the instruction and data caches
+	/*
+	 * Disable MMU and both the instruction and data caches
+	 */
 	mrc	p15, 0, r0, c1, c0, 0		// r0 = system control reg
-// disable ICache, disable DCache, disable MMU, set vector base to 0x00000000
-	BigBic2	r0, ARM_CTRL_ICACHE | ARM_CTRL_DCACHE | ARM_CTRL_MMU | ARM_CTRL_VECTORS
-	orr	 r0, r0, #ARM_CTRL_FLOW		// program flow prediction enabled
+	/*
+	 * disable ICache, disable DCache, disable MMU, set vector base to 0x00000000
+	 */
+	BigBic2	r0, ARM_CTRL_VECTORS | ARM_CTRL_ICACHE | ARM_CTRL_DCACHE | ARM_CTRL_MMU
+	BigOrr2	r0, ARM_CTRL_FLOW | ARM_CTRL_ALIGNMENT	// program flow prediction enabled
 	mcr	 p15, 0, r0, c1, c0, 0		// update system control reg
+
+	init_l1cc
+	init_l2cc
 
 // Configure ARM coprocessor access control register
 	BigMov	 r0, ARM_CACR_CONFIG		// r0 = CACR configuration
