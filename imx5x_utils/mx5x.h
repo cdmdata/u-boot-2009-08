@@ -86,6 +86,105 @@
 	.byte	 ((\offset) & 0xff), ((\offset) >> 8), (\mask)
 	.endm
 
+	.macro	fuse_check_rev	rIIM
+	ldr	r0, [\rIIM, #I_PREV]
+	cmp	r0, #PREV_EXPECTED
+	.endm
+
+	.macro fuse_load_mask rTable, rMask, rTmp
+	ldrb	\rMask,[\rTable], #1
+	.endm
+
+#define PROGRAM_START 1
+#define ESNS_N 8
+#define PGR_LENGTH_MASK 0x70
+
+//Out: r0 - fuse value, r1-r3 trashed
+	.macro	fuse_sense, rIIM, rFuse
+	strb	\rFuse,[\rIIM, #I_LA]
+	mov	r0, \rFuse,LSR #8
+	strb	r0, [\rIIM, #I_UA]
+
+	mov	r0, #3
+	strb	r0, [\rIIM, #I_STAT]
+	ldrb	r0, [\rIIM, #I_FCTL]
+	and	r0, r0, #PGR_LENGTH_MASK
+	orr	r0, r0, #ESNS_N
+	strb	r0, [\rIIM, #I_FCTL]
+91:	ldrb	r0, [\rIIM, #I_STAT]
+	tst	r0, #1
+	beq	91b
+	ldrb	r0, [\rIIM, #I_SDAT]
+	bl	print_hex_byte
+	bl	TransmitCRLF
+	ldrb	r0, [\rIIM, #I_SDAT]
+	.endm
+
+//In: rFuse >= r4
+//Out: r0 has error code, r0-r3 trashed
+	.macro	fuse_burn_single rIIM, rCCM, rFuse
+	ldr	r1, [\rCCM, #CCM_CGPR]
+	orr	r1, r1, #0x10		//turn on programming supply
+	str	r1, [\rCCM, #CCM_CGPR]
+
+	mov	r1, #3
+	strb	r1, [\rIIM, #I_STAT]
+	mov	r1, #0xff
+	strb	r1, [\rIIM, #I_ERR]
+
+	strb	\rFuse, [\rIIM, #I_LA]
+	mov	r0, \rFuse, LSR #8
+	strb	r0, [\rIIM, #I_UA]
+
+	ldrb	r0, [\rIIM, #I_FCTL]
+	and	r0, r0, #PGR_LENGTH_MASK
+	orr	r0, r0, #PROGRAM_START
+#if 1
+	mov	r1, #0xaa
+	strb	r1, [\rIIM, #I_PREG_P]
+
+	strb	r0, [\rIIM, #I_FCTL]
+93:	ldrb	r0, [\rIIM, #I_STAT]
+	tst	r0, #2		//wait for program done
+	beq	93b
+#endif
+	mov	r0, #0x55
+	strb	r0, [\rIIM, #I_PREG_P]
+
+	ldr	r1, [\rCCM, #CCM_CGPR]
+	bic	r1, r1, #0x10		//turn off programming supply
+	str	r1, [\rCCM, #CCM_CGPR]
+
+	ldrb	r0,[\rIIM, #I_ERR]
+	.endm
+
+//Out: rTmp - err code if z-0
+	.macro fuse_burn rIIM, rCCM, rMask, rOffset, rTmp
+	b	91f
+90:
+	mov	r1, #1
+	bic	\rMask, r1, LSL r0
+	add	r0, r0, \rOffset
+//r0 - fuse #
+//Out: r0 - r5, trashed, r6 - error code
+	mov	\rTmp, r0
+	adr	r0, blowing_str
+	bl	transmit_string
+	mov	r0, \rTmp
+	bl	print_hex_byte
+	bl	TransmitCRLF
+
+	fuse_burn_single \rIIM, \rCCM, \rTmp
+	movs	\rTmp, r0
+	bne	92f
+91:
+	clz	r0, \rMask
+	rsbs	r0, r0, #31
+	bcs	90b
+	movs	r0, #0
+92:
+	.endm
+
 	.equiv	M4IF_CNTL_REG0, 0x08c
 
 	.macro ecspi_clk_setup, ccm_base

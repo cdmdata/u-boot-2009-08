@@ -93,8 +93,7 @@ assem_start:
 
 	add	rTable, rTable, #1
 	BigMov	rIIM,IIM_BASE
-	ldr	r0, [rIIM, #I_PREV]
-	cmp	r0, #PREV_EXPECTED
+	fuse_check_rev	rIIM
 	bne	11f
 1:
 	mov	r0, rTable
@@ -103,25 +102,18 @@ assem_start:
 	ldrb	rOffset,[rTable], #1
 	ldrb	r0,[rTable], #1
 	orr	rOffset, rOffset, r0, LSL #8
-	mov	r0, rOffset
-	bl	sense_fuse
-	ldrb	r7,[rTable], #1
-	bic	rOffset, rOffset, #7
-	ldrb	r0,[rIIM, #I_SDAT]
-	bic	r7, r7, r0
-//r7 has fuses to be burned
-2:
-	clz	r0, r7
-	rsbs	r0, r0, #31
-	bcc	3f
-	mov	r1, #1
-	bic	r7, r1, LSL r0
-	add	r0, r0, rOffset
-	bl	burn_fuse
-	bne	8f
-	b	2b
+	fuse_sense rIIM, rOffset
 
-3:	ldrb	r0,[rTable]
+	fuse_load_mask rTable, r7, r1
+	bics	r7, r7, r0
+	beq	30f
+//r7 has fuses to be burned
+
+	BigMov	r5, CCM_BASE
+	fuse_burn rIIM, r5, r7, rOffset, r6
+	bne	8f
+30:
+	ldrb	r0,[rTable]
 	movs	r0,r0
 	bne	1b
 	b	9f
@@ -143,80 +135,6 @@ assem_start:
 	adr	r0,done_str
 12:	bl	transmit_string
 20:	b	20b
-
-#define PROGRAM_START 1
-#define ESNS_N 8
-#define PGR_LENGTH_MASK 0x70
-
-//In: r0 - fuse #
-//Out: r0-r5 trashed
-sense_fuse:
-	mov	r5, lr
-	strb	r0,[rIIM, #I_LA]
-	mov	r0,r0,LSR #8
-	strb	r0,[rIIM, #I_UA]
-
-	mov	r0,#3
-	strb	r0,[rIIM, #I_STAT]
-	ldrb	r0,[rIIM, #I_FCTL]
-	and	r0, r0, #PGR_LENGTH_MASK
-	orr	r0, r0, #ESNS_N
-	strb	r0,[rIIM, #I_FCTL]
-1:	ldrb	r0,[rIIM, #I_STAT]
-	tst	r0,#1
-	beq	1b
-	ldrb	r0,[rIIM, #I_SDAT]
-	bl	print_hex_byte
-	bl	TransmitCRLF
-	mov	pc, r5
-
-//In: r0 - fuse #
-//Out: r0 - r5, trashed, r6 - error code
-burn_fuse:
-	mov	r5, lr
-	mov	r6, r0
-	adr	r0, blowing_str
-	bl	transmit_string
-	mov	r0, r6
-	bl	print_hex_byte
-	bl	TransmitCRLF
-
-	BigMov	r2, CCM_BASE
-	ldr	r1, [r2, #CCM_CGPR]
-	orr	r1, r1, #0x10		//turn on programming supply
-	str	r1, [r2, #CCM_CGPR]
-
-	mov	r1,#3
-	strb	r1,[rIIM, #I_STAT]
-	mov	r1,#0xff
-	strb	r1,[rIIM, #I_ERR]
-
-	strb	r6,[rIIM, #I_LA]
-	mov	r6,r6,LSR #8
-	strb	r6,[rIIM, #I_UA]
-
-	ldrb	r0,[rIIM, #I_FCTL]
-	and	r0, r0, #PGR_LENGTH_MASK
-	orr	r0, r0, #PROGRAM_START
-#if 1
-	mov	r1,#0xaa
-	strb	r1,[rIIM, #I_PREG_P]
-
-	strb	r0,[rIIM, #I_FCTL]
-1:	ldrb	r0,[rIIM, #I_STAT]
-	tst	r0,#2		//wait for program done
-	beq	1b
-#endif
-	mov	r0,#0x55
-	strb	r0,[rIIM, #I_PREG_P]
-
-	ldr	r1, [r2, #CCM_CGPR]
-	bic	r1, r1, #0x10		//turn off programming supply
-	str	r1, [r2, #CCM_CGPR]
-
-	ldrb	r6,[rIIM, #I_ERR]
-	tst	r6,#0xff
-	mov	pc, r5
 
 
 //In: r0 @asciz str
