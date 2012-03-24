@@ -77,7 +77,7 @@ int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	}
 #endif
 	if (ci.hdr)
-		debug_dump((void *)ci.hdr, start_block, 1);
+		debug_dump((void *)ci.hdr, offset, 1);
 	flush_uart();
 	if (pstart)
 		*pstart = ci.dest;
