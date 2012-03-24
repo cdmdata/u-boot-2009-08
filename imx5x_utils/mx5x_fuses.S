@@ -1,5 +1,7 @@
 	.global assem_start
 
+#include <asm/BigMacro.h>
+#include <asm/char.inc>
 #define ASM
 #include "imx.h"
 #include "mx5x.h"
@@ -13,8 +15,6 @@
 #define rOffset r9
 #define rIIM r12
 
-#include <asm/BigMacro.h>
-#include <asm/char.inc>
 
 #define L1(a)          ((CH_##a))
 #define L2(a,b)     ((CH_##a)+(CH_##b<<8))
@@ -30,6 +30,7 @@
 
 	.section .text
 assem_start:
+	hw_init	CSP_BASE_REG_PA_AIPS1, CSP_BASE_REG_PA_AIPS2
 	BigMov	sp,STACK_HIGH
 	bl	Basic_Init_IOMux
 	config_uart_clocks
