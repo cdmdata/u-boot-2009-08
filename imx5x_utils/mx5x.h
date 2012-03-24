@@ -1,20 +1,3 @@
-#define GPIO_DR		0x00
-#define GPIO_DIR	0x04
-#define GPIO_PSR	0x08
-
-#define WDOG_WCR  0x00
-#define WDOG_WSR  0x02
-#define WDOG_WRSR 0x04
-#define WDOG_WICR 0x06
-#define WDOG_WMCR 0x08
-
-#define AIPSREG_MPR0_OFFSET	0x0000
-#define AIPSREG_MPR1_OFFSET	0x0004
-#define AIPSREG_OPACR0_OFFSET	0x0040
-#define AIPSREG_OPACR1_OFFSET	0x0044
-#define AIPSREG_OPACR2_OFFSET	0x0048
-#define AIPSREG_OPACR3_OFFSET	0x004C
-#define AIPSREG_OPACR4_OFFSET	0x0050
 
 //MRS defines
 #define MRS_DLL_RESET (1 << 8)
@@ -29,48 +12,7 @@
 
 #define EMRS1_DQS_SINGLE_BIT	10
 
-#define ERROR_NO_HEADER		-9
-#define ERROR_MEMORY_TEST	-10
-#define ERROR_GP12_LOW		-11
-#define ERROR_MAX		-12
-
 #ifdef ASM
-	.equiv	URXD,	0x0000
-	.equiv	UTXD,	0x0040
-	.equiv	UCR1,	0x0080
-	.equiv	UCR2,	0x0084
-	.equiv	UCR3,	0x0088
-	.equiv	UCR4,	0x008c
-	.equiv	UFCR,	0x0090
-	.equiv	USR1,	0x0094
-	.equiv	USR2,	0x0098
-	.equiv	UESC,	0x009c
-	.equiv	UTIM,	0x00a0
-	.equiv	UBIR,	0x00a4
-	.equiv	UBMR,	0x00a8
-	.equiv	UBRC,	0x00ac
-	.equiv	ONEMS,	0x00b0
-	.equiv	UTS,	0x00b4
-
-	.macro	debug_ch ch
-	stmdb	sp!,{r0,r1,lr}
-	mov	r0, #\ch
-	bl	TransmitX
-	ldmia	sp!,{r0,r1,lr}
-	.endm
-
-	.macro	debug_hex reg
-	stmdb	sp!,{r0,r1,r2,r3,lr}
-	str	\reg, [sp, #-4]!
-	mov	r0, #' '
-	bl	TransmitX
-	ldr	r0,[sp]
-	bl	print_hex
-	add	sp, sp, #4
-	ldmia	sp!,{r0,r1,r2,r3,lr}
-	.endm
-
-
 	.equiv	I_STAT,		0x0000
 	.equiv	I_STATM,	0x0004
 	.equiv	I_ERR,		0x0008
@@ -121,19 +63,6 @@
 	.asciz	"\name"
 	.byte	 ((\offset) & 0xff), ((\offset) >> 8), (\mask)
 	.endm
-
-	.equiv	CCM_CCDR, 0x04
-	.equiv	CCM_CBCDR, 0x14
-	.equiv	CCM_CSCMR1, 0x1c
-	.equiv	CCM_CSCDR1, 0x24
-	.equiv	CCM_CLPCR, 0x054
-	.equiv	CCM_CGPR, 0x64
-	.equiv	CCM_CCGR1, 0x6c
-	.equiv	CCM_CCGR2, 0x70
-	.equiv	CCM_CCGR3, 0x74
-	.equiv	CCM_CCGR4, 0x78
-	.equiv	CCM_CCGR5, 0x7c
-	.equiv	CCM_CCGR6, 0x80
 
 	.equiv	M4IF_CNTL_REG0, 0x08c
 
@@ -298,40 +227,4 @@
 	cmp r0, #0x0
 	bne 1b
 	.endm
-
-#define IPU_CONF		0x000
-#define IPU_DISP_GEN		0x0C4
-#define IPU_CH_DB_MODE_SEL0	0x150
-#define IPU_CH_DB_MODE_SEL1	0x154
-#define IPU_CH_TRB_MODE_SEL0	0x178
-#define IPU_CH_TRB_MODE_SEL1	0x17c
-
-#define IDMAC_CONF		0x000
-#define IDMAC_CH_EN_1		0x004
-#define IDMAC_CH_EN_2		0x008
-#define IDMAC_WM_EN_1		0x01C
-#define IDMAC_WM_EN_2		0x020
-
-
-.macro init_disable_ipu ipu_cm_reg_base, ipu_idmac_base
-	mov	r1,#\ipu_cm_reg_base
-	ldr	r0,[r1, #IPU_DISP_GEN]
-	bic	r0, r0, #(3 << 24)	//clear DI0/DI1 counter release
-	str	r0,[r1, #IPU_DISP_GEN]
-
-	mov	r0, #0
-	str	r0,[r1, #IPU_CONF]	//disable DI0/DI1
-#if 0
-	add	r2, r1, #\ipu_idmac_base - \ipu_cm_reg_base
-	str	r0, [r2, #IDMAC_CH_EN_1]
-	str	r0, [r2, #IDMAC_CH_EN_2]
-	str	r0, [r2, #IDMAC_WM_EN_1]
-	str	r0, [r2, #IDMAC_WM_EN_2]
-
-	str	r0, [r1, #IPU_CH_DB_MODE_SEL0]
-	str	r0, [r1, #IPU_CH_DB_MODE_SEL1]
-	str	r0, [r1, #IPU_CH_TRB_MODE_SEL0]
-	str	r0, [r1, #IPU_CH_TRB_MODE_SEL1]
-#endif
-.endm
 #endif

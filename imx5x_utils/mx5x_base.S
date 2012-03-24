@@ -33,6 +33,7 @@
 #include <asm/BigMacro.h>
 #include <asm/char.inc>
 #define ASM
+#include "imx.h"
 #include "mx5x.h"
 #ifdef CONFIG_MX51
 #include "mx51.h"
@@ -40,83 +41,6 @@
 #include "mx53.h"
 #endif
 //#define DEBUG
-//
-// ARM constants
-//
-	.equiv	ARM_CPSR_PRECISE,	(1 << 8)
-	.equiv	ARM_CPSR_IRQDISABLE,	(1 << 7)
-	.equiv	ARM_CPSR_FIQDISABLE,	(1 << 6)
-	.equiv	ARM_CPSR_MODE_SVC,	0x13
-
-	.equiv	ARM_CTRL_MMU,		(1 << 0)
-	.equiv	ARM_CTRL_DCACHE,	(1 << 2)
-	.equiv	ARM_CTRL_FLOW,		(1 << 11)
-	.equiv	ARM_CTRL_ICACHE,	(1 << 12)
-	.equiv	ARM_CTRL_VECTORS,	(1 << 13)
-
-	.equiv	ARM_CACR_FULL,		0x3
-
-	.equiv	ARM_AUXCR_L2EN,		(1 << 1)
-
-// VFP uses coproc 10 for single-precision instructions
-	.equiv	ARM_VFP_SP_COP,		10
-	.equiv	ARM_VFP_SP_ACCESS,	(ARM_CACR_FULL << (ARM_VFP_SP_COP*2))
-
-// VFP uses coproc 11 for double-precision instructions
-	.equiv	ARM_VFP_DP_COP,		11
-	.equiv	ARM_VFP_DP_ACCESS,	(ARM_CACR_FULL << (ARM_VFP_DP_COP*2))
-
-// Configure coprocessor access control
-	.equiv	ARM_CACR_CONFIG,	(ARM_VFP_SP_ACCESS | ARM_VFP_DP_ACCESS)
-
-
-	.macro hw_init
-	BigMov	r0, ARM_CPSR_MODE_SVC|ARM_CPSR_IRQDISABLE|ARM_CPSR_FIQDISABLE|ARM_CPSR_PRECISE
-	msr	cpsr_xc, r0			// update CPSR control bits
-
-	mrc	p15, 1, r0, c9, c0, 2		// Read L2 aux control reg
-	orr	r0, r0, #(1 << 25)		// Disable write combining (HW workaround)
-	mcr	p15, 1, r0, c9, c0, 2		// Update L2 aux control reg
-
-// Disable MMU and both the instruction and data caches
-	mrc	p15, 0, r0, c1, c0, 0		// r0 = system control reg
-// disable ICache, disable DCache, disable MMU, set vector base to 0x00000000
-	BigBic2	r0, ARM_CTRL_ICACHE | ARM_CTRL_DCACHE | ARM_CTRL_MMU | ARM_CTRL_VECTORS
-	orr	 r0, r0, #ARM_CTRL_FLOW		// program flow prediction enabled
-	mcr	 p15, 0, r0, c1, c0, 0		// update system control reg
-
-// Configure ARM coprocessor access control register
-	BigMov	 r0, ARM_CACR_CONFIG		// r0 = CACR configuration
-	mcr	 p15, 0, r0, c1, c0, 2		// update CACR
-	.word	 0xF57FF06F			// ISB
-
-// Configure AHB<->IP-bus interface (AIPS) registers
-	BigMov	 r1, CSP_BASE_REG_PA_AIPS1
-	BigMov	 r2, CSP_BASE_REG_PA_AIPS2
-
-// Except for AIPS regs, configure all peripherals as follows:
-// unbuffered writes (MBW=0), disable supervisor protect (SP=0)
-// disable write protect (WP=0), disable trusted protect (TP=0)
-	mov	 r0, #0
-	str	 r0, [r1, #AIPSREG_OPACR0_OFFSET]
-	str	 r0, [r1, #AIPSREG_OPACR1_OFFSET]
-	str	 r0, [r1, #AIPSREG_OPACR2_OFFSET]
-	str	 r0, [r1, #AIPSREG_OPACR3_OFFSET]
-	str	 r0, [r1, #AIPSREG_OPACR4_OFFSET]
-	str	 r0, [r2, #AIPSREG_OPACR0_OFFSET]
-	str	 r0, [r2, #AIPSREG_OPACR1_OFFSET]
-	str	 r0, [r2, #AIPSREG_OPACR2_OFFSET]
-	str	 r0, [r2, #AIPSREG_OPACR3_OFFSET]
-	str	 r0, [r2, #AIPSREG_OPACR4_OFFSET]
-
-// Set all MPRx to be non-bufferable, trusted for R/W,
-// not forced to user-mode.
-	ldr	 r0, =(0x77777777)
-	str	 r0, [r1, #AIPSREG_MPR0_OFFSET]
-	str	 r0, [r1, #AIPSREG_MPR1_OFFSET]
-	str	 r0, [r2, #AIPSREG_MPR0_OFFSET]
-	str	 r0, [r2, #AIPSREG_MPR1_OFFSET]
-	.endm
 
 	.section .header_mem,"x"
 header_base:
@@ -217,7 +141,7 @@ pe:	.word	program_end
 plug_start:
 	/* Save the return address and the function arguments */
 	push	{r0-r12, lr}
-	hw_init
+	hw_init CSP_BASE_REG_PA_AIPS1, CSP_BASE_REG_PA_AIPS2
 	bl	Basic_Init_IOMux
 	init_gps
 	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE

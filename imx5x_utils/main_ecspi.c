@@ -1,6 +1,6 @@
 #include <stdarg.h>
 //#define DEBUG
-#include "mx5x.h"
+#include "imx.h"
 #include "mx5x_common.h"
 #include "mx5x_ecspi.h"
 #define NULL 0

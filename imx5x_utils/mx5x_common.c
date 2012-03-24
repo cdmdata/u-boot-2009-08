@@ -3,7 +3,7 @@
 //#define DEBUG
 #include "mx5x_common.h"
 #include "mx5x_i2c.h"
-#include "mx5x.h"
+#include "imx.h"
 
 #define UTXD 0x0040
 #define USR2 0x0098

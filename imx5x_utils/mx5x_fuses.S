@@ -1,6 +1,7 @@
 	.global assem_start
 
 #define ASM
+#include "imx.h"
 #include "mx5x.h"
 #ifdef mx51
 #include "mx51.h"
