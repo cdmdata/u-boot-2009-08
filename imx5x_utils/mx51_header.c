@@ -8,7 +8,7 @@ void mx51_header_search(struct common_info *pinfo)
 	for (;;) {
 		struct app_header *hdr = (struct app_header *)pinfo->search;
 		void *pdest = (void *)&hdr->app_dest_ptr;
-		debug_pr("hdr=%x pdest=%x buf=%x\n", hdr, pdest, pinfo->buf);
+		debug_pr("hdr=%x pdest=%x buf=%x start=%x barker=%x\n", hdr, pdest, pinfo->buf, hdr->app_start_addr, hdr->app_barker);
 		if (pdest >= pinfo->buf)
 			break;
 		if (hdr->app_barker == APP_BARKER) {
