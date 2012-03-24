@@ -33,15 +33,15 @@ assem_start:
 	BigMov	sp,STACK_HIGH
 	bl	Basic_Init_IOMux
 	config_uart_clocks
-#if (UART_INIT_MASK & 1 == 1)
+#if (UART_INIT_MASK & 1)
 	BigMov	r3,UART1_BASE
 	bl	setup_uart
 #endif
-#if (UART_INIT_MASK & 2 == 2)
+#if (UART_INIT_MASK & 2)
 	BigMov	r3,UART2_BASE
 	bl	setup_uart
 #endif
-#if (UART_INIT_MASK & 4 == 4)
+#if (UART_INIT_MASK & 4)
 	BigMov	r3,UART3_BASE
 	bl	setup_uart
 #endif
@@ -318,7 +318,7 @@ TransmitSPACE:
 //IN: r0 - character(s) to transmit, r1 - trashed
 TransmitX:
 1:
-#if (UART_TX_MASK & 1 == 1)
+#if (UART_TX_MASK & 1)
 
 	ldr	r1,uart_bases
 	ldr	r1, [r1, #USR2]
@@ -328,7 +328,7 @@ TransmitX:
 	ldr	r1,uart_bases
 	str	r0, [r1, #UTXD]
 #endif
-#if (UART_TX_MASK & 2 == 2)
+#if (UART_TX_MASK & 2)
 2:
 	ldr	r1,uart_bases+4
 	ldr	r1, [r1, #USR2]
@@ -338,7 +338,7 @@ TransmitX:
 	ldr	r1,uart_bases+4
 	str	r0, [r1, #UTXD]
 #endif
-#if (UART_TX_MASK & 4 == 4)
+#if (UART_TX_MASK & 4)
 3:
 	ldr	r1,uart_bases+8
 	ldr	r1, [r1, #USR2]
