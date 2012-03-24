@@ -10,9 +10,19 @@ void check_page_size(int base)
 	unsigned block_size;
 	read_block_rtn read_rtn;
 	write_blocks_rtn write_rtn;
+	int i = 0;
 
 	ecspi_init(base);
-	offset_bits = identify_chip_rtns(base, &block_size, &read_rtn, &write_rtn);
+	for (;;) {
+		offset_bits = identify_chip_rtns(base, &block_size, &read_rtn, &write_rtn);
+		if (offset_bits)
+			break;
+		i++;
+		if (i > 7)
+			break;
+	}
+	if (i)
+		my_printf("offset_bits=%x\n", offset_bits);
 	if (offset_bits && (block_size != (1 << offset_bits))) {
 		//atmel and not a power of 2
 		my_printf("Unsupported page size of 0x%x bytes.\n", block_size);
