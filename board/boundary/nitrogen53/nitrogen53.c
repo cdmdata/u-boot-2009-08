@@ -42,6 +42,7 @@ void TransmitX(char ch);
 #define debug_putc(ch)
 #endif
 
+#define N53_BUTTON_100KPU_PAD_CTL	(PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | PAD_CTL_100K_PU)
 
 #if CONFIG_I2C_MXC
 #include <i2c.h>
@@ -1635,7 +1636,7 @@ int board_late_init(void)
 #endif
 	/* gpio3[22] - Power button */
 	mxc_request_iomux(MX53_PIN_EIM_D22, IOMUX_CONFIG_ALT1);
-	mxc_iomux_set_pad(MX53_PIN_EIM_D22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+	mxc_iomux_set_pad(MX53_PIN_EIM_D22, N53_BUTTON_100KPU_PAD_CTL);
 	Set_GPIO_input(MAKE_GP(3, 22));
 	/* gpio3[23] - KEEPON */
 	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
