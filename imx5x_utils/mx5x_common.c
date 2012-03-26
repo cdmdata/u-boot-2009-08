@@ -199,6 +199,8 @@ int common_exec_program(struct common_info *pinfo)
 	return (int)rtn;
 }
 
+int is_vbuckcore_boosted(void);
+
 int ram_test(unsigned *ram_base)
 {
 	unsigned *p = ram_base;
@@ -216,6 +218,10 @@ int ram_test(unsigned *ram_base)
 	for (;;) {
 		if (p >= p_end) {
 //			my_printf("ram test passed\r\n");
+#if defined(CONFIG_ALLOW_VBUCKCORE_BOOST_IF_OLD) || defined(CONFIG_ALLOW_VBUCKCORE_BOOST)
+			if (!is_vbuckcore_boosted())
+				my_printf("Warning: using old rev code for new board, please update firmware!!!\r\n");
+#endif
 			return 1;
 		}
 		val[0] = p[0];
@@ -276,10 +282,14 @@ static unsigned char da9052_init_data[] = {
 		0x1b, 0x09,		/* gp12 input, no LDO9_en , active low */
 };
 
+unsigned char vbuckcore_val = 0;
+
 int i2c_write_byte(unsigned i2c_base, unsigned chip, unsigned reg, unsigned char val)
 {
 	unsigned char buf[4];
 	buf[0] = val;
+	if (reg == 0x2e)
+		vbuckcore_val = val;
 	return i2c_write(i2c_base, chip, reg, 1, buf, 1);
 }
 
@@ -303,6 +313,8 @@ int i2c_read_byte(unsigned i2c_base, unsigned chip, unsigned reg)
 	ret = i2c_read(i2c_base, chip, reg, 1, buf, 1);
 	if (ret)
 		return -1;
+	if (reg == 0x2e)
+		vbuckcore_val = buf[0];
 	return buf[0];
 }
 
@@ -315,6 +327,15 @@ static const unsigned char da9052_boost_vbuckcore_data[] = {
 #endif
 
 unsigned gp12_val = 0;
+
+int is_vbuckcore_boosted()
+{
+	int ret = vbuckcore_val;
+	if ((ret & 0x7f) >= 0x60)
+		return 1;
+	return 0;
+}
+
 //Return 0 if voltage was boosted
 int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 {
