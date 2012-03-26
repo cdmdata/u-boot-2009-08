@@ -306,11 +306,13 @@ int i2c_read_byte(unsigned i2c_base, unsigned chip, unsigned reg)
 	return buf[0];
 }
 
+#if defined(CONFIG_ALLOW_VBUCKCORE_BOOST_IF_OLD) || defined(CONFIG_ALLOW_VBUCKCORE_BOOST)
 static const unsigned char da9052_boost_vbuckcore_data[] = {
 		0x2e, 0x73,		/* on,  VBUCKCORE (0x73:1.775V) , old rev of board*/
 		0x3c, 0x61,		/* go:core */
 		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
 };
+#endif
 
 unsigned gp12_val = 0;
 //Return 0 if voltage was boosted
