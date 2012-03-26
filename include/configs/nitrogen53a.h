@@ -28,14 +28,8 @@
 #undef CONFIG_BOARD_NAME
 #define CONFIG_BOARD_NAME	"MX53-Nitrogen_A"
 
-#if 0
-/* This will damage DDR on new boards if enabled */
-#define CONFIG_BOOST_VBUCKCORE
-#endif
-
 #undef CONFIG_UART_BASE_ADDR
-#define CONFIG_UART_BASE_ADDR		UART1_BASE_ADDR
-#define CONFIG_UART_DA9052_GP12		/* Low means new board - UART3, high means old board - UART1 */
+#define CONFIG_UART_BASE_ADDR		UART3_BASE_ADDR
 
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
