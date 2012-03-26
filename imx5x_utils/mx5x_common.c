@@ -317,7 +317,7 @@ unsigned gp12_val = 0;
 int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 {
 	int ret;
-#ifndef CONFIG_BOOST_VBUCKCORE
+#ifdef CONFIG_ALLOW_VBUCKCORE_BOOST_IF_OLD
 	unsigned srev = *((int *)0x63f98024); /* silicon revision */
 	if (srev >= 3)
 		return -5;
@@ -327,12 +327,16 @@ int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 		return ret;
 	if (ret == 0x73)
 		return 1;
-#ifndef CONFIG_BOOST_VBUCKCORE
+#ifdef CONFIG_ALLOW_VBUCKCORE_BOOST_IF_OLD
 	if (gp12_val == 0)
 		return ERROR_GP12_LOW;	/* gp12 is grounded (new rev), don't change voltage */
 #endif
+#if defined(CONFIG_ALLOW_VBUCKCORE_BOOST_IF_OLD) || defined(CONFIG_ALLOW_VBUCKCORE_BOOST)
 	ret = i2c_write_array(i2c_base, chip, da9052_boost_vbuckcore_data, sizeof(da9052_boost_vbuckcore_data));
 	delayMicro(1000);
+#else
+	ret = -6;
+#endif
 	return ret;
 }
 
