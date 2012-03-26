@@ -250,12 +250,7 @@ static unsigned char da9052_init_data[] = {
 #endif
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
 //		0x34, 0x73,		/* on,  LDO3, 3.0V (73:3.0V) default (7f:3.3v) */
-#ifdef CONFIG_BOOST_VBUCKCORE
-		/* Always boost Nitrogen A */
-		0x2e, 0x73,		/* on,  VBUCKCORE (0x73:1.775V) , Nitrogen53A*/
-#else
 		0x2e, 0x5d,		/* on,  VBUCKCORE, 1.225V  (0x73:1.775V) if old rev of board*/
-#endif
 		0x2f, 0x61,		/* on,  VBUCK_PRO, 1.302V (61:1.325V) */
 		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
 		0x3c, 0x7f,		/* go:core, pro, mem, LDO2, LDO3 */
@@ -322,16 +317,20 @@ unsigned gp12_val = 0;
 int vbuckcore_boost(unsigned i2c_base, unsigned chip)
 {
 	int ret;
+#ifndef CONFIG_BOOST_VBUCKCORE
 	unsigned srev = *((int *)0x63f98024); /* silicon revision */
 	if (srev >= 3)
 		return -5;
+#endif
 	ret = i2c_read_byte(i2c_base, chip, 0x2e);
 	if (ret < 0)
 		return ret;
 	if (ret == 0x73)
 		return 1;
+#ifndef CONFIG_BOOST_VBUCKCORE
 	if (gp12_val == 0)
 		return ERROR_GP12_LOW;	/* gp12 is grounded (new rev), don't change voltage */
+#endif
 	ret = i2c_write_array(i2c_base, chip, da9052_boost_vbuckcore_data, sizeof(da9052_boost_vbuckcore_data));
 	delayMicro(1000);
 	return ret;
