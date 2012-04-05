@@ -787,6 +787,10 @@ void init_display_pins(void)
 		printf("LDO10 reg of DA9053 failed\n");
 	udelay(500);
 #endif
+#ifdef CONFIG_TFP410_HUB_EN
+	Set_GPIO_output_val(CONFIG_TFP410_HUB_EN, 1);		/* Enable */
+#endif
+
 #ifdef N53_I2C_CONNECTOR_BUFFER_ENABLE
 	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 0);	//disable external i2c connector
 	mxc_request_iomux(PIN_N53_I2C_CONNECTOR_BUFFER, IOMUX_CONFIG_ALT1);
@@ -814,6 +818,9 @@ void init_display_pins(void)
 	}
 #ifdef N53_I2C_CONNECTOR_BUFFER_ENABLE
 	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 1);	//reenable external i2c connector
+#endif
+#ifdef CONFIG_TFP410_HUB_EN
+	Set_GPIO_output_val(CONFIG_TFP410_HUB_EN, 0);		/* Disable */
 #endif
 #endif
 }
@@ -1371,25 +1378,30 @@ int board_init(void)
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
 #define I2C2_HUB_PIC16F616_TOUCH	MAKE_GP(3, 7)		/* EIM_DA7 */
+#define I2C2_HUB_CAMERA			MAKE_GP(3, 10)		/* EIM_DA10 */
+#define I2C2_HUB_TFP410_ACCEL		MAKE_GP(3, 11)		/* EIM_DA11 */
 #define I2C2_HUB_BATT_EDID		MAKE_GP(6, 11)		/* NANDF_CS0 */
-#define I2C2_HUB_SC16IS7XX		MAKE_GP(3, 9)		/* EIM_DA9 */
-/* This is also N53_I2C_CONNECTOR_BUFFER_ENABLE same as Nitrogen53 board */
-#define I2C2_HUB_TFP410_ACCEL		MAKE_GP(3, 10)		/* EIM_DA10 */
-#define I2C2_HUB_CAMERA			MAKE_GP(6, 10)		/* NANDF_RB0 */
+#define I2C2_HUB_OLD_EMPTY		MAKE_GP(3, 9)		/* EIM_DA9 */
+#define I2C3_HUB_SC16IS7XX		MAKE_GP(6, 10)		/* NANDF_RB0 */
 	Set_GPIO_output_val(I2C2_HUB_PIC16F616_TOUCH, 0);	/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_BATT_EDID, 0);		/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_SC16IS7XX, 0);		/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_TFP410_ACCEL, 0);		/* Disable */
 	Set_GPIO_output_val(I2C2_HUB_CAMERA, 0);		/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_TFP410_ACCEL, 0);		/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_BATT_EDID, 0);		/* Disable */
+	Set_GPIO_output_val(I2C2_HUB_OLD_EMPTY, 0);		/* Disable */
+	Set_GPIO_output_val(I2C3_HUB_SC16IS7XX, 0);		/* Disable */
+
 	mxc_request_iomux(MX53_PIN_EIM_DA7, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA11, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_CS0, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
-	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
+
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA7, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA11, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_CS0, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
-	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
 #endif
 
