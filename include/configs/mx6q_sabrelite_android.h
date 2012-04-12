@@ -150,11 +150,11 @@
 		"video=mxcfb0:dev=ldb,LDB-XGA,if=RGB666 " \
 		"video=mxcfb0:dev=hdmi,1920x1080M@60,if=RGB24\0" \
 	"bootargs_nfs=setenv bootargs ${bootargs} root=/dev/nfs " \
-		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp rw rootwait" \
+		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp rw rootwait " \
 		"enable_wait_mode=off\0" \
 	"bootcmd_net=dhcp && run bootargs_base bootargs_nfs && bootm\0" \
 	"bootargs_mmc=setenv bootargs ${bootargs} " \
-		"root=/dev/mmcblk0p1 rootwait rw " \
+		"root=/dev/mmcblk0p1 rootwait rw\0" \
 	"bootcmd_mmc=run bootargs_base bootargs_mmc && mmc dev 1 && " \
 		"mmc read ${loadaddr} 0x800 0x2000 && bootm\0" \
 	"clearenv=sf probe 1 && sf erase 0xc0000 0x2000 && " \
