@@ -627,6 +627,10 @@
 #define SRC_GPR9		0x40
 #define SRC_GPR10		0x44
 
+
+#define HDMI_PHY_STAT0		(HDMI_ARB_BASE_ADDR+0x3004)
+#define HDMI_PHY_STAT0_HPD	0x02
+
 #ifndef __ASSEMBLER__
 
 enum boot_device {
