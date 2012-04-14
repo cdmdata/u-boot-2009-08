@@ -428,6 +428,8 @@ iomux_v3_cfg_t wl12xx_pads[] = {
 	(MX6Q_PAD_NANDF_CS1__GPIO_6_14 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(0x1b0b0),
 	(MX6Q_PAD_NANDF_CS2__GPIO_6_15 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(0x000b0),
 	(MX6Q_PAD_NANDF_CS3__GPIO_6_16 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(0x000b0),
+	/* CCM  */
+	(MX6Q_PAD_GPIO_0__CCM_CLKO & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(0x000b0),		/* SGTL5000 sys_mclk */
 };
 
 int board_init(void)
@@ -444,6 +446,7 @@ int board_init(void)
 	/* Disable wl1271 For Nitrogen6w */
 	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 15) | (1 << 16), 0);
 	mxc_iomux_v3_setup_multiple_pads(wl12xx_pads, ARRAY_SIZE(wl12xx_pads));
+	clk_config_cko1(8000);
 
 	/* board id for linux */
 	gd->bd->bi_arch_number = MACH_TYPE_MX6Q_SABRELITE;
