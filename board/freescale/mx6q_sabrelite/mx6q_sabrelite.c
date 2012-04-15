@@ -447,7 +447,7 @@ int board_init(void)
 	/* Disable wl1271 For Nitrogen6w */
 	set_gpio_output_val(GPIO6_BASE_ADDR, (1 << 15) | (1 << 16), 0);
 	mxc_iomux_v3_setup_multiple_pads(wl12xx_pads, ARRAY_SIZE(wl12xx_pads));
-	clk_config_cko1(8000);
+	clk_config_cko1(8000000);
 
 	/* board id for linux */
 	gd->bd->bi_arch_number = MACH_TYPE_MX6Q_SABRELITE;
