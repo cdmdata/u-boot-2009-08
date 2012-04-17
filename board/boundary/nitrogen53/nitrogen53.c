@@ -1799,7 +1799,6 @@ void check_power_key(void)
 }
 #endif
 
-#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
 
 
 struct da90_regname_t {
@@ -2041,6 +2040,7 @@ U_BOOT_CMD(
 	   "Displays value of ADC_VBBAT\n"
 );
 
+#if (CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K)
 static unsigned char const poweroff_regs[] = {
 	5, 0xff,	/* clear events */
 	6, 0xff,

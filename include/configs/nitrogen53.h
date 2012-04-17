@@ -115,6 +115,8 @@
 #define CONFIG_CMD_CLOCK
 #define CONFIG_REF_CLK_FREQ CONFIG_MX53_HCLK_FREQ
 
+#define CONFIG_CMD_SATA
+
 ///////////
 /*
  * FUSE Configs
@@ -163,6 +165,18 @@
 	#define CONFIG_CMD_EXT2		1
 	#define CONFIG_DYNAMIC_MMC_DEVNO
 //	#define CONFIG_BOOT_PARTITION_ACCESS
+#endif
+
+/*
+ * SATA Configs
+ */
+#ifdef CONFIG_CMD_SATA
+	#define CONFIG_DWC_AHSATA
+	#define CONFIG_SYS_SATA_MAX_DEVICE	1
+	#define CONFIG_DWC_AHSATA_PORT_ID	0
+	#define CONFIG_DWC_AHSATA_BASE_ADDR 	SATA_BASE_ADDR
+	#define CONFIG_LBA48
+	#define CONFIG_LIBATA
 #endif
 
 /*
