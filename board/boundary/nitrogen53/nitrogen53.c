@@ -2047,11 +2047,17 @@ static unsigned char const poweroff_regs[] = {
 	7, 0xff,
 	8, 0xff,
 	9, 0xff,
+#if 1
+	/* deep sleep*/
+	15, 0x7a,	/* deep sleep */
+#else
+	/* Shutdown */
 	10, 0xff,	/* mask interrupts */
 	11, 0xfe,	/* except nONKEY */
 	12, 0xff,
 	13, 0xff,
 	15, 0xaa,	/* power-off */
+#endif
 	DA9052_STATUSA_REG, 0	/* select status_a register */
 };
 
