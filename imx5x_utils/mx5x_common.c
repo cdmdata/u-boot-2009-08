@@ -275,11 +275,17 @@ static unsigned char da9052_init_data[] = {
 		0x41, 0xff,		/* max current for ICHG_BAT, ICHG_PRE */
 		0x43, 0x0f,		/* max 450 minutes */
 #endif
-		0x1a, 0x97,		/* gp11 input, usbotg id */
-		0x1b, 0x09,		/* gp12 input, no LDO9_en */
-		0x45, 0x2f,		/* charge coin cell @200uA to 3.1V */
-		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
-		0x1b, 0x09,		/* gp12 input, no LDO9_en , active low */
+		0x15, 0xee,		/* GPIO 0/1 open drain high */
+		0x16, 0xee,		/* GPIO 2/3 open drain high */
+		0x17, 0xee,		/* GPIO 4/5 open drain high */
+		0x18, 0xee,		/* GPIO 6/7 open drain high */
+		0x19, 0xee,		/* GPIO 8(SYS_EN)/9(PWR_EN) open drain high */
+		0x1a, 0xee,		/* GPIO 10/11(OTG_ID) open drain high */
+		0x45, 0xae,		/* charge coin cell @1mA to 3.0V */
+		0x12, 0xdf,		/* Disable all but backup battery charging during power-down */
+		0x0d, 0xd8,		/* Mask GP11/12 wake up event*/
+		0x1b, 0x0a,		/* GPIO 12 output, open drain, internal pullup, high */
+		0x1b, 0x09,		/* GPIO 12 input, no LDO9_en , active low/ GPIO 13(nVDD_FAULT) */
 };
 
 unsigned char vbuckcore_val = 0;
@@ -322,7 +328,6 @@ int i2c_read_byte(unsigned i2c_base, unsigned chip, unsigned reg)
 static const unsigned char da9052_boost_vbuckcore_data[] = {
 		0x2e, 0x73,		/* on,  VBUCKCORE (0x73:1.775V) , old rev of board*/
 		0x3c, 0x61,		/* go:core */
-		0x1b, 0x0a,		/* gp12 output, open drain, internal pullup, high */
 };
 #endif
 
@@ -398,6 +403,7 @@ int power_up_ddr(unsigned i2c_base, unsigned chip)
 #endif
 			debug_pr("statusd=%x\n", ret);
 		}
+		i2c_write_byte(i2c_base, chip, 0x1b, 0x0e);	/* gp12 output, open drain, external pullup, high */
 	}
 //
 	delayMicro(1000);
