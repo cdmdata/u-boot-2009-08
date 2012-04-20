@@ -249,7 +249,7 @@ int bus_i2c_probe(unsigned base, uchar chip)
 	return ret;
 }
 
-int i2c_bus;
+static int g_bus;
 const unsigned i2c_bases[] = {
 	I2C1_BASE_ADDR,
 	I2C2_BASE_ADDR,
@@ -281,31 +281,31 @@ void bus_i2c_init(unsigned base, int speed, int unused)
 
 int i2c_get_bus_num(void)
 {
-	return i2c_bus;
+	return g_bus;
 }
 
 int i2c_set_bus_num(unsigned bus_idx)
 {
 	if (bus_idx >= ARRAY_SIZE(i2c_bases))
 		return -1;
-	i2c_bus = bus_idx;
+	g_bus = bus_idx;
 	return 0;
 }
 
 int i2c_read(uchar chip, uint addr, int alen, uchar *buf, int len)
 {
-	return bus_i2c_read(i2c_bases[i2c_bus], chip, addr, alen, buf, len);
+	return bus_i2c_read(i2c_bases[g_bus], chip, addr, alen, buf, len);
 }
 int i2c_write(uchar chip, uint addr, int alen, uchar *buf, int len)
 {
-	return bus_i2c_write(i2c_bases[i2c_bus], chip, addr, alen, buf, len);
+	return bus_i2c_write(i2c_bases[g_bus], chip, addr, alen, buf, len);
 }
 int i2c_probe(uchar chip)
 {
-	return bus_i2c_probe(i2c_bases[i2c_bus], chip);
+	return bus_i2c_probe(i2c_bases[g_bus], chip);
 }
 void i2c_init(int speed, int unused)
 {
-	bus_i2c_init(i2c_bases[i2c_bus], speed, unused);
+	bus_i2c_init(i2c_bases[g_bus], speed, unused);
 }
 #endif				/* CONFIG_HARD_I2C */
