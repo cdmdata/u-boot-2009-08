@@ -47,9 +47,6 @@
 #define I2SR_IIF	(1 << 1)
 #define I2SR_RX_NO_AK	(1 << 0)
 
-#define I2C_MAX_TIMEOUT		100000
-#define I2C_TIMEOUT_TICKET	1
-
 #undef DEBUG
 
 #ifdef DEBUG
@@ -78,18 +75,19 @@ static inline void i2c_reset(unsigned base)
 
 static unsigned wait_for_sr_state(unsigned base, unsigned state)
 {
-	int timeout = I2C_MAX_TIMEOUT;
 	unsigned sr;
+	ulong elapsed;
+	ulong start_time = get_timer(0);
 	for (;;) {
 		sr = __REG16(base + I2SR);
 		if ((sr & (state >> 16)) == (unsigned short)state)
 			break;
-		if (!(--timeout)) {
+		elapsed = get_timer(start_time);
+		if (elapsed > 100) {
 			printf("%s: failed sr=%x cr=%x state=%x\n", __func__,
 					sr, __REG16(base + I2CR), state);
 			return 0;
 		}
-		udelay(I2C_TIMEOUT_TICKET);
 	}
 	DPRINTF("%s:%x\n", __func__, sr);
 	return sr | 0x10000;
@@ -146,6 +144,7 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 			return -1;
 		}
 	}
+	udelay(10);
 	if (tx_byte(base, chip << 1, 0)) {
 		printf("%s:chip address cycle fail(%x)\n",
 		       __func__, __REG16(base + I2SR));
