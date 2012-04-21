@@ -28,14 +28,28 @@
 
 void eth_parse_enetaddr(const char *addr, uchar *enetaddr)
 {
-	char *end;
 	int i;
-
 	for (i = 0; i < 6; ++i) {
-		enetaddr[i] = addr ? simple_strtoul(addr, &end, 16) : 0;
-		if (addr)
-			addr = (*end) ? end + 1 : end;
+		unsigned val = 0;
+		if (addr) {
+			char *end;
+			val = simple_strtoul(addr, &end, 16);
+			addr = end;
+			if (val > 0xff)
+				break;
+			if (i < 5) {
+				if (*addr != ':')
+					break;
+				addr++;
+			} else if (*addr)
+				break;
+		}
+		enetaddr[i] = (unsigned char)val;
 	}
+	if (i == 6)
+		return;
+	for (i = 0; i < 6; ++i)
+		enetaddr[i] = 0;
 }
 
 int eth_getenv_enetaddr(char *name, uchar *enetaddr)
