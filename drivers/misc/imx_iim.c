@@ -212,14 +212,14 @@ static void fuse_blow_row(s32 bank, s32 row, s32 value)
 	for (i = 0; i < 8; i++) {
 		if (((value >> i) & 0x1) == 0)
 			continue;
-	if (fuse_blow_bit(bank, row, i) != 0) {
+		if (fuse_blow_bit(bank, row, i) != 0) {
 			printf("fuse_blow_bit(bank: %d, row: %d, "
-				"bit: %d failed\n",
-				bank, row, i);
+					"bit: %d failed\n",
+					bank, row, i);
 		}
-    }
-    reg &= ~0x10;
-    writel(reg, CCM_BASE_ADDR + 0x64);
+	}
+	reg &= ~0x10;
+	writel(reg, CCM_BASE_ADDR + 0x64);
 }
 
 int iim_blow(int bank, int row, int val)
@@ -315,26 +315,38 @@ int iim_blow_func(char *func_name, char *func_val)
 		}
 	} else if (0 == strcmp(func_name, "fecmac")) {
 		u8 ea[6] = { 0 };
+		u8 ea_val[6] = { 0 };
+		u8 ea_result[6] = { 0 };
 
+		/* Read the Mac address */
+		iim_read_mac_addr(ea);
 		if (NULL == func_val) {
-			/* Read the Mac address and print it */
-			iim_read_mac_addr(ea);
-
 			printf("FEC MAC address: ");
 			printf("0x%02x:0x%02x:0x%02x:0x%02x:0x%02x:0x%02x\n\n",
 				ea[0], ea[1], ea[2], ea[3], ea[4], ea[5]);
 
 			return 0;
 		}
-
-		eth_parse_enetaddr(func_val, ea);
-		if (!is_valid_ether_addr(ea)) {
+		eth_parse_enetaddr(func_val, ea_val);
+		if (!is_valid_ether_addr(ea_val)) {
 			printf("Error: invalid mac address parameter!\n");
-			err = -1;
-		} else {
-			for (i = 0; i < 6; ++i)
-				fuse_blow_row(1, i + 9, ea[i]);
+			return -1;
 		}
+		for (i = 0; i < 6; ++i) {
+			ea_result[i] = ea[i] | ea_val[i];
+			if (ea_result[i] != ea_val[i]) {
+				printf("current %02x:%02x:%02x:%02x:%02x:%02x"
+					"\n\n", ea[0], ea[1], ea[2],
+					ea[3], ea[4], ea[5]);
+				printf("desired %02x:%02x:%02x:%02x:%02x:%02x"
+					"\n\n", ea_val[0], ea_val[1], ea_val[2],
+					ea_val[3], ea_val[4], ea_val[5]);
+				printf("Error: cannot un-blow fuses!\n");
+				return -1;
+			}
+		}
+		for (i = 0; i < 6; ++i)
+			fuse_blow_row(1, i + 9, ea_val[i]);
 	} else {
 		printf("This command is not supported\n");
 	}
