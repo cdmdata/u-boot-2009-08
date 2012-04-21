@@ -71,6 +71,7 @@ static inline void i2c_reset(unsigned base)
 #define ST_BUS_BUSY (I2SR_IBB | (I2SR_IBB << 16))
 #define ST_BYTE_COMPLETE (I2SR_ICF | (I2SR_ICF << 16))
 #define ST_BYTE_PENDING (0 | (I2SR_ICF << 16))
+#define ST_IIF (I2SR_IIF | (I2SR_IIF << 16))
 
 static unsigned wait_for_sr_state(unsigned base, unsigned state)
 {
@@ -92,17 +93,12 @@ static unsigned wait_for_sr_state(unsigned base, unsigned state)
 	return sr | 0x10000;
 }
 
-static int tx_byte(unsigned base, u8 byte, int clear_wait)
+static int tx_byte(unsigned base, u8 byte)
 {
 	unsigned sr;
+	__REG16(base + I2SR) = 0;
 	__REG16(base + I2DR) = byte;
-	if (clear_wait) {
-		/* cannot use
-		 * wait_for_sr_state(base, ST_BYTE_PENDING);
-		 * because the time period low is very very small */
-		udelay(10);
-	}
-	sr = wait_for_sr_state(base, ST_BYTE_COMPLETE);
+	sr = wait_for_sr_state(base, ST_IIF);
 	if ((!sr) || (sr & I2SR_RX_NO_AK)) {
 		printf("%s: sr=%x byte=%x\n", __func__, sr, byte);
 		return -1;
@@ -143,14 +139,13 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 			return -1;
 		}
 	}
-	udelay(10);
-	if (tx_byte(base, chip << 1, 0)) {
+	if (tx_byte(base, chip << 1)) {
 		printf("%s:chip address cycle fail(%x)\n",
 		       __func__, __REG16(base + I2SR));
 		return -1;
 	}
 	while (alen--)
-		if (tx_byte(base, (addr >> (alen * 8)) & 0xff, 0)) {
+		if (tx_byte(base, (addr >> (alen * 8)) & 0xff)) {
 			printf("%s:device address cycle fail(%x)\n",
 			       __func__, __REG16(base + I2SR));
 			return -1;
@@ -174,7 +169,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf,
 
 	__REG16(base + I2CR) = I2CR_IEN | I2CR_MSTA | I2CR_MTX | I2CR_RSTA;
 
-	if (tx_byte(base, chip << 1 | 1, 1)) {
+	if (tx_byte(base, chip << 1 | 1)) {
 		printf("%s:Send 2nd chip address fail(%x)\n",
 		       __func__, __REG16(base + I2SR));
 		/* send stop */
@@ -227,7 +222,7 @@ int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen,
 		return -1;
 	}
 	while (len--)
-		if (tx_byte(base, *buf++, 0)) {
+		if (tx_byte(base, *buf++)) {
 			__REG16(base + I2CR) = I2CR_IEN;	/* send stop */
 			return -1;
 		}
