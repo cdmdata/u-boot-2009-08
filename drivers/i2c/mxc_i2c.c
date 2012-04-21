@@ -67,24 +67,24 @@ static inline void i2c_reset(unsigned base)
 	udelay(100);
 }
 
-#define ST_BUS_IDLE 0, I2SR_IBB
-#define ST_BUS_BUSY I2SR_IBB, I2SR_IBB
-#define ST_BYTE_COMPLETE I2SR_ICF, I2SR_ICF
-#define ST_BYTE_PENDING 0, I2SR_ICF
+#define ST_BUS_IDLE (0 | (I2SR_IBB << 16))
+#define ST_BUS_BUSY (I2SR_IBB | (I2SR_IBB << 16))
+#define ST_BYTE_COMPLETE (I2SR_ICF | (I2SR_ICF << 16))
+#define ST_BYTE_PENDING (0 | (I2SR_ICF << 16))
 
-static unsigned wait_for_sr_state(unsigned base, unsigned state, unsigned mask)
+static unsigned wait_for_sr_state(unsigned base, unsigned state)
 {
 	unsigned sr;
 	ulong elapsed;
 	ulong start_time = get_timer(0);
 	for (;;) {
 		sr = __REG16(base + I2SR);
-		if ((sr & mask) == state)
+		if ((sr & (state >> 16)) == (unsigned short)state)
 			break;
 		elapsed = get_timer(start_time);
 		if (elapsed > 100) {
-			printf("%s: failed sr=%x cr=%x state=%x mask=%x\n", __func__,
-					sr, __REG16(base + I2CR), state, mask);
+			printf("%s: failed sr=%x cr=%x state=%x\n", __func__,
+					sr, __REG16(base + I2CR), state);
 			return 0;
 		}
 	}
