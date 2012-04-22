@@ -54,20 +54,22 @@ void i2c_init(unsigned i2c_base, unsigned speed)
 	i2c_reset(i2c_base);
 }
 
-#define ST_BUS_IDLE 0, I2SR_IBB
-#define ST_BUS_BUSY I2SR_IBB, I2SR_IBB
-#define ST_BYTE_COMPLETE I2SR_ICF, I2SR_ICF
-#define ST_BYTE_PENDING 0, I2SR_ICF
-static unsigned wait_for_sr_state(unsigned i2c_base, unsigned state, unsigned mask)
+#define ST_BUS_IDLE (0 | (I2SR_IBB << 16))
+#define ST_BUS_BUSY (I2SR_IBB | (I2SR_IBB << 16))
+#define ST_BYTE_COMPLETE (I2SR_ICF | (I2SR_ICF << 16))
+#define ST_BYTE_PENDING (0 | (I2SR_ICF << 16))
+
+static unsigned wait_for_sr_state(unsigned i2c_base, unsigned state)
 {
 	int timeout = 10000;
 	unsigned sr;
 	for (;;) {
 		sr = IO_READ16(i2c_base, I2SR);
-		if ((sr & mask) == state)
+		if ((sr & (state >> 16)) == (unsigned short)state)
 			break;
 		if (!(--timeout)) {
-			my_printf("%s: failed sr=%x cr=%x state=%x mask=%x\n", __func__, sr, IO_READ16(i2c_base, I2CR), state, mask);
+			my_printf("%s: failed sr=%x cr=%x state=%x\n", __func__,
+					sr, IO_READ16(i2c_base, I2CR), state);
 			return 0;
 		}
 		delayMicro(1);
