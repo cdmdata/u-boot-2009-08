@@ -58,6 +58,7 @@ void i2c_init(unsigned i2c_base, unsigned speed)
 #define ST_BUS_BUSY (I2SR_IBB | (I2SR_IBB << 16))
 #define ST_BYTE_COMPLETE (I2SR_ICF | (I2SR_ICF << 16))
 #define ST_BYTE_PENDING (0 | (I2SR_ICF << 16))
+#define ST_IIF (I2SR_IIF | (I2SR_IIF << 16))
 
 static unsigned wait_for_sr_state(unsigned i2c_base, unsigned state)
 {
@@ -78,17 +79,12 @@ static unsigned wait_for_sr_state(unsigned i2c_base, unsigned state)
 	return sr | 0x10000;
 }
 
-static int tx_byte(unsigned i2c_base, uint8_t byte, int clear_wait)
+static int tx_byte(unsigned i2c_base, uint8_t byte)
 {
 	unsigned sr;
+	IO_WRITE16(i2c_base, I2SR, 0);
 	IO_WRITE16(i2c_base, I2DR, byte);
-	if (clear_wait) {
-		/* cannot use
-		 * wait_for_sr_state(ST_BYTE_PENDING);
-		 * because the time period low is very very small */
-		delayMicro(10);
-	}
-	sr = wait_for_sr_state(i2c_base, ST_BYTE_COMPLETE);
+	sr = wait_for_sr_state(i2c_base, ST_IIF);
 	if ((!sr) || (sr & I2SR_RX_NO_AK)) {
 		DPRINTF("%s:%x <= %x\n", __func__, sr, byte);
 		return -1;
@@ -106,7 +102,7 @@ int i2c_probe(unsigned i2c_base, uint8_t chip)
 	for (ret = 0; ret < 1000; ret++)
 		delayMicro(1);
 	IO_WRITE16(i2c_base, I2CR, I2CR_IEN | I2CR_MSTA | I2CR_MTX);
-	ret = tx_byte(i2c_base, chip << 1, 0);
+	ret = tx_byte(i2c_base, chip << 1);
 	IO_WRITE16(i2c_base, I2CR, I2CR_IEN);
 
 	return ret;
@@ -132,14 +128,13 @@ static int i2c_addr(unsigned i2c_base, uint8_t chip, uint addr, int alen)
 		       __func__, IO_READ16(i2c_base, I2SR));
 		return -1;
 	}
-	delayMicro(10);
-	if (tx_byte(i2c_base, chip << 1, 0)) {
+	if (tx_byte(i2c_base, chip << 1)) {
 		my_printf("%s:chip address cycle fail(%x)\n",
 		       __func__, IO_READ16(i2c_base, I2SR));
 		return -1;
 	}
 	while (alen--)
-		if (tx_byte(i2c_base, (addr >> (alen * 8)) & 0xff, 0)) {
+		if (tx_byte(i2c_base, (addr >> (alen * 8)) & 0xff)) {
 			my_printf("%s:device address cycle fail(%x)\n",
 			       __func__, IO_READ16(i2c_base, I2SR));
 			return -1;
@@ -179,7 +174,7 @@ int i2c_read(unsigned i2c_base, uint8_t chip, uint addr, int alen, uint8_t *buf,
 
 	IO_WRITE16(i2c_base, I2CR, I2CR_IEN | I2CR_MSTA | I2CR_MTX | I2CR_RSTA);
 
-	if (tx_byte(i2c_base, chip << 1 | 1, 1)) {
+	if (tx_byte(i2c_base, chip << 1 | 1)) {
 		my_printf("%s:Send 2th chip address fail(%x)\n",
 		       __func__, IO_READ16(i2c_base, I2SR));
 		return -1;
@@ -223,7 +218,7 @@ int i2c_write(unsigned i2c_base, uint8_t chip, uint addr, int alen, uint8_t *buf
 		return -1;
 
 	while (len--)
-		if (tx_byte(i2c_base, *buf++, 0)) {
+		if (tx_byte(i2c_base, *buf++)) {
 			my_printf("%s: failed\n", __func__);
 			return -1;
 		}
