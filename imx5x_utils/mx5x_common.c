@@ -283,6 +283,8 @@ static unsigned char da9052_init_data[] = {
 		0x1a, 0xee,		/* GPIO 10/11(OTG_ID) open drain high */
 		0x45, 0xae,		/* charge coin cell @1mA to 3.0V */
 		0x12, 0xdf,		/* Disable all but backup battery charging during power-down */
+		0x46, 0x30,		/* R70 powers up as 0x36, disable LED1/2 boost controler */
+		0x47, 0xc0,		/* R71 powers up as 0xcf, turn off led1/2/3 */
 		0x0d, 0xd8,		/* Mask GP11/12 wake up event*/
 		0x1b, 0x0a,		/* GPIO 12 output, open drain, internal pullup, high */
 		0x1b, 0x09,		/* GPIO 12 input, no LDO9_en , active low/ GPIO 13(nVDD_FAULT) */
