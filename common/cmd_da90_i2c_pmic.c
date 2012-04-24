@@ -300,35 +300,66 @@ int do_pmic (cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 		unsigned regnum ;
 		for( regnum=0 ; regnum < NUM_REGISTERS ; regnum++ ) {
 			uchar val ;
-			if (0 == bus_i2c_read(DA90_I2C_BUS,DA90_I2C_ADDR,regnum,1,&val,1)) {
-				printf( "0x%02x %3u  %-20s 0x%02x\n", regnum, regnum, regnames[regnum], val);
+			if (0 == bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+					regnum, 1, &val, 1)) {
+				printf( "0x%02x %3u  %-20s 0x%02x\n", regnum,
+						regnum, regnames[regnum], val);
 			} else
-				printf( "%s: error reading register %u\n", __func__, regnum);
+				printf( "%s: error reading register %u\n",
+						__func__, regnum);
 		}
 	} else if (1 < argc) {
+		unsigned char buf[4];
+		unsigned val;
+		uchar prev;
 		unsigned reg = simple_strtoul(argv[1], NULL, 0);
-		if (NUM_REGISTERS > reg) {
-			int do_write = (2 < argc);
-			uchar prev ;
-			uchar val = (do_write ? simple_strtoul(argv[2],NULL,0) : 0 );
-
-			if (0 == bus_i2c_read(DA90_I2C_BUS,DA90_I2C_ADDR,reg,1,&prev,1)) {
-				printf( "0x%02x %3u  %-20s 0x%06x", reg, reg, regnames[reg], prev );
-				if (do_write) {
-					printf(" --> 0x%06x", val );
-					if (0 == bus_i2c_write(DA90_I2C_BUS,DA90_I2C_ADDR,reg,1,&val,1)) {
-						printf("\n");
-					}
-					else
-						printf("...error\n");
-				}
-				else
-					printf("\n");
-			} else
-				printf( "%s: error reading register %u\n", __func__, reg);
+		if (reg >= NUM_REGISTERS) {
+			printf("invalid register %s, max is %u (0x%x)\n",
+				argv[1], NUM_REGISTERS-1, NUM_REGISTERS-1 );
+			return -1;
 		}
-		else
-			printf("invalid register %s, max is %u (0x%x)\n", argv[1], NUM_REGISTERS-1, NUM_REGISTERS-1 );
+		if (bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR, reg, 1,
+				&prev, 1)) {
+			printf( "%s: error reading register %u\n", __func__, reg);
+			return -1;
+		}
+		printf("0x%02x %3u  %-20s 0x%02x", reg, reg, regnames[reg], prev );
+		if (argc <= 2) {
+			printf("\n");
+			return 0;
+		}
+		val = simple_strtoul(argv[2],NULL,0);
+		if (val > 0xff) {
+			printf("%s: value(%x) too large\n", __func__, val);
+			return -1;
+		}
+		if (reg == DA90REG_CONTROL_B)
+			val |= (1 << 5);	/* repeated write mode */
+		printf(" --> 0x%02x", val );
+
+		if (reg != DA90REG_CONTROL_B) {
+			if (bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
+					DA90REG_CONTROL_B, 1, &prev, 1)) {
+				printf( "%s: error reading register %u\n",
+						__func__, DA90REG_CONTROL_B);
+				return -1;
+			}
+			if (!((prev >> 5) & 1)) {
+				/* enable repeated write mode */
+				buf[0] = (prev | (1 << 5)) & ~0xc0;
+				bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR,
+						DA90REG_CONTROL_B, 1, buf, 1);
+			}
+		}
+		buf[0] = (unsigned char)val;
+		buf[1] = DA90REG_STATUS_A;
+		buf[2] = 0;
+		if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, reg, 1,
+				buf, 3)) {
+			printf("%s: i2c_write error\n", __func__);
+			return -1;
+		}
+		printf("\n");
 	} else {
 		cmd_usage(cmdtp);
 	}
