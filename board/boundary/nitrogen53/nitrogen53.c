@@ -1863,6 +1863,11 @@ static long convert_vbat(unsigned short val)
 	return ((val+1280)*1000)/512;
 }
 
+static long convert_vbbat(unsigned short val)
+{
+	return (5000*val)/1023 ;
+}
+
 static long convert_tjunc(unsigned short val)
 {
         return (((1708 * val)/10) - 10600);
@@ -1883,7 +1888,7 @@ static struct da90_adc_name_t const da90_adc_names[] = {
 ,	{ "ADC_ADCIN6",	6, '\0', 0}
 ,	{ "ADC_TSI",	7, '\0', 0}
 ,	{ "ADC_TJUNC",	8, 'C',  convert_tjunc}
-,	{ "ADC_VBBAT",	9, 'V',	 convert_vbat}
+,	{ "ADC_VBBAT",	9, 'V',	 convert_vbbat}
 };
 
 /*
