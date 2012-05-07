@@ -408,6 +408,33 @@ iomux_v3_cfg_t wl12xx_pads[] = {
 	(MX6Q_PAD_GPIO_0__CCM_CLKO & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(0x000b0),		/* SGTL5000 sys_mclk */
 };
 
+#ifdef CONFIG_CMD_SATA
+int setup_sata(void)
+{
+	unsigned gpr;
+	struct iomuxc_base_regs *const iomuxc_regs
+		= (struct iomuxc_base_regs *) IOMUXC_BASE_ADDR;
+	int ret = enable_sata_clock();
+	if (ret)
+		return ret;
+
+	gpr = readl(&iomuxc_regs->gpr[13]);
+	gpr &= ~IOMUXC_GPR13_SATA_MASK;
+	gpr |= IOMUXC_GPR13_SATA_PHY_8_RXEQ_3P0DB |
+			IOMUXC_GPR13_SATA_PHY_7_SATA2M |
+			IOMUXC_GPR13_SATA_SPEED_3G |
+			(3 << IOMUXC_GPR13_SATA_PHY_6_SHIFT) |
+			IOMUXC_GPR13_SATA_SATA_PHY_5_SS_DISABLED |
+			IOMUXC_GPR13_SATA_SATA_PHY_4_ATTEN_9_16 |
+			IOMUXC_GPR13_SATA_PHY_3_TXBOOST_0P00_DB |
+			IOMUXC_GPR13_SATA_PHY_2_TX_1P104V |
+			IOMUXC_GPR13_SATA_PHY_1_SLOW;
+	writel(gpr, &iomuxc_regs->gpr[13]);
+
+	return 0;
+}
+#endif
+
 int board_init(void)
 {
 #ifdef CONFIG_MFG
@@ -441,6 +468,9 @@ int board_init(void)
 			&i2c_pad_info1);
 	mx6_setup_i2c(2, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE,
 			&i2c_pad_info2);
+#endif
+#ifdef CONFIG_CMD_SATA
+	setup_sata();
 #endif
 
 	return 0;
