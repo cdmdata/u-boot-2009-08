@@ -25,10 +25,11 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(SOC).a
+LIB     = $(obj)libimx-common.o
 
-COBJS	= interrupts.o generic.o iomux-v3.o timer.o soc.o
-COBJS += $(COBJS-y)
+COBJS-y	= timer.o cpu.o speed.o
+COBJS-$(CONFIG_CMD_RESETMODE) += cmd_resetmode.o
+COBJS	:= $(sort $(COBJS-y))
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
@@ -36,7 +37,7 @@ OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
 all:	$(obj).depend $(LIB)
 
 $(LIB):	$(OBJS)
-	$(AR) $(ARFLAGS) $@ $(OBJS)
+	$(call cmd_link_o_target, $(OBJS))
 
 #########################################################################
 

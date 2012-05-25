@@ -25,10 +25,10 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	= $(obj)lib$(SOC).a
+LIB     = $(obj)libimx-common.a
 
-COBJS	= interrupts.o generic.o iomux-v3.o timer.o soc.o
-COBJS += $(COBJS-y)
+COBJS-$(CONFIG_CMD_RESETMODE) += cmd_resetmode.o
+COBJS	:= $(sort $(COBJS-y))
 
 SRCS	:= $(SOBJS:.o=.S) $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(SOBJS) $(COBJS))
