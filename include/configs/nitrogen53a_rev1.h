@@ -42,4 +42,7 @@
 
 #define CONFIG_POWER_KEY
 
+#undef CONFIG_PWM2_DUTY
+#define CONFIG_PWM2_DUTY	235	/* 235 out of 256 */
+
 #endif
