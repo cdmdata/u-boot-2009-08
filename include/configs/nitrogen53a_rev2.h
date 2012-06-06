@@ -19,14 +19,14 @@
  * MA 02111-1307 USA
  */
 
-#ifndef __NITROGEN53A_H
-#define __NITROGEN53A_H
+#ifndef __NITROGEN53A_REV2_H
+#define __NITROGEN53A_REV2_H
 
 #include <configs/nitrogen53.h>
 #undef CONFIG_MACH_TYPE
 #define CONFIG_MACH_TYPE	MACH_TYPE_MX53_NITROGEN_A
 #undef CONFIG_BOARD_NAME
-#define CONFIG_BOARD_NAME	"MX53-Nitrogen_A"
+#define CONFIG_BOARD_NAME	"MX53-Nitrogen_A rev2"
 
 #undef CONFIG_UART_BASE_ADDR
 #define CONFIG_UART_BASE_ADDR		UART3_BASE_ADDR
@@ -35,6 +35,7 @@
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
 	"ethprime=FEC0\0"		\
 	"machid=c62\0"			\
+	"panel=raw:63500000,1024,768,1,0,1,0,104,152,48,4,23,3,1,1\0" \
 
 #define CONFIG_POWER_KEY
 
