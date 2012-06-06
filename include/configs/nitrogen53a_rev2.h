@@ -36,6 +36,7 @@
 	"ethprime=FEC0\0"		\
 	"machid=c62\0"			\
 	"panel=raw:63500000,1024,768,1,0,1,0,104,152,48,4,23,3,1,1\0" \
+	"lvds=1,1\0" \
 
 #define CONFIG_POWER_KEY
 
@@ -44,5 +45,8 @@
 
 #undef CONFIG_PWM2_DUTY
 #define CONFIG_PWM2_DUTY	235	/* 235 out of 256 */
+
+#undef CONFIG_BOOTDELAY
+#define CONFIG_BOOTDELAY	0
 
 #endif
