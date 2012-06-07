@@ -256,14 +256,14 @@ static unsigned char da9052_init_data[] = {
 #endif
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
 //		0x34, 0x73,		/* on,  LDO3, 3.0V (73:3.0V) default (7f:3.3v) */
-		0x2e, 0x5d,		/* on,  VBUCKCORE, 1.225V  (0x73:1.775V) if old rev of board*/
-		0x2f, 0x61,		/* on,  VBUCK_PRO, 1.302V (61:1.325V) */
+		0x2e, 0x60,		/* on,  VBUCKCORE, 1.300V  (0x73:1.775V) if old rev of board*/
+		0x2f, 0x62,		/* on,  VBUCK_PRO, 1.350V (62:1.350V) */
 		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
 		0x3c, 0x7f,		/* go:core, pro, mem, LDO2, LDO3 */
 		0x31, 0x7d,		/* on,  VBUCK_PERI 2.489V (7d:2.450V) */
 //		0x32, 0x4e		/* on,  LDO1, 1.3V (4e:1.3V) */
 		0x35, 0x73,		/* on, LDO4, audio amp(73:3.0V) */
-		0x36, 0x40,		/* off, LDO5, sata(40:1.2V) */
+		0x36, 0x40,		/* on, LDO5, sata(40:1.2V) */
 		0x37, 0x40,		/* on,  LDO6 (40:1.2V) */
 		0x38, 0x5e,		/* on,  LDO7, 2.75V (5e:2.70V) */
 /* LDO8 - leave on 1.8V, serial port messed up otherwise on newest board */
