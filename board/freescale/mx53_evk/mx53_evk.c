@@ -28,6 +28,7 @@
 #include <asm/arch/mx53_pins.h>
 #include <asm/arch/iomux.h>
 #include <asm/errno.h>
+#include <asm/imx-common/resetmode.h>
 #include <imx_spi.h>
 #include <netdev.h>
 
@@ -1126,8 +1127,20 @@ int check_recovery_cmd_file(void)
 }
 #endif
 
+#ifdef CONFIG_CMD_RESETMODE
+static const struct reset_mode board_reset_modes[] = {
+	/* 4 bit bus width */
+	{"mmc0",	MAKE_CFGVAL(0x40, 0x20, 0x00, 0x12)},
+	{"mmc1",	MAKE_CFGVAL(0x40, 0x20, 0x08, 0x12)},
+	{NULL,		0},
+};
+#endif
+
 int board_late_init(void)
 {
+#ifdef CONFIG_CMD_RESETMODE
+	add_board_resetmodes(board_reset_modes);
+#endif
 	return 0;
 }
 
