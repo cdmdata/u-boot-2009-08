@@ -42,6 +42,8 @@
 #define CONFIG_SYS_PLL1_FREQ	800	/* Mhz */
 #define CONFIG_MX51_HCLK_FREQ	24000000	/* RedBoot says 26MHz */
 #define CONFIG_SYS_ARM_PODF	0	/* divide by (n+1), n = 0-7 */
+#define CONFIG_SYS_DDR_CLKSEL	0
+#define CONFIG_SYS_CLKTL_CBCDR	0x59E35100
 
 #define CONFIG_ARCH_CPU_INIT
 #define CONFIG_ARCH_MMU
