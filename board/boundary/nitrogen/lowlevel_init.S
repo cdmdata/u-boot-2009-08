@@ -90,18 +90,16 @@
 
 /* AIPS setup - Only setup MPROTx registers.
  * The PACR default values are good.*/
-.macro init_aips
+.macro init_aips	rAips1, rAips2
 	/*
 	 * Set all MPROTx to be non-bufferable, trusted for R/W,
 	 * not forced to user-mode.
 	 */
-	ldr	r1, =AIPS1_BASE_ADDR
 	ldr	r0, =0x77777777
-	str	r0, [r1, #0x0]
-	str	r0, [r1, #0x4]
-	ldr	r1, =AIPS2_BASE_ADDR
-	str	r0, [r1, #0x0]
-	str	r0, [r1, #0x4]
+	str	r0, [\rAips1, #0x0]
+	str	r0, [\rAips1, #0x4]
+	str	r0, [\rAips2, #0x0]
+	str	r0, [\rAips2, #0x4]
 	/*
 	 * Clear the on and off peripheral modules Supervisor Protect bit
 	 * for SDMA to access them. Did not change the AIPS control registers
@@ -109,35 +107,22 @@
 	 */
 .endm /* init_aips */
 
-/* MAX (Multi-Layer AHB Crossbar Switch) setup */
-.macro init_max
-.endm /* init_max */
-
 /* M4IF setup */
-.macro init_m4if
+.macro init_m4if	rM4if
 	/* VPU and IPU given higher priority (0x4)
 	 * IPU accesses with ID=0x1 given highest priority (=0xA)
 	 */
-	ldr	r1, =M4IF_BASE_ADDR
-
 	ldr	r0, =0x00000203
-	str	r0, [r1, #0x40]
+	str	r0, [\rM4if, #0x40]
 
 	mov	r0, #0x0
-	str	r0, [r1, #0x44]
+	str	r0, [\rM4if, #0x44]
 
 	ldr	r0, =0x00120125
-	str	r0, [r1, #0x9C]
+	str	r0, [\rM4if, #0x9C]
 
 	ldr	r0, =0x001901A3
-	str	r0, [r1, #0x48]
-
-/*
-	ldr	r0, =0x00000a01
-	str	r0, [r1, #0x48]
-	ldr	r0, =0x00000404
-	str	r0, [r1, #0x40]
-*/
+	str	r0, [\rM4if, #0x48]
 .endm /* init_m4if */
 
 #define IPU_CM_REG_BASE		0x5E000000
@@ -298,7 +283,7 @@ waitosc:
 	str	r0, [r1, #0x14]
 
 	/*
-	 * Run TO 3.0 at Full speed,
+	 * Run Tapeout 3.0 at Full speed,
 	 * for other TO's wait till we increase VDDGP
 	 */
 	mov	r0, #CONFIG_SYS_ARM_PODF
@@ -342,12 +327,6 @@ waitosc:
 	str	r0, [\rClk, #CLKCTL_CCOSR]
 .endm
 
-.macro setup_wdog
-	ldr	r1, =WDOG1_BASE_ADDR
-	mov	r0, #0x30
-	strh	r0, [r1]
-.endm
-
 .section ".text.init", "x"
 
 #define GPIO_DR 0
@@ -386,25 +365,26 @@ lowlevel_init:
 	orr	r1, r1, #(1 << 5)	/* enable L1NEON bit */
 	mcr	15, 0, r1, c1, c0, 1
 
-	print_debug_ch '1'
+	print_debug_ch 'b'
 	init_l1cc
 
-	print_debug_ch 'b'
+	print_debug_ch 'c'
 	init_l2cc
 
-	print_debug_ch 'c'
-	init_aips
-
 	print_debug_ch 'd'
-	init_max
+	ldr	r4, =AIPS1_BASE_ADDR
+	ldr	r5, =AIPS2_BASE_ADDR
+	init_aips	r4, r5
 
 	print_debug_ch 'e'
-	init_m4if
+	ldr	r4, =M4IF_BASE_ADDR
+	init_m4if	r4
 
 //	print_debug_ch 'g'
 //	init_disable_ipu
 
 	print_debug_ch 'h'
+
 	ldr	r4, =CCM_BASE_ADDR
 	ldr	r5, =PLL1_BASE_ADDR
 	ldr	r6, =PLL2_BASE_ADDR
@@ -413,5 +393,4 @@ lowlevel_init:
 	bl	setup_uart
 
 	print_debug_ch '\n'
-	mov	pc,r8
-
+	mov	pc, r8
