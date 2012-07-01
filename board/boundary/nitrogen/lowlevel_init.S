@@ -498,20 +498,6 @@ lowlevel_init:
 	str	r0, [r1, #GPIO_DIR]
 #endif
 
-#ifdef ENABLE_IMPRECISE_ABORT
-	mrs	r1, spsr		/* save old spsr */
-	mrs	r0, cpsr		/* read out the cpsr */
-	bic	r0, r0, #0x100		/* clear the A bit */
-	msr	spsr, r0		/* update spsr */
-	add	lr, pc, #0x8		/* update lr */
-	movs	pc, lr			/* update cpsr */
-	nop
-	nop
-	nop
-	nop
-	msr	spsr, r1		/* restore old spsr */
-#endif
-
 	/* ARM errata ID #468414 */
 	mrc	15, 0, r1, c1, c0, 1
 	orr	r1, r1, #(1 << 5)	/* enable L1NEON bit */
