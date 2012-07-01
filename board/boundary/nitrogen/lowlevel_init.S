@@ -160,6 +160,51 @@
 	str	r0, [r1, #IPU_CH_TRB_MODE_SEL1]
 .endm
 
+	.equiv	_DP_OP_1000,	DP_OP_1000
+	.equiv	_DP_MFN_1000,	DP_MFN_1000
+	.equiv	_DP_MFD_1000,	DP_MFD_1000
+	.equiv	_DP_CTL_1000,	DP_CTL_1000
+
+	.equiv	_DP_OP_850,	DP_OP_850
+	.equiv	_DP_MFN_850,	DP_MFN_850
+	.equiv	_DP_MFD_850,	DP_MFD_850
+	.equiv	_DP_CTL_850,	DP_CTL_850
+
+	.equiv	_DP_OP_800,	DP_OP_800
+	.equiv	_DP_MFN_800,	DP_MFN_800
+	.equiv	_DP_MFD_800,	DP_MFD_800
+	.equiv	_DP_CTL_800,	DP_CTL_800
+
+	.equiv	_DP_OP_700,	DP_OP_700
+	.equiv	_DP_MFN_700,	DP_MFN_700
+	.equiv	_DP_MFD_700,	DP_MFD_700
+	.equiv	_DP_CTL_700,	DP_CTL_700
+
+	.equiv	_DP_OP_665,	DP_OP_665
+	.equiv	_DP_MFN_665,	DP_MFN_665
+	.equiv	_DP_MFD_665,	DP_MFD_665
+	.equiv	_DP_CTL_665,	DP_CTL_665
+
+	.equiv	_DP_OP_600,	DP_OP_600
+	.equiv	_DP_MFN_600,	DP_MFN_600
+	.equiv	_DP_MFD_600,	DP_MFD_600
+	.equiv	_DP_CTL_600,	DP_CTL_600
+
+	.equiv	_DP_OP_532,	DP_OP_532
+	.equiv	_DP_MFN_532,	DP_MFN_532
+	.equiv	_DP_MFD_532,	DP_MFD_532
+	.equiv	_DP_CTL_532,	DP_CTL_532
+
+	.equiv	_DP_OP_400,	DP_OP_400
+	.equiv	_DP_MFN_400,	DP_MFN_400
+	.equiv	_DP_MFD_400,	DP_MFD_400
+	.equiv	_DP_CTL_400,	DP_CTL_400
+
+	.equiv	_DP_OP_216,	DP_OP_216
+	.equiv	_DP_MFN_216,	DP_MFN_216
+	.equiv	_DP_MFD_216,	DP_MFD_216
+	.equiv	_DP_CTL_216,	DP_CTL_216
+
 .macro pll_op_mfd_mfn r_pll, dp_op, dp_mfd, dp_mfn
 	mov	r0, #\dp_op
 	str	r0, [\r_pll, #PLL_DP_OP]
@@ -174,12 +219,20 @@
 	str	r0, [\r_pll, #PLL_DP_HFS_MFN]
 .endm
 
+.macro pll_op r_pll, freq
+	pll_op_mfd_mfn \r_pll, _DP_OP_\freq, _DP_MFD_\freq, _DP_MFN_\freq
+.endm
+
 .macro start_pll r_pll, dp_ctl
 	ldr	r0, =\dp_ctl
 	str	r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
 1:	ldr	r0, [\r_pll, #PLL_DP_CTL]
 	tst	r0, #0x1
 	beq	1b
+.endm
+
+.macro start_pllf r_pll, freq
+	start_pll	\r_pll, _DP_CTL_\freq
 .endm
 
 .macro divisor_change_wait r_clk
@@ -204,7 +257,6 @@ waitosc:
 	cmp	r0, #0x22		/* wait for Oscillator and FPM ready */
 	bne	waitosc
 	print_debug_ch '1'
-
 
 /* disable auto restart */
 	mov	r0, #0
@@ -246,15 +298,15 @@ waitosc:
 	/* switch arm to step clock */
 	mov	r0, #0x4
 	str	r0, [\rClk, #CLKCTL_CCSR]
-	pll_op_mfd_mfn \rPll1,DP_OP_800,DP_MFD_800,DP_MFN_800
-	start_pll \rPll1,DP_CTL_800
+	pll_op	\rPll1, CONFIG_SYS_PLL1_FREQ
+	start_pllf \rPll1, CONFIG_SYS_PLL1_FREQ
 
 	/* Switch ARM back to PLL 1 */
 	mov	r0, #0
 	str	r0, [\rClk, #CLKCTL_CCSR]
 
-	pll_op_mfd_mfn \rPll3,DP_OP_665,DP_MFD_665,DP_MFN_665
-	start_pll \rPll3,DP_CTL_665
+	pll_op	\rPll3, 665
+	start_pllf \rPll3, 665
 
 	/* Switch peripheral to PLL 3 */
 	ldr	r0, =0x000010C0
@@ -264,8 +316,8 @@ waitosc:
 	str	r0, [\rClk, #CLKCTL_CBCDR]
 	divisor_change_wait \rClk
 
-	pll_op_mfd_mfn \rPll2,DP_OP_665,DP_MFD_665,DP_MFN_665
-	start_pll \rPll2,DP_CTL_665
+	pll_op	\rPll2, 665
+	start_pllf \rPll2, 665
 
 	/* Switch peripheral to PLL2 */
 	/* [25] 1 -> 0 (periph was apm, now pll2) */
@@ -274,8 +326,8 @@ waitosc:
 	ldr	r0, =0x000020C0
 	str	r0, [\rClk, #CLKCTL_CBCMR]
 
-	pll_op_mfd_mfn \rPll3,DP_OP_216,DP_MFD_216,DP_MFN_216
-	start_pll \rPll3,DP_CTL_216
+	pll_op	\rPll3, 216
+	start_pllf \rPll3, 216
 
 	/* Set the platform clock dividers */
 	ldr	r1, =ARM_BASE_ADDR
