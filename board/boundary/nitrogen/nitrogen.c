@@ -315,9 +315,6 @@ void setup_uart(void)
 	mxc_iomux_set_pad(MX51_PIN_UART1_RTS, pad);
 	mxc_request_iomux(MX51_PIN_UART1_CTS, IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_UART1_CTS, pad);
-	/* enable GPIO1_9 for CLK0 and GPIO1_8 for CLK02 */
-	writel(0x00000004, 0x73fa83e8);
-	writel(0x00000004, 0x73fa83ec);
 
 	debug_putc('x');
 //	printf("setup_uart clk_src=%i mult=%i div=%i\n", clk_src, mult, div);
