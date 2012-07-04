@@ -162,8 +162,6 @@ static int tx_byte(struct mxc_i2c_regs *i2c_regs, u8 byte)
 	return 0;
 }
 
-static int toggle_i2c(void *base);
-
 /*
  * Stop I2C transaction
  */
@@ -207,6 +205,8 @@ static int i2c_init_transfer_(struct mxc_i2c_regs *i2c_regs, uchar chip,
 	return 0;
 }
 
+static int toggle_i2c(void *base);
+
 static int i2c_init_transfer(struct mxc_i2c_regs *i2c_regs,
 		uchar chip, uint addr, int alen)
 {
@@ -249,7 +249,7 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 
 	writeb(I2CR_IEN | I2CR_MSTA | I2CR_MTX | I2CR_RSTA, &i2c_regs->i2cr);
 
-	ret = tx_byte(i2c_regs, chip << 1 | 1);
+	ret = tx_byte(i2c_regs, (chip << 1) | 1);
 	if (ret < 0) {
 		printf("%s:Send 2nd chip address fail(%x)\n",
 		       __func__, readb(&i2c_regs->i2sr));
