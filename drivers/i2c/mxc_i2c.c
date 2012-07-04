@@ -120,8 +120,6 @@ unsigned int bus_i2c_get_bus_speed(void *base)
 
 #define ST_BUS_IDLE (0 | (I2SR_IBB << 8))
 #define ST_BUS_BUSY (I2SR_IBB | (I2SR_IBB << 8))
-#define ST_BYTE_COMPLETE (I2SR_ICF | (I2SR_ICF << 8))
-#define ST_BYTE_PENDING (0 | (I2SR_ICF << 8))
 #define ST_IIF (I2SR_IIF | (I2SR_IIF << 8))
 
 static int wait_for_sr_state(struct mxc_i2c_regs *i2c_regs, unsigned state)
@@ -271,10 +269,11 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 	}
 	writeb(I2CR_IEN | I2CR_MSTA | ((len <= 1) ? I2CR_TX_NO_AK : 0),
 			&i2c_regs->i2cr);
+	writeb(0, &i2c_regs->i2sr);
 	ret = readb(&i2c_regs->i2dr);		/* dummy read to clear ICF */
 
 	for (;;) {
-		ret = wait_for_sr_state(i2c_regs, ST_BYTE_COMPLETE);
+		ret = wait_for_sr_state(i2c_regs, ST_IIF);
 		if (ret < 0) {
 			printf("%s: fail sr=%x cr=%x, len=%i\n", __func__,
 					readb(&i2c_regs->i2sr),
@@ -290,6 +289,7 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 		if (len <= 1) {
 			i2c_imx_stop(i2c_regs);
 		}
+		writeb(0, &i2c_regs->i2sr);
 		ret = readb(&i2c_regs->i2dr);
 		if (len <= 0)
 			break;
