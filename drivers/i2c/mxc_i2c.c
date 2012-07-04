@@ -167,11 +167,14 @@ static int tx_byte(struct mxc_i2c_regs *i2c_regs, u8 byte)
  */
 static void i2c_imx_stop(struct mxc_i2c_regs *i2c_regs)
 {
+	int ret;
 	unsigned int temp = readb(&i2c_regs->i2cr);
 
 	temp &= ~(I2CR_MSTA | I2CR_MTX);
 	writeb(temp, &i2c_regs->i2cr);
-	wait_for_sr_state(i2c_regs, ST_BUS_IDLE);
+	ret = wait_for_sr_state(i2c_regs, ST_BUS_IDLE);
+	if (ret < 0)
+		printf("%s:trigger stop fail\n", __func__);
 }
 
 /*
@@ -285,8 +288,7 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 					&i2c_regs->i2cr);
 		}
 		if (len <= 1) {
-			/* send stop */
-			writeb(I2CR_IEN | I2CR_TX_NO_AK, &i2c_regs->i2cr);
+			i2c_imx_stop(i2c_regs);
 		}
 		ret = readb(&i2c_regs->i2dr);
 		if (len <= 0)
@@ -295,9 +297,7 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 		if (!(--len))
 			break;
 	}
-	ret = wait_for_sr_state(i2c_regs, ST_BUS_IDLE);
-	if (ret < 0)
-		printf("%s:trigger stop fail\n", __func__);
+	i2c_imx_stop(i2c_regs);
 	return 0;
 }
 
@@ -318,11 +318,7 @@ int bus_i2c_write(void *base, uchar chip, uint addr, int alen,
 			return ret;
 		}
 	}
-	writeb(I2CR_IEN, &i2c_regs->i2cr);
-
-	ret = wait_for_sr_state(i2c_regs, ST_BUS_IDLE);
-	if (ret < 0)
-		printf("%s:trigger stop fail\n", __func__);
+	i2c_imx_stop(i2c_regs);
 	return 0;
 }
 
