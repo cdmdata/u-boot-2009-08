@@ -124,11 +124,11 @@ unsigned int bus_i2c_get_bus_speed(void *base)
 	return freq / divisor_map[clk_idx & 0x3f];
 }
 
-#define ST_BUS_IDLE (0 | (I2SR_IBB << 16))
-#define ST_BUS_BUSY (I2SR_IBB | (I2SR_IBB << 16))
-#define ST_BYTE_COMPLETE (I2SR_ICF | (I2SR_ICF << 16))
-#define ST_BYTE_PENDING (0 | (I2SR_ICF << 16))
-#define ST_IIF (I2SR_IIF | (I2SR_IIF << 16))
+#define ST_BUS_IDLE (0 | (I2SR_IBB << 8))
+#define ST_BUS_BUSY (I2SR_IBB | (I2SR_IBB << 8))
+#define ST_BYTE_COMPLETE (I2SR_ICF | (I2SR_ICF << 8))
+#define ST_BYTE_PENDING (0 | (I2SR_ICF << 8))
+#define ST_IIF (I2SR_IIF | (I2SR_IIF << 8))
 
 static unsigned wait_for_sr_state(struct mxc_i2c_regs *i2c_regs, unsigned state)
 {
@@ -137,7 +137,7 @@ static unsigned wait_for_sr_state(struct mxc_i2c_regs *i2c_regs, unsigned state)
 	ulong start_time = get_timer(0);
 	for (;;) {
 		sr = readb(&i2c_regs->i2sr);
-		if ((sr & (state >> 16)) == (unsigned short)state)
+		if ((sr & (state >> 8)) == (unsigned char)state)
 			break;
 		elapsed = get_timer(start_time);
 		if (elapsed > 100) {
