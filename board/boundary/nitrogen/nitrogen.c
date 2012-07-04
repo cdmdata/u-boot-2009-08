@@ -549,7 +549,7 @@ static void setup_i2c(unsigned int module_base)
 	}
 }
 
-void toggle_i2c(unsigned int module_base)
+int toggle_i2c(void *toggle_data)
 {
 	unsigned i;
 	unsigned sda_gp = MAKE_GP(2, 0);
@@ -573,6 +573,7 @@ void toggle_i2c(unsigned int module_base)
 	//back to I2C mode
 	writel(0x14, IOMUXC_BASE_ADDR + 0x5c); /* i2c1 SDA, EIM_D16 */
 	writel(0x14, IOMUXC_BASE_ADDR + 0x68); /* i2c2 SCL, EIM_D19 */
+	return 0;
 }
 
 static void setup_core_voltage_i2c(void)
@@ -1230,6 +1231,8 @@ int check_recovery_cmd_file(void)
 
 }
 #endif
+void bus_i2c_init(void *base, int speed, int unused,
+		int (*toggle_fn)(void *p), void *toggle_data);
 
 #ifdef BOARD_LATE_INIT
 int board_late_init(void)
@@ -1251,7 +1254,8 @@ int board_late_init(void)
 	setup_display();
 
 #ifdef CONFIG_I2C_MXC
-	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	bus_i2c_init((void *)I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE,
+			toggle_i2c, NULL);
 //	if (!i2c_probe(0x34))
 //		setup_core_voltage_i2c();
 //	else

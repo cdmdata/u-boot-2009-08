@@ -25,8 +25,15 @@
  */
 
 #include <common.h>
+#include <asm/io.h>
 
-#if defined(CONFIG_HARD_I2C)
+struct mxc_i2c_regs {
+	uint32_t	iadr;
+	uint32_t	ifdr;
+	uint32_t	i2cr;
+	uint32_t	i2sr;
+	uint32_t	i2dr;
+};
 
 #define IADR	0x00
 #define IFDR	0x04
@@ -54,17 +61,73 @@
 #define DPRINTF(args...)
 #endif
 
-static u16 div[] = { 30, 32, 36, 42, 48, 52, 60, 72, 80, 88, 104, 128, 144,
-	160, 192, 240, 288, 320, 384, 480, 576, 640, 768, 960,
-	1152, 1280, 1536, 1920, 2304, 2560, 3072, 3840
+static u16 divisor_map[] = {
+	  30,   32,   36,   42,   48,   52,   60,   72,
+	  80,   88,  104,  128,  144,  160,  192,  240,
+	 288,  320,  384,  480,  576,  640,  768,  960,
+	1152, 1280, 1536, 1920, 2304, 2560, 3072, 3840,
+	  22,   24,   26,   28,   32,   36,   40,   44,
+	  48,   56,   64,   72,   80,   96,  112,  128,
+	 160,  192,  224,  256,  320,  384,  448,  512,
+	 640,  768,  896, 1024, 1280, 1536, 1792, 2048,
 };
 
-static inline void i2c_reset(unsigned base)
+static inline void i2c_reset(void *base)
 {
 	__REG16(base + I2CR) = 0;	/* Reset module */
 	__REG16(base + I2SR) = 0;
 	__REG16(base + I2CR) = I2CR_IEN;
 	udelay(100);
+}
+
+/*
+ * Set I2C Bus speed
+ */
+int bus_i2c_set_bus_speed(void *base, int max_speed)
+{
+	int freq;
+	int i;
+	int min_div;
+	int best_index = 0x1f;
+	int best_div = divisor_map[best_index];
+	struct mxc_i2c_regs *i2c_regs = (struct mxc_i2c_regs *)base;
+
+#ifdef CONFIG_MX31
+	freq = mx31_get_ipg_clk();
+#else
+	freq = mxc_get_clock(MXC_IPG_PERCLK);
+#endif
+	min_div = (freq + max_speed - 1) / max_speed;
+	for (i = 0 ; i < ARRAY_SIZE(divisor_map); i++) {
+		int cur_div = divisor_map[i];
+		if ((cur_div < best_div) && (cur_div >= min_div)) {
+			best_index = i;
+			best_div = cur_div;
+		}
+	}
+
+	printf("%s: root clock: %d, speed: %d index: %x\n",
+		__func__, freq, freq / best_div, best_index);
+	writeb(best_index, &i2c_regs->ifdr);
+	i2c_reset(base);
+	return 0;
+}
+
+/*
+ * Get I2C Speed
+ */
+unsigned int bus_i2c_get_bus_speed(void *base)
+{
+	int freq;
+	struct mxc_i2c_regs *i2c_regs = (struct mxc_i2c_regs *)base;
+	u8 clk_idx = readb(&i2c_regs->ifdr);
+
+#ifdef CONFIG_MX31
+	freq = mx31_get_ipg_clk();
+#else
+	freq = mxc_get_clock(MXC_IPG_PERCLK);
+#endif
+	return freq / divisor_map[clk_idx & 0x3f];
 }
 
 #define ST_BUS_IDLE (0 | (I2SR_IBB << 16))
@@ -73,7 +136,7 @@ static inline void i2c_reset(unsigned base)
 #define ST_BYTE_PENDING (0 | (I2SR_ICF << 16))
 #define ST_IIF (I2SR_IIF | (I2SR_IIF << 16))
 
-static unsigned wait_for_sr_state(unsigned base, unsigned state)
+static unsigned wait_for_sr_state(void *base, unsigned state)
 {
 	unsigned sr;
 	ulong elapsed;
@@ -93,7 +156,7 @@ static unsigned wait_for_sr_state(unsigned base, unsigned state)
 	return sr | 0x10000;
 }
 
-static int tx_byte(unsigned base, u8 byte)
+static int tx_byte(void *base, u8 byte)
 {
 	unsigned sr;
 	__REG16(base + I2SR) = 0;
@@ -107,9 +170,9 @@ static int tx_byte(unsigned base, u8 byte)
 	return 0;
 }
 
-void toggle_i2c(unsigned int base);
+static int toggle_i2c(void *base);
 
-static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
+static int i2c_addr(void *base, uchar chip, uint addr, int alen)
 {
 	int retry = 0;
 	for (retry = 0; retry < 3; retry++) {
@@ -153,7 +216,7 @@ static int i2c_addr(unsigned base, uchar chip, uint addr, int alen)
 	return 0;
 }
 
-int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf,
+int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 		int len)
 {
 	uint ret;
@@ -211,7 +274,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf,
 	return 0;
 }
 
-int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen,
+int bus_i2c_write(void *base, uchar chip, uint addr, int alen,
 		const uchar *buf, int len)
 {
 	DPRINTF("%s chip: 0x%02x addr: 0x%04x alen: %d len: %d\n",
@@ -234,73 +297,140 @@ int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen,
 	return 0;
 }
 
-int bus_i2c_probe(unsigned base, uchar chip)
-{
-	int ret;
-	i2c_reset(base);
-	ret = bus_i2c_write(base, chip, 0, 0, NULL, 0);
-	if (ret)
-		printf("probe failed\n");
-	return ret;
-}
-
-static int g_bus;
-const unsigned i2c_bases[] = {
-	I2C1_BASE_ADDR,
-	I2C2_BASE_ADDR,
-#ifdef CONFIG_MX53
-	I2C3_BASE_ADDR
-#endif
+struct i2c_parms {
+	void *base;
+	void *toggle_data;
+	int (*toggle_fn)(void *p);
 };
 
-void bus_i2c_init(unsigned base, int speed, int unused)
+struct sram_data {
+	unsigned curr_i2c_bus;
+	struct i2c_parms i2c_data[3];
+};
+
+/*
+ * For SPL boot some boards need i2c before SDRAM is initialized so force
+ * variables to live in SRAM
+ */
+static struct sram_data __attribute__((section(".data"))) srdata;
+
+void *get_base(void)
 {
-	int freq;
-	int i;
-
-#ifdef CONFIG_MX31
-	freq = mx31_get_ipg_clk();
-#else
-	freq = mxc_get_clock(MXC_IPG_PERCLK);
+#ifdef CONFIG_SYS_I2C_BASE
+#ifdef CONFIG_I2C_MULTI_BUS
+	void *ret = srdata.i2c_data[srdata.curr_i2c_bus].base;
+	if (ret)
+		return ret;
 #endif
-	for (i = 0; i < 0x1f; i++)
-		if (freq / div[i] <= speed)
-			break;
-
-	DPRINTF("%s: root clock: %d, speed: %d div: %x\n",
-		__func__, freq, speed, i);
-
-	__REG16(base + IFDR) = i;
-	i2c_reset(base);
+	return (void *)CONFIG_SYS_I2C_BASE;
+#elif defined(CONFIG_I2C_MULTI_BUS)
+	return srdata.i2c_data[srdata.curr_i2c_bus].base;
+#else
+	return srdata.i2c_data[0].base;
+#endif
 }
 
-int i2c_get_bus_num(void)
+static struct i2c_parms *i2c_get_parms(void *base)
 {
-	return g_bus;
+	int i = 0;
+	struct i2c_parms *p = srdata.i2c_data;
+	while (i < ARRAY_SIZE(srdata.i2c_data)) {
+		if (p->base == base)
+			return p;
+		p++;
+		i++;
+	}
+	printf("Invalid I2C base: %p\n", base);
+	return NULL;
+}
+
+static int toggle_i2c(void *base)
+{
+	struct i2c_parms *p = i2c_get_parms(base);
+	if (p && p->toggle_fn)
+		return p->toggle_fn(p->toggle_data);
+	return 0;
+}
+
+#ifdef CONFIG_I2C_MULTI_BUS
+unsigned int i2c_get_bus_num(void)
+{
+	return srdata.curr_i2c_bus;
 }
 
 int i2c_set_bus_num(unsigned bus_idx)
 {
-	if (bus_idx >= ARRAY_SIZE(i2c_bases))
+	if (bus_idx >= ARRAY_SIZE(srdata.i2c_data))
 		return -1;
-	g_bus = bus_idx;
+	if (!srdata.i2c_data[bus_idx].base)
+		return -1;
+	srdata.curr_i2c_bus = bus_idx;
 	return 0;
 }
+#endif
 
 int i2c_read(uchar chip, uint addr, int alen, uchar *buf, int len)
 {
-	return bus_i2c_read(i2c_bases[g_bus], chip, addr, alen, buf, len);
+	return bus_i2c_read(get_base(), chip, addr, alen, buf, len);
 }
+
 int i2c_write(uchar chip, uint addr, int alen, uchar *buf, int len)
 {
-	return bus_i2c_write(i2c_bases[g_bus], chip, addr, alen, buf, len);
+	return bus_i2c_write(get_base(), chip, addr, alen, buf, len);
 }
+
+/*
+ * Try if a chip add given address responds (probe the chip)
+ */
 int i2c_probe(uchar chip)
 {
-	return bus_i2c_probe(i2c_bases[g_bus], chip);
+	return bus_i2c_write(get_base(), chip, 0, 0, NULL, 0);
 }
+
+void bus_i2c_init(void *base, int speed, int unused,
+		int (*toggle_fn)(void *p), void *toggle_data)
+{
+	int i = 0;
+	struct i2c_parms *p = srdata.i2c_data;
+	if (!base)
+		return;
+	for (;;) {
+		if (!p->base || (p->base == base)) {
+			p->base = base;
+			if (toggle_fn) {
+				p->toggle_fn = toggle_fn;
+				p->toggle_data = toggle_data;
+			}
+			break;
+		}
+		p++;
+		i++;
+		if (i >= ARRAY_SIZE(srdata.i2c_data))
+			return;
+	}
+	bus_i2c_set_bus_speed(base, speed);
+}
+
+/*
+ * Init I2C Bus
+ */
 void i2c_init(int speed, int unused)
 {
-	bus_i2c_init(i2c_bases[g_bus], speed, unused);
+	bus_i2c_init(get_base(), speed, unused, NULL, NULL);
 }
-#endif				/* CONFIG_HARD_I2C */
+
+/*
+ * Set I2C Speed
+ */
+int i2c_set_bus_speed(unsigned int speed)
+{
+	return bus_i2c_set_bus_speed(get_base(), speed);
+}
+
+/*
+ * Get I2C Speed
+ */
+unsigned int i2c_get_bus_speed(void)
+{
+	return bus_i2c_get_bus_speed(get_base());
+}
