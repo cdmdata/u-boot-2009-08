@@ -199,10 +199,12 @@ static int i2c_init_transfer_(struct mxc_i2c_regs *i2c_regs,
 
 	/* Start I2C transaction */
 	writeb(I2CR_IEN | I2CR_MSTA | I2CR_MTX, &i2c_regs->i2cr);
+
 	ret = wait_for_sr_state(i2c_regs, ST_BUS_BUSY);
 	if (ret < 0)
 		return ret;
 
+	/* write slave address */
 	ret = tx_byte(i2c_regs, chip << 1);
 	if (ret < 0)
 		return ret;
@@ -272,6 +274,7 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 	writeb(0, &i2c_regs->i2sr);
 	readb(&i2c_regs->i2dr);		/* dummy read to clear ICF */
 
+	/* read data */
 	for (i = 0; i < len; i++) {
 		ret = wait_for_sr_state(i2c_regs, ST_IIF);
 		if (ret < 0) {
