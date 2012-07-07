@@ -49,15 +49,19 @@ struct mxc_i2c_regs {
 #define I2SR_IIF	(1 << 1)
 #define I2SR_RX_NO_AK	(1 << 0)
 
+/*
+ * Values in manual are incorrect
+ */
+#define C 0	/* correction value should be 8, but not agreed on yet */
 static u16 divisor_map[] = {
-	  30,   32,   36,   42,   48,   52,   60,   72,
-	  80,   88,  104,  128,  144,  160,  192,  240,
+	  30+C,   32+C,   36+C,   42+C,   48+C,   52+C,   60+C,   72+C,
+	  80+C,   88+C,  104+C,  128+C,  144+C,  160+C,  192+C,  240+C,
 	 288,  320,  384,  480,  576,  640,  768,  960,
 	1152, 1280, 1536, 1920, 2304, 2560, 3072, 3840,
-	  22,   24,   26,   28,   32,   36,   40,   44,
-	  48,   56,   64,   72,   80,   96,  112,  128,
-	 160,  192,  224,  256,  320,  384,  448,  512,
-	 640,  768,  896, 1024, 1280, 1536, 1792, 2048,
+	  22+C,   24+C,   26+C,   28+C,   32+C,   36+C,   40+C,   44+C,
+	  48+C,   56+C,   64+C,   72+C,   80+C,   96+C,  112+C,  128+C,
+	 160+C,  192+C,  224+C,  256+C,  320+C,  384+C,  448+C,  512+C,
+	 640+C,  768+C,  896+C, 1024+C, 1280+C, 1536+C, 1792+C, 2048+C,
 };
 
 static inline void i2c_reset(struct mxc_i2c_regs *i2c_regs)
@@ -172,7 +176,7 @@ static void i2c_imx_stop(struct mxc_i2c_regs *i2c_regs)
 	writeb(temp, &i2c_regs->i2cr);
 	ret = wait_for_sr_state(i2c_regs, ST_BUS_IDLE);
 	if (ret < 0)
-		printf("%s:trigger stop fail\n", __func__);
+		printf("%s:trigger stop failed\n", __func__);
 }
 
 /*
@@ -269,6 +273,8 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 		i2c_imx_stop(i2c_regs);
 		return ret;
 	}
+
+	/* setup bus to read data */
 	writeb(I2CR_IEN | I2CR_MSTA | ((len <= 1) ? I2CR_TX_NO_AK : 0),
 			&i2c_regs->i2cr);
 	writeb(0, &i2c_regs->i2sr);
@@ -284,6 +290,7 @@ int bus_i2c_read(void *base, uchar chip, uint addr, int alen, uchar *buf,
 			i2c_imx_stop(i2c_regs);
 			return ret;
 		}
+
 		/*
 		 * It must generate STOP before read I2DR to prevent
 		 * controller from generating another clock cycle
@@ -407,7 +414,7 @@ int i2c_write(uchar chip, uint addr, int alen, uchar *buf, int len)
 }
 
 /*
- * Try if a chip add given address responds (probe the chip)
+ * Test if a chip at a given address responds (probe the chip)
  */
 int i2c_probe(uchar chip)
 {
