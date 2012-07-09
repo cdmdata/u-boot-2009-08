@@ -252,6 +252,8 @@
 #define PART_ACCESS_MASK	(0x7)
 #define PART_SUPPORT		(0x1)
 
+#define MMCPART_NOAVAILABLE	(0xff)
+
 struct mmc_cid {
 	unsigned long psn;
 	unsigned short oid;

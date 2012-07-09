@@ -23,18 +23,14 @@
 
 include $(TOPDIR)/config.mk
 
-LIB	:= $(obj)libusb_gadget.a
+LIB	:= $(obj)libfastboot.a
 
-ifdef CONFIG_USB_DEVICE
-COBJS-y += core.o
-COBJS-y += ep0.o
-COBJS-$(CONFIG_IMX_UDC) += imx_udc.o
-COBJS-$(CONFIG_OMAP1510) += omap1510_udc.o
-COBJS-$(CONFIG_OMAP1610) += omap1510_udc.o
-COBJS-$(CONFIG_MPC885_FAMILY) += mpc8xx_udc.o
-COBJS-$(CONFIG_PXA27X) += pxa27x_udc.o
-endif
-
+# ohci
+COBJS-$(CONFIG_FASTBOOT) += fastboot.o
+COBJS-$(CONFIG_FASTBOOT_STORAGE_ENV) += storage_env.o
+COBJS-$(CONFIG_FASTBOOT_STORAGE_EMMC_SATA) += storage_emmc_sata.o
+COBJS-$(CONFIG_FASTBOOT_STORAGE_NAND) += storage_nand.o
+COBJS-$(CONFIG_FASTBOOT_STORAGE_SF) += storage_sf.o
 COBJS	:= $(COBJS-y)
 SRCS	:= $(COBJS:.o=.c)
 OBJS	:= $(addprefix $(obj),$(COBJS))

@@ -80,6 +80,37 @@
 #define CONFIG_TFP410_LDO10
 #define CONFIG_TFP410_BUS I2C2_BASE_ADDR
 
+/*
+ * Android support Configs
+ */
+
+/* Android fastboot configs */
+#define CONFIG_USB_DEVICE
+#define CONFIG_IMX_UDC
+#define CONFIG_FASTBOOT
+#define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+#define CONFIG_FASTBOOT_STORAGE_SF
+//#define CONFIG_FASTBOOT_STORAGE_NAND
+#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+#define CONFIG_FASTBOOT_PRODUCT_ID     0x0c01
+#define CONFIG_FASTBOOT_BCD_DEVICE     0x0311
+#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx53 Nit"
+#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+#define CONFIG_FASTBOOT_INTERFACE_STR         "Android fastboot"
+#define CONFIG_FASTBOOT_SERIAL_NUM   "12345"
+#define CONFIG_FASTBOOT_TRANSFER_BUF 0x80000000
+#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x09400000 /* 148M byte */
+
+#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
+#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
+#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+#define CONFIG_ANDROID_RECOVERY
+#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
+#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+        "booti mmc1 recovery"
+#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
 #define CONFIG_CONS_INDEX		1
@@ -273,9 +304,9 @@
  */
 #define CONFIG_NR_DRAM_BANKS	1
 #define PHYS_SDRAM_1		CSD0_BASE_ADDR
-#define PHYS_SDRAM_1_SIZE	(1024 * 1024 * 1024)	/* GE board has 1G */
+#define PHYS_SDRAM_1_SIZE	(1u * 1024 * 1024 * 1024)	/* GE board has 1G */
 #define iomem_valid_addr(addr, size) \
-	(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
+	((addr >= PHYS_SDRAM_1) && (addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE)))
 
 /*-----------------------------------------------------------------------
  * FLASH and environment organization
