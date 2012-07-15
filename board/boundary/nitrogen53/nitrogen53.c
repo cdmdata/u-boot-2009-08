@@ -1799,6 +1799,47 @@ void check_power_key(void)
 }
 #endif
 
+struct button_key {
+       char const      *name;
+       unsigned        gpnum;
+       char            ident;
+};
+
+static struct button_key const buttons[] = {
+       {"back",		MAKE_GP(3, 26),	'B'},
+       {"home",		MAKE_GP(3, 29),	'H'},
+       {"menu",		MAKE_GP(3, 31),	'M'},
+       {"search",	MAKE_GP(3, 27),	'S'},
+};
+
+/*
+ * generate a null-terminated string containing the buttons pressed
+ * returns number of keys pressed
+ */
+static int read_keys(char *buf)
+{
+       int i, numpressed = 0;
+       for (i = 0; i < ARRAY_SIZE(buttons); i++) {
+               if (!gpio_get_value(buttons[i].gpnum))
+                       buf[numpressed++] = buttons[i].ident;
+       }
+       buf[numpressed] = '\0';
+       return numpressed;
+}
+
+static int do_kbd(cmd_tbl_t *cmdtp, int flag, int argc, char * argv[])
+{
+       char envvalue[ARRAY_SIZE(buttons)+1];
+       int numpressed = read_keys(envvalue);
+       setenv("keybd", envvalue);
+       return numpressed == 0;
+}
+
+U_BOOT_CMD(
+       kbd, 1, 1, do_kbd,
+       "Tests for keypresses, sets 'keybd' environment variable",
+       "Returns 0 (true) to shell if key is pressed."
+);
 
 
 struct da90_regname_t {
