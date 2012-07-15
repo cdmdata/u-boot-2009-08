@@ -228,6 +228,7 @@
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
 	"ethprime=FEC0\0"		\
 	"upgradeu=fatload mmc 0 70008000 n53_upgrade && source 70008000\0" \
+	"clearenv=sf probe 1 && sf erase 0x5f000 0x1000 && echo 'environment reset to factory defaults';\0" \
 
 #define CONFIG_ARP_TIMEOUT	200UL
 
