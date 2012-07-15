@@ -227,6 +227,7 @@
 
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
 	"ethprime=FEC0\0"		\
+	"upgradeu=fatload mmc 0 70008000 n53_upgrade && source 70008000\0" \
 
 #define CONFIG_ARP_TIMEOUT	200UL
 
