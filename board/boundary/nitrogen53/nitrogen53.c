@@ -1575,7 +1575,14 @@ int misc_init_r(void)
 	unsigned char macAddrROM[6];
 	unsigned char macAddrEnv[6];
 	unsigned found = 0 ;
-	int rv = iim_read_mac_addr(macAddrROM);
+	int rv ;
+
+	/* gpio3[23] - KEEPON */
+	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
+	mxc_iomux_set_pad(MX53_PIN_EIM_D23, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+	Set_GPIO_output_val(MAKE_GP(3, 23), 1);
+
+	rv = iim_read_mac_addr(macAddrROM);
 	if (rv) {
 		printf( "ROM mac address %02x:%02x:%02x:%02x:%02x:%02x\n",
 			macAddrROM[0], macAddrROM[1], macAddrROM[2],
@@ -1618,6 +1625,7 @@ int board_late_init(void)
 	char buf[20];
 	int i = 1;
 	unsigned uart;
+
 #ifdef CONFIG_I2C_MXC
 	char *pmic_regs ;
 	if (0 != (pmic_regs = getenv("PMICREGS"))) {
@@ -1650,10 +1658,6 @@ int board_late_init(void)
 	mxc_request_iomux(MX53_PIN_EIM_D22, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D22, N53_BUTTON_100KPU_PAD_CTL);
 	Set_GPIO_input(MAKE_GP(3, 22));
-	/* gpio3[23] - KEEPON */
-	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
-	mxc_iomux_set_pad(MX53_PIN_EIM_D23, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
-	Set_GPIO_output_val(MAKE_GP(3, 23), 1);
 
 	uart = get_uart_base();
 	if (uart == UART1_BASE_ADDR) {
