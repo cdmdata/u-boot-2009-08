@@ -171,6 +171,7 @@ struct ahci_ioports {
 	u32	scr_addr;
 	u32	port_mmio;
 	struct ahci_cmd_hdr	*cmd_slot;
+	void	*cmd_slot_release;
 	struct ahci_sg		*cmd_tbl_sg;
 	u32	cmd_tbl;
 	u32	rx_fis;
