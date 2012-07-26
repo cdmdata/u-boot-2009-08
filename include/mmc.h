@@ -284,7 +284,6 @@ struct mmc {
 	uint read_bl_len;
 	uint write_bl_len;
 	u64 capacity;
-	uint init_completed;
 #ifdef CONFIG_BOOT_PARTITION_ACCESS
 	uint boot_config;
 	uint boot_size_mult;

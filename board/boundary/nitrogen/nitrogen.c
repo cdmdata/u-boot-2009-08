@@ -1263,6 +1263,12 @@ int board_late_init(void)
 #ifdef CONFIG_IMX_ECSPI
 		setup_core_voltage_spi();
 #endif
+#ifdef CONFIG_MMC
+	{
+		struct mmc *mmc = find_mmc_device(0);
+		if (mmc) mmc_init(mmc);
+	}
+#endif
 
 	return 0;
 }
