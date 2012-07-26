@@ -518,6 +518,7 @@ extern void set_usboh3_clk(void);
 extern void set_usb_phy1_clk(void);
 extern void enable_usboh3_clk(unsigned char enable);
 extern void enable_usb_phy1_clk(unsigned char enable);
+extern int enable_i2c_clk(unsigned char enable, unsigned i2c_num);
 #endif /* __ASSEMBLER__*/
 
 #endif				/*  __ASM_ARCH_MXC_MX53_H__ */

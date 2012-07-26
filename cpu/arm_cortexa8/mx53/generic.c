@@ -1146,6 +1146,26 @@ void enable_usboh3_clk(unsigned char enable)
 	writel(reg, MXC_CCM_CCGR2);
 }
 
+#ifdef CONFIG_I2C_MXC
+/* i2c_num can be from 0 - 2 */
+int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
+{
+	u32 reg;
+	u32 mask;
+
+	if (i2c_num > 2)
+		return -EINVAL;
+	mask = MXC_CCM_CCGR_CG_MASK << ((i2c_num + 9) << 1);
+	reg = __raw_readl(MXC_CCM_CCGR1);
+	if (enable)
+		reg |= mask;
+	else
+		reg &= ~mask;
+	__raw_writel(reg, MXC_CCM_CCGR1);
+	return 0;
+}
+#endif
+
 void enable_usb_phy1_clk(unsigned char enable)
 {
 	unsigned int reg;

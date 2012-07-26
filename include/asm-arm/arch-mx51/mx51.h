@@ -543,6 +543,7 @@ extern void set_pixel_clock(int which, unsigned hz);
 unsigned get_pixel_clock(unsigned which);
 extern void setup_display(void);
 extern void disable_lcd_panel(void);
+extern int enable_i2c_clk(unsigned char enable, unsigned i2c_num);
 
 
 #endif /* __ASSEMBLER__*/
