@@ -221,7 +221,7 @@ static int i2c_init_transfer_(struct mxc_i2c_regs *i2c_regs,
 	return 0;
 }
 
-static int toggle_i2c(void *base);
+static int i2c_idle_bus(void *base);
 
 static int i2c_init_transfer(struct mxc_i2c_regs *i2c_regs,
 		uchar chip, uint addr, int alen)
@@ -241,7 +241,7 @@ static int i2c_init_transfer(struct mxc_i2c_regs *i2c_regs,
 		if (ret != -ERESTART)
 			writeb(0, &i2c_regs->i2cr);	/* Disable controller */
 		udelay(100);
-		if (toggle_i2c(i2c_regs) < 0)
+		if (i2c_idle_bus(i2c_regs) < 0)
 			break;
 	}
 	printf("%s: give up i2c_regs=%p\n", __func__, i2c_regs);
@@ -333,8 +333,8 @@ int bus_i2c_write(void *base, uchar chip, uint addr, int alen,
 
 struct i2c_parms {
 	void *base;
-	void *toggle_data;
-	int (*toggle_fn)(void *p);
+	void *idle_bus_data;
+	int (*idle_bus_fn)(void *p);
 };
 
 struct sram_data {
@@ -378,11 +378,11 @@ static struct i2c_parms *i2c_get_parms(void *base)
 	return NULL;
 }
 
-static int toggle_i2c(void *base)
+static int i2c_idle_bus(void *base)
 {
 	struct i2c_parms *p = i2c_get_parms(base);
-	if (p && p->toggle_fn)
-		return p->toggle_fn(p->toggle_data);
+	if (p && p->idle_bus_fn)
+		return p->idle_bus_fn(p->idle_bus_data);
 	return 0;
 }
 
@@ -422,7 +422,7 @@ int i2c_probe(uchar chip)
 }
 
 void bus_i2c_init(void *base, int speed, int unused,
-		int (*toggle_fn)(void *p), void *toggle_data)
+		int (*idle_bus_fn)(void *p), void *idle_bus_data)
 {
 	int i = 0;
 	struct i2c_parms *p = srdata.i2c_data;
@@ -431,9 +431,9 @@ void bus_i2c_init(void *base, int speed, int unused,
 	for (;;) {
 		if (!p->base || (p->base == base)) {
 			p->base = base;
-			if (toggle_fn) {
-				p->toggle_fn = toggle_fn;
-				p->toggle_data = toggle_data;
+			if (idle_bus_fn) {
+				p->idle_bus_fn = idle_bus_fn;
+				p->idle_bus_data = idle_bus_data;
 			}
 			break;
 		}
