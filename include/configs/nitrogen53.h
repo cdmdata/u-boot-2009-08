@@ -214,7 +214,6 @@
  * I2C Configs
  */
 #ifdef CONFIG_CMD_I2C
-	#define CONFIG_HARD_I2C         1
 	#define CONFIG_I2C_MXC          1
 	#define CONFIG_SYS_I2C1_SPEED	400000
 	#define CONFIG_SYS_I2C2_SPEED	100000
