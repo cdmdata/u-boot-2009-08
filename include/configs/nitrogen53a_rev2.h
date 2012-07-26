@@ -37,7 +37,8 @@
 	"machid=c62\0"			\
 	"panel=raw:63500000,1024,768,1,0,1,0,104,152,48,4,23,3,1,1\0" \
 	"lvds=1,1\0" \
-	"clearenv=sf erase 0x5f000 0x1000 && echo 'environment reset to factory defaults'; \0" \
+	"upgradeu=fatload mmc 0 70008000 n53_upgrade && source 70008000\0" \
+	"clearenv=sf probe 1 && sf erase 0x5f000 0x1000 && echo 'environment reset to factory defaults'; \0" \
 
 #define CONFIG_POWER_KEY
 
