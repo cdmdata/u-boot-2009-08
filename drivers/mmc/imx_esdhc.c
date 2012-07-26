@@ -82,7 +82,7 @@ uint esdhc_xfertyp(struct mmc_cmd *cmd, struct mmc_data *data)
 	uint xfertyp = 0;
 
 	if (data) {
-		xfertyp |= XFERTYP_DPSEL | XFERTYP_AC12EN;
+		xfertyp |= XFERTYP_DPSEL;
 
 		if (data->blocks > 1) {
 			xfertyp |= XFERTYP_MSBSEL;
