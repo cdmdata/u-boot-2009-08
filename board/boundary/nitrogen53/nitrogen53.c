@@ -300,6 +300,8 @@ unsigned get_uart_base(void)
 	unsigned base;
 	if (uart_base)
 		return uart_base;
+	/* Prevent recursion if i2c prints message */
+	uart_base = UART3_BASE_ADDR;
 	buf[0] = 0x09;		/* gp12 input, no LDO9_en , active low */
 
 	if (bus_i2c_write(DA90_I2C_BUS, DA90_I2C_ADDR, 0x1b, 1, buf, 1)) {
