@@ -26,7 +26,9 @@ include $(TOPDIR)/config.mk
 LIB	= $(obj)lib$(CPU).a
 
 START	:= start.o
-COBJS	:= cpu.o
+COBJS-y	= cpu.o iomux-v3.o
+COBJS	:= $(sort $(COBJS-y))
+
 SOBJS	:= xmodemReceive.o
 
 SRCS	:= $(START:.o=.S) $(COBJS:.o=.c) $(SOBJS:.o=.S)
