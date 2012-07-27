@@ -147,6 +147,7 @@
 #define CONFIG_REF_CLK_FREQ CONFIG_MX53_HCLK_FREQ
 
 #define CONFIG_CMD_SATA
+#define CONFIG_CMD_RESETMODE
 
 ///////////
 /*
