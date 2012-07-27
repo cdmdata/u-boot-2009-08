@@ -27,12 +27,17 @@
 #include <asm/arch/mx53.h>
 #include <asm/arch/mx53_pins.h>
 #include <asm/arch/iomux.h>
+#include <asm/arch/iomux-mx53.h>
+#include <asm/gpio.h>
+#include <asm/imx-common/mxc_i2c.h>
 #include <asm/errno.h>
 #include <imx_spi.h>
 #include <netdev.h>
 #include <malloc.h>
 #include "da9052.h"
 #include "bq2416x.h"
+
+#define GPIO_NUMBER(port, offset) (((port - 1) << 5) | offset)
 
 //#define DEBUG		//if enabled, also enable in start.S
 #ifdef DEBUG
@@ -43,13 +48,6 @@ void TransmitX(char ch);
 #endif
 
 #define N53_BUTTON_100KPU_PAD_CTL	(PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | PAD_CTL_100K_PU)
-
-#if CONFIG_I2C_MXC
-#include <i2c.h>
-void bus_i2c_init(unsigned base, int speed, int unused);
-int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, const uchar *buf, int len);
-int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
-#endif
 
 #ifdef CONFIG_CMD_MMC
 #include <mmc.h>
@@ -84,52 +82,6 @@ static enum boot_device boot_dev;
 
 #define GPIO_DIR 4
 #define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
-
-unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR,
-		GPIO5_BASE_ADDR, GPIO6_BASE_ADDR, GPIO7_BASE_ADDR};
-void Set_GPIO_output_val(unsigned gp, unsigned val)
-{
-	unsigned base = gp_base[gp >> 5];
-	unsigned mask = (1 << (gp & 0x1f));
-	unsigned reg = readl(base + GPIO_DR);
-	if (val & 1)
-		reg |= mask;	/* set high */
-	else
-		reg &= ~mask;	/* clear low */
-	writel(reg, base + GPIO_DR);
-
-	reg = readl(base + GPIO_DIR);
-	reg |= mask;		/* configure GPIO line as output */
-	writel(reg, base + GPIO_DIR);
-}
-
-void Set_GPIO_input(unsigned gp)
-{
-	unsigned base = gp_base[gp >> 5];
-	unsigned mask = (1 << (gp & 0x1f));
-	unsigned reg;
-	reg = readl(base + GPIO_DIR);
-	reg &= ~mask;		/* configure GPIO line as input */
-	writel(reg, base + GPIO_DIR);
-}
-
-unsigned gpio_get_value(unsigned gp)
-{
-	unsigned base = gp_base[gp >> 5];
-	unsigned reg = readl(base + GPIO_PSR);
-	return (reg >> (gp & 0x1f)) & 1;
-}
-
-void gpio_set_value(unsigned gp,unsigned val)
-{
-	unsigned base = gp_base[gp >> 5];
-	unsigned reg = readl(base + GPIO_DR);
-	unsigned bit = (gp&31);
-	unsigned mask = 1<<bit;
-	val = (val<<bit)&mask ;
-	val |= (reg&~mask);
-	writel(val,base + GPIO_DR);
-}
 
 unsigned get_machid(void)
 {
@@ -466,123 +418,12 @@ static void setup_uart(void)
 	printf("setup_uart clk_src=%i mult=%i div=%i\n", clk_src, mult, div);
 }
 
-
-#ifdef CONFIG_I2C_MXC
-#define I2C_PAD_NO_PULLUP (PAD_CTL_HYS_ENABLE |	PAD_CTL_100K_PU | \
-		PAD_CTL_ODE_OPENDRAIN_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST)
-#define I2C_PAD_22K_PULLUP (PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | PAD_CTL_22K_PU | \
-		PAD_CTL_ODE_OPENDRAIN_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST)
-
-struct pin_ctrl {
-	iomux_pin_name_t pin;
-	u32 sel_input;
-	unsigned char alt;
-	unsigned char path;
-	unsigned char gp;
-	unsigned char spare;
-};
-
-struct i2c_select {
-	u32 pad_ctl;
-	struct pin_ctrl sda;
-	struct pin_ctrl scl;
-};
-
-static int i2c_get_index(unsigned module_base)
-{
-	int i = -1;
-	switch (module_base) {
-	case I2C1_BASE_ADDR:
-		i = 0;
-		break;
-	case I2C2_BASE_ADDR:
-		i = 1;
-		break;
-	case I2C3_BASE_ADDR:
-		/* only boards no longer supported use gpio6 for sda */
-		i = 3;
-		break;
-	default:
-		printf("Invalid I2C base: 0x%x\n", module_base);
-		break;
-	}
-	return i;
-}
-
-struct i2c_select i2c_sel[] = {
-//0
-	{ I2C_PAD_22K_PULLUP,
-		{MX53_PIN_EIM_D28, MUX_IN_I2C1_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(3, 28)},
-		{MX53_PIN_EIM_D21, MUX_IN_I2C1_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(3, 21)}},
-//1
-	{ I2C_PAD_NO_PULLUP,
-		{MX53_PIN_KEY_ROW3, MUX_IN_I2C2_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT4 | IOMUX_CONFIG_SION, INPUT_CTL_PATH0, MAKE_GP(4, 13)},
-		{MX53_PIN_EIM_EB2,  MUX_IN_I2C2_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT5 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(2, 30)}},
-//2
-	{ I2C_PAD_NO_PULLUP,
-		{MX53_PIN_GPIO_6,  MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(1, 6)},
-		{MX53_PIN_GPIO_3,  MUX_IN_I2C3_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(1, 3)}},
-//3
-	{ I2C_PAD_NO_PULLUP,
-		{MX53_PIN_GPIO_16, MUX_IN_I2C3_IPP_SDA_IN_SELECT_INPUT, IOMUX_CONFIG_ALT6 | IOMUX_CONFIG_SION, INPUT_CTL_PATH2, MAKE_GP(7, 11)},
-		{MX53_PIN_GPIO_3,  MUX_IN_I2C3_IPP_SCL_IN_SELECT_INPUT, IOMUX_CONFIG_ALT2 | IOMUX_CONFIG_SION, INPUT_CTL_PATH1, MAKE_GP(1, 3)}},
-};
-
-
-static void setup_i2c(unsigned int module_base)
-{
-	int i = i2c_get_index(module_base);
-	struct i2c_select* p;
-	if (i < 0)
-		return;
-
-	/* GPIO_0 - SSI_EXT1 output clock, this is needed for sgtl500 */
-	mxc_request_iomux(MX53_PIN_GPIO_0, IOMUX_CONFIG_ALT3);
-
-	p = &i2c_sel[i];
-	/* SDA */
-	mxc_request_iomux(p->sda.pin, p->sda.alt);
-	mxc_iomux_set_input(p->sda.sel_input, p->sda.path);
-	mxc_iomux_set_pad(p->sda.pin, p->pad_ctl);
-	/* SCL */
-	mxc_request_iomux(p->scl.pin, p->scl.alt);
-	mxc_iomux_set_input(p->scl.sel_input, p->scl.path);
-	mxc_iomux_set_pad(p->scl.pin, p->pad_ctl);
-}
-
-void toggle_i2c(unsigned int module_base)
-{
-	int i = i2c_get_index(module_base);
-	struct i2c_select* p;
-	if (i < 0)
-		return;
-	p = &i2c_sel[i];
-	Set_GPIO_input(p->sda.gp);
-	Set_GPIO_input(p->scl.gp);
-	mxc_request_iomux(p->sda.pin, 1 | IOMUX_CONFIG_SION);
-	mxc_request_iomux(p->scl.pin, 1 | IOMUX_CONFIG_SION);
-
-	printf("%s sda=%i scl=%i sda.gp=0x%x scl.gp=0x%x\n", __func__, gpio_get_value(p->sda.gp), gpio_get_value(p->scl.gp), p->sda.gp, p->scl.gp);
-	/* Send high and low on the SCL line */
-	for (i = 0; i < 9; i++) {
-		Set_GPIO_output_val(p->scl.gp, 0);
-		udelay(20);
-		Set_GPIO_input(p->scl.gp);
-		udelay(10);
-		printf("%s sda=%i scl=%i\n", __func__, gpio_get_value(p->sda.gp), gpio_get_value(p->scl.gp));
-		udelay(10);
-	}
-	mxc_request_iomux(p->sda.pin, p->sda.alt);
-	mxc_request_iomux(p->scl.pin, p->scl.alt);
-}
-#endif
-
 #ifdef CONFIG_W3
 void w3_setup(void)
 {
-	Set_GPIO_output_val(CONFIG_W3_CS, 1);
-	Set_GPIO_input(CONFIG_W3_SCL);
-	Set_GPIO_input(CONFIG_W3_SDA);
+	gpio_direction_output(CONFIG_W3_CS, 1);
+	gpio_direction_input(CONFIG_W3_SCL);
+	gpio_direction_input(CONFIG_W3_SDA);
 	mxc_iomux_set_pad(CONFIG_W3_CS_PIN, 0x1ec);
 	mxc_iomux_set_pad(CONFIG_W3_SCL_PIN, 0x1ec);
 	mxc_iomux_set_pad(CONFIG_W3_SDA_PIN, 0x1ec);
@@ -595,20 +436,20 @@ void w3_write(unsigned reg, unsigned data)
 {
 	int i;
 	unsigned val = (reg << 10) | (data & 0xff);
-	Set_GPIO_output_val(CONFIG_W3_SCL, 1);
-	Set_GPIO_output_val(CONFIG_W3_SDA, 1);
-	Set_GPIO_output_val(CONFIG_W3_CS, 0);
+	gpio_direction_output(CONFIG_W3_SCL, 1);
+	gpio_direction_output(CONFIG_W3_SDA, 1);
+	gpio_direction_output(CONFIG_W3_CS, 0);
 	for (i = 0; i < 16; i++) {
-		Set_GPIO_output_val(CONFIG_W3_SCL, 0);
-		Set_GPIO_output_val(CONFIG_W3_SDA, (val >> 15) & 1);
+		gpio_direction_output(CONFIG_W3_SCL, 0);
+		gpio_direction_output(CONFIG_W3_SDA, (val >> 15) & 1);
 		udelay(10);
-		Set_GPIO_output_val(CONFIG_W3_SCL, 1);
+		gpio_direction_output(CONFIG_W3_SCL, 1);
 		val <<= 1;
 		udelay(10);
 	}
-	Set_GPIO_output_val(CONFIG_W3_CS, 1);
-	Set_GPIO_input(CONFIG_W3_SCL);
-	Set_GPIO_input(CONFIG_W3_SDA);
+	gpio_direction_output(CONFIG_W3_CS, 1);
+	gpio_direction_input(CONFIG_W3_SCL);
+	gpio_direction_input(CONFIG_W3_SDA);
 	udelay(20);
 }
 
@@ -616,25 +457,25 @@ unsigned w3_read(unsigned reg)
 {
 	int i;
 	unsigned val = (reg << 10) | 0x3ff;
-	Set_GPIO_output_val(CONFIG_W3_SCL, 1);
-	Set_GPIO_output_val(CONFIG_W3_SDA, 1);
-	Set_GPIO_output_val(CONFIG_W3_CS, 0);
+	gpio_direction_output(CONFIG_W3_SCL, 1);
+	gpio_direction_output(CONFIG_W3_SDA, 1);
+	gpio_direction_output(CONFIG_W3_CS, 0);
 	for (i = 0; i < 16; i++) {
-		Set_GPIO_output_val(CONFIG_W3_SCL, 0);
+		gpio_direction_output(CONFIG_W3_SCL, 0);
 		if (i >= 7)
-			Set_GPIO_input(CONFIG_W3_SDA);
+			gpio_direction_input(CONFIG_W3_SDA);
 		else
-			Set_GPIO_output_val(CONFIG_W3_SDA, (val >> 15) & 1);
+			gpio_direction_output(CONFIG_W3_SDA, (val >> 15) & 1);
 		udelay(10);
-		Set_GPIO_output_val(CONFIG_W3_SCL, 1);
+		gpio_direction_output(CONFIG_W3_SCL, 1);
 		val <<= 1;
 		if (i >= 7)
 			val |= gpio_get_value(CONFIG_W3_SDA);
 		udelay(10);
 	}
-	Set_GPIO_output_val(CONFIG_W3_CS, 1);
-	Set_GPIO_input(CONFIG_W3_SCL);
-	Set_GPIO_input(CONFIG_W3_SDA);
+	gpio_direction_output(CONFIG_W3_CS, 1);
+	gpio_direction_input(CONFIG_W3_SCL);
+	gpio_direction_input(CONFIG_W3_SDA);
 	udelay(20);
 	return val & 0xff;
 }
@@ -730,7 +571,7 @@ void init_display_pins(void)
 {
 	unsigned machid = get_machid();
 #ifdef CONFIG_TFP410_BUS
-	unsigned tfp410_bus = CONFIG_TFP410_BUS;
+	void *tfp410_bus = CONFIG_TFP410_BUS;
 	unsigned tfp410_i2c_addr = 0x38;
 #endif
 	unsigned char buf[4];
@@ -743,8 +584,8 @@ void init_display_pins(void)
 		pins++ ;
 	}
 
-	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410, i2c_mode
-	Set_GPIO_input(MAKE_GP(4,15));			//tfp410, interrupt
+	gpio_direction_output(MAKE_GP(2, 29), 1);		//tfp410, i2c_mode
+	gpio_direction_input(MAKE_GP(4,15));			//tfp410, interrupt
 	mxc_request_iomux(MX53_PIN_EIM_EB1, IOMUX_CONFIG_ALT1);		//gpio2[29] - i2c_mode
 	mxc_iomux_set_pad(MX53_PIN_EIM_EB1, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
 	mxc_request_iomux(MX53_PIN_KEY_ROW4, IOMUX_CONFIG_ALT1);	//gpio4[15] - interrupt pin
@@ -755,15 +596,15 @@ void init_display_pins(void)
 	mxc_iomux_set_pad(MX53_PIN_GPIO_1, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
 	/* Some boards enable backlight power supply with this (NitrogenA) */
-	Set_GPIO_output_val(MAKE_GP(2, 16), 1);
+	gpio_direction_output(MAKE_GP(2, 16), 1);
 
 	/* backlight power enable for GE board, rts on UART3 for nitrogen53 */
-	Set_GPIO_input(MAKE_GP(3, 31));
+	gpio_direction_input(MAKE_GP(3, 31));
 	mxc_request_iomux(MX53_PIN_EIM_D31, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D31, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL);
 
 	/* gpio2[20] - Display enable for chimei 7" panel */
-	Set_GPIO_output_val(MAKE_GP(2, 20), 1);
+	gpio_direction_output(MAKE_GP(2, 20), 1);
 	mxc_request_iomux(MX53_PIN_EIM_A18, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_A18, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
@@ -788,19 +629,19 @@ void init_display_pins(void)
 	udelay(500);
 #endif
 #ifdef CONFIG_TFP410_HUB_EN
-	Set_GPIO_output_val(CONFIG_TFP410_HUB_EN, 1);		/* Enable */
+	gpio_direction_output(CONFIG_TFP410_HUB_EN, 1);		/* Enable */
 #endif
 
 #ifdef N53_I2C_CONNECTOR_BUFFER_ENABLE
-	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 0);	//disable external i2c connector
+	gpio_direction_output(N53_I2C_CONNECTOR_BUFFER_ENABLE, 0);	//disable external i2c connector
 	mxc_request_iomux(PIN_N53_I2C_CONNECTOR_BUFFER, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(PIN_N53_I2C_CONNECTOR_BUFFER, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 #endif
-	Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
+	gpio_direction_output(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
 	udelay(5);
-	Set_GPIO_output_val(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
+	gpio_direction_output(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
 	if (machid == MACH_TYPE_MX53_NITROGEN_V1)
-		tfp410_bus = I2C1_BASE_ADDR;
+		tfp410_bus = (void *)I2C1_BASE_ADDR;
 
 	/* Init tfp410 */
 	buf[0] = 0xbd;
@@ -812,15 +653,15 @@ void init_display_pins(void)
 		tfp410_i2c_addr++;
 		if (tfp410_i2c_addr > 0x39) {
 			printf("tfp410 init failed, machid = %x\n", machid);
-			Set_GPIO_output_val(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
+			gpio_direction_output(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
 			break;
 		}
 	}
 #ifdef N53_I2C_CONNECTOR_BUFFER_ENABLE
-	Set_GPIO_output_val(N53_I2C_CONNECTOR_BUFFER_ENABLE, 1);	//reenable external i2c connector
+	gpio_direction_output(N53_I2C_CONNECTOR_BUFFER_ENABLE, 1);	//reenable external i2c connector
 #endif
 #ifdef CONFIG_TFP410_HUB_EN
-	Set_GPIO_output_val(CONFIG_TFP410_HUB_EN, 0);		/* Disable */
+	gpio_direction_output(CONFIG_TFP410_HUB_EN, 0);		/* Disable */
 #endif
 #endif
 }
@@ -905,13 +746,13 @@ s32 spi_get_cfg(struct imx_spi_dev_t *dev)
 void spi_io_init(struct imx_spi_dev_t *dev, int active)
 {
 	if (dev->ss == 1) {
-		Set_GPIO_output_val(MAKE_GP(3, 19), active ? 0 : 1);
+		gpio_direction_output(MAKE_GP(3, 19), active ? 0 : 1);
 	}
 }
 
 void setup_spi(void)
 {
-	Set_GPIO_output_val(MAKE_GP(3, 19), 1);	/* SS1 low active */
+	gpio_direction_output(MAKE_GP(3, 19), 1);	/* SS1 low active */
 	/* de-select SS1 of instance: ecspi1. */
 	mxc_request_iomux(MX53_PIN_EIM_D19, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D19, 0x104);
@@ -939,7 +780,7 @@ void setup_spi(void)
 static void setup_fec(void)
 {
 	/* gp7[13] - low active reset pin*/
-	Set_GPIO_output_val(MAKE_GP(7, 13), 0);
+	gpio_direction_output(MAKE_GP(7, 13), 0);
 	mxc_request_iomux(MX53_PIN_GPIO_18, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_18, 0x0);
 
@@ -1018,7 +859,7 @@ static void setup_fec(void)
 
 
 	udelay(50);
-	Set_GPIO_output_val(MAKE_GP(7, 13), 1);
+	gpio_direction_output(MAKE_GP(7, 13), 1);
 }
 #endif
 
@@ -1072,7 +913,7 @@ int get_mmc_env_devno(void)
 	return (soc_sbmr & 0x00300000)  ? 1 : 0;
 }
 #endif
-
+#undef MX53_SDHC_PAD_CTRL
 #define MX53_SDHC_PAD_CTRL      (PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL | \
 		PAD_CTL_75K_PU | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST)
 
@@ -1142,13 +983,13 @@ int esdhc_gpio_init(bd_t *bis)
 #define N53_EMMC_RESET		MAKE_GP(5, 2)	/* EIM_A25 - eMMC reset */
 #endif
 
-			Set_GPIO_output_val(N53_EMMC_RESET, 0);
-			Set_GPIO_input(N53_WL1271_INT);
-			Set_GPIO_output_val(N53_WL1271_WL_EN, 0);
-			Set_GPIO_output_val(N53_WL1271_BT_EN, 0);
-			Set_GPIO_input(N53_WL1271_BT_FUNC5);
+			gpio_direction_output(N53_EMMC_RESET, 0);
+			gpio_direction_input(N53_WL1271_INT);
+			gpio_direction_output(N53_WL1271_WL_EN, 0);
+			gpio_direction_output(N53_WL1271_BT_EN, 0);
+			gpio_direction_input(N53_WL1271_BT_FUNC5);
 #ifdef N53_WL1271_BT_FUNC2
-			Set_GPIO_output_val(N53_WL1271_BT_FUNC2, 0);
+			gpio_direction_output(N53_WL1271_BT_FUNC2, 0);
 #endif
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
@@ -1279,7 +1120,7 @@ int esdhc_gpio_init(bd_t *bis)
 			mxc_iomux_set_pad(MX53_PIN_ATA_DATA7, MX53_SDHC_PAD_CTRL);	/* D7 */
 #endif
 			/* release eMMC reset */
-			Set_GPIO_output_val(N53_EMMC_RESET, 1);
+			gpio_direction_output(N53_EMMC_RESET, 1);
 			break;
 		default:
 			printf("Warning: you configured more ESDHC controller"
@@ -1309,10 +1150,61 @@ int board_mmc_init(bd_t *bis)
 
 #endif
 
+#ifdef CONFIG_I2C_MXC
+#define PC_22K	(PAD_CTL_PKE | PAD_CTL_PUE | PAD_CTL_PUS_22K_UP |	\
+	PAD_CTL_HYS | PAD_CTL_ODE | PAD_CTL_DSE_HIGH | PAD_CTL_SRE_FAST)
+
+#define PC_NONE	(PAD_CTL_PKE | PAD_CTL_PUE |	\
+	PAD_CTL_HYS | PAD_CTL_ODE | PAD_CTL_DSE_HIGH | PAD_CTL_SRE_FAST)
+
+
+/* I2C1,  */
+struct i2c_pads_info i2c_pad_info0 = {
+       .scl = {
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D21__I2C1_SCL, PC_22K),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D21__GPIO3_21, PC_22K),
+               .gp = GPIO_NUMBER(3, 21)
+       },
+       .sda = {
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D28__I2C1_SDA, PC_22K),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D28__GPIO3_28, PC_22K),
+               .gp = GPIO_NUMBER(3, 28)
+       }
+};
+
+/* I2C2,  */
+struct i2c_pads_info i2c_pad_info1 = {
+       .scl = {
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_EB2__I2C2_SCL, PC_NONE),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_EB2__GPIO2_30, PC_NONE),
+               .gp = GPIO_NUMBER(2, 30)
+       },
+       .sda = {
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_KEY_ROW3__I2C2_SDA, PC_NONE),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_KEY_ROW3__GPIO4_13, PC_NONE),
+               .gp = GPIO_NUMBER(4, 13)
+       }
+};
+
+/* I2C3,  */
+struct i2c_pads_info i2c_pad_info2 = {
+       .scl = {
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_3__I2C3_SCL, PC_NONE),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_3__GPIO1_3, PC_NONE),
+               .gp = GPIO_NUMBER(1, 3)
+       },
+       .sda = {
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_16__I2C3_SDA, PC_NONE),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_16__GPIO7_11, PC_NONE),
+               .gp = GPIO_NUMBER(7, 11)
+       }
+};
+#endif
+
 int board_init(void)
 {
 	/* Nitrogen A, disable 12V display power */
-	Set_GPIO_output_val(MAKE_GP(2, 16), 0);
+	gpio_direction_output(MAKE_GP(2, 16), 0);
 	mxc_request_iomux(MX53_PIN_EIM_A22, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_A22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
@@ -1323,7 +1215,7 @@ int board_init(void)
 	val &= ~0x1; /*RS bit*/
 	writel(val, OTG_BASE_ADDR + USBCMD);
 #endif
-	Set_GPIO_output_val(MAKE_GP(5, 0), 0);		//USB Hub reset, low power reset state
+	gpio_direction_output(MAKE_GP(5, 0), 0);		//USB Hub reset, low power reset state
 	mxc_request_iomux(MX53_PIN_EIM_WAIT, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_WAIT, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
 
@@ -1337,8 +1229,7 @@ int board_init(void)
 	gd->bd->bi_boot_params = PHYS_SDRAM_1 + 0x100;
 
 #ifdef CONFIG_I2C_MXC
-	setup_i2c(I2C1_BASE_ADDR);
-	bus_i2c_init(I2C1_BASE_ADDR, CONFIG_SYS_I2C1_SPEED, CONFIG_SYS_I2C_SLAVE);
+	setup_i2c(0, CONFIG_SYS_I2C1_SPEED, 0x7f, &i2c_pad_info0);
 #endif
 	setup_uart();
 	gd->bd->bi_arch_number = CONFIG_MACH_TYPE;	/* board id for linux */
@@ -1350,8 +1241,7 @@ int board_init(void)
 #endif
 
 #ifdef CONFIG_I2C_MXC
-	setup_i2c(I2C2_BASE_ADDR);
-	bus_i2c_init(I2C2_BASE_ADDR, CONFIG_SYS_I2C2_SPEED, CONFIG_SYS_I2C_SLAVE);
+	setup_i2c(1, CONFIG_SYS_I2C2_SPEED, 0x7f, &i2c_pad_info1);
 #endif
 
 #define PAD_CTL_NORMAL_LOW_OUT	PAD_CTL_360K_PD		/* pull down disabled */
@@ -1361,10 +1251,10 @@ int board_init(void)
 #define I2C2_HUB_BQ24163	MAKE_GP(3, 9)		/* EIM_DA9 */
 #define I2C2_HUB_AMBIENT	MAKE_GP(3, 10)		/* EIM_DA10 */
 #define I2C2_HUB_CAMERA		MAKE_GP(6, 10)		/* NANDF_RB0 */
-	Set_GPIO_output_val(I2C2_HUB_EDID, 0);		/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_BQ24163, 0);	/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_AMBIENT, 0);	/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_CAMERA, 0);	/* Disable */
+	gpio_direction_output(I2C2_HUB_EDID, 0);		/* Disable */
+	gpio_direction_output(I2C2_HUB_BQ24163, 0);	/* Disable */
+	gpio_direction_output(I2C2_HUB_AMBIENT, 0);	/* Disable */
+	gpio_direction_output(I2C2_HUB_CAMERA, 0);	/* Disable */
 	mxc_request_iomux(MX53_PIN_EIM_DA8, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
@@ -1383,12 +1273,12 @@ int board_init(void)
 #define I2C2_HUB_BATT_EDID		MAKE_GP(6, 11)		/* NANDF_CS0 */
 #define I2C2_HUB_OLD_EMPTY		MAKE_GP(3, 9)		/* EIM_DA9 */
 #define I2C3_HUB_SC16IS7XX		MAKE_GP(6, 10)		/* NANDF_RB0 */
-	Set_GPIO_output_val(I2C2_HUB_PIC16F616_TOUCH, 0);	/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_CAMERA, 0);		/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_TFP410_ACCEL, 0);		/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_BATT_EDID, 0);		/* Disable */
-	Set_GPIO_output_val(I2C2_HUB_OLD_EMPTY, 0);		/* Disable */
-	Set_GPIO_output_val(I2C3_HUB_SC16IS7XX, 0);		/* Disable */
+	gpio_direction_output(I2C2_HUB_PIC16F616_TOUCH, 0);	/* Disable */
+	gpio_direction_output(I2C2_HUB_CAMERA, 0);		/* Disable */
+	gpio_direction_output(I2C2_HUB_TFP410_ACCEL, 0);		/* Disable */
+	gpio_direction_output(I2C2_HUB_BATT_EDID, 0);		/* Disable */
+	gpio_direction_output(I2C2_HUB_OLD_EMPTY, 0);		/* Disable */
+	gpio_direction_output(I2C3_HUB_SC16IS7XX, 0);		/* Disable */
 
 	mxc_request_iomux(MX53_PIN_EIM_DA7, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
@@ -1410,8 +1300,7 @@ int board_init(void)
 #endif
 
 #ifdef CONFIG_I2C_MXC
-	setup_i2c(I2C3_BASE_ADDR);
-	bus_i2c_init(I2C3_BASE_ADDR, CONFIG_SYS_I2C3_SPEED, CONFIG_SYS_I2C_SLAVE);
+	setup_i2c(2, CONFIG_SYS_I2C3_SPEED, 0x7f, &i2c_pad_info2);
 	setup_core_voltages();
 #endif
 	return 0;
@@ -1580,7 +1469,7 @@ int misc_init_r(void)
 	/* gpio3[23] - KEEPON */
 	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D23, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
-	Set_GPIO_output_val(MAKE_GP(3, 23), 1);
+	gpio_direction_output(MAKE_GP(3, 23), 1);
 
 	rv = iim_read_mac_addr(macAddrROM);
 	if (rv) {
@@ -1657,7 +1546,7 @@ int board_late_init(void)
 	/* gpio3[22] - Power button */
 	mxc_request_iomux(MX53_PIN_EIM_D22, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D22, N53_BUTTON_100KPU_PAD_CTL);
-	Set_GPIO_input(MAKE_GP(3, 22));
+	gpio_direction_input(MAKE_GP(3, 22));
 
 	uart = get_uart_base();
 	if (uart == UART1_BASE_ADDR) {

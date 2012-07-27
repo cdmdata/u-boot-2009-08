@@ -22,13 +22,9 @@
 
 #include <common.h>
 #include <command.h>
+#include <asm/imx-common/mxc_i2c.h>
 
-#if CONFIG_I2C_MXC
-#include <i2c.h>
-void bus_i2c_init(unsigned base, int speed, int unused);
-int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
-int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
-#else
+#ifndef CONFIG_I2C_MXC
 #error attempt to include DA90_i2c_pmic without I2C_MXC
 #endif
 

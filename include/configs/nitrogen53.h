@@ -28,7 +28,7 @@
 
  /* High Level Configuration Options */
 #define CONFIG_ARMV7		1	/* This is armv7 Cortex-A8 CPU core */
-
+#define CONFIG_MXC_GPIO
 #define CONFIG_MXC		1
 #define CONFIG_MX53
 #define CONFIG_VIDEO_IMX5X	1
@@ -78,7 +78,7 @@
 #define CONFIG_MXC_UART 1
 #define CONFIG_UART_BASE_ADDR   UART2_BASE_ADDR
 #define CONFIG_TFP410_LDO10
-#define CONFIG_TFP410_BUS I2C2_BASE_ADDR
+#define CONFIG_TFP410_BUS ((void *)I2C2_BASE_ADDR)
 
 /*
  * Android support Configs
@@ -355,7 +355,7 @@
 #define CONFIG_CMD_SOURCE
 #define CONFIG_CMD_RUN
 
-#define DA90_I2C_BUS I2C1_BASE_ADDR
+#define DA90_I2C_BUS ((void *)I2C1_BASE_ADDR)
 #define DA90_I2C_ADDR 0x48
 #define CONFIG_CMD_DA90_I2C_PMIC
 #define N53_I2C_CONNECTOR_BUFFER_ENABLE		MAKE_GP(3, 10)
