@@ -233,6 +233,7 @@ void dev_print (block_dev_desc_t *dev_desc)
 
 void init_part (block_dev_desc_t * dev_desc)
 {
+	dev_print(dev_desc);
 #ifdef CONFIG_ISO_PARTITION
 	if (test_part_iso(dev_desc) == 0) {
 		dev_desc->part_type = PART_TYPE_ISO;
