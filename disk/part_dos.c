@@ -61,7 +61,7 @@ static inline int is_extended(int part_type)
 	    part_type == 0x85);
 }
 
-static void print_one_part (dos_partition_t *p, int ext_part_sector, int part_num)
+static void print_one_part (block_dev_desc_t *dev_desc, dos_partition_t *p, int ext_part_sector, int part_num)
 {
 	int lba_start = ext_part_sector + le32_to_int (p->start4);
 	int lba_size  = le32_to_int (p->size4);
@@ -69,6 +69,9 @@ static void print_one_part (dos_partition_t *p, int ext_part_sector, int part_nu
 	printf ("%5d\t\t%10d\t%10d\t%2x%s\n",
 		part_num, lba_start, lba_size, p->sys_ind,
 		(is_extended (p->sys_ind) ? " Extd" : ""));
+	if (lba_start+lba_size > dev_desc->lba) {
+		printf("********* exceeds maximum %lu sectors\n", dev_desc->lba);
+	}
 }
 
 static int test_block_type(unsigned char *buffer)
@@ -131,7 +134,7 @@ static void print_partition_extended (block_dev_desc_t *dev_desc, int ext_part_s
 
 		if ((pt->sys_ind != 0) &&
 		    (ext_part_sector == 0 || !is_extended (pt->sys_ind)) ) {
-			print_one_part (pt, ext_part_sector, part_num);
+			print_one_part (dev_desc, pt, ext_part_sector, part_num);
 		}
 
 		/* Reverse engr the fdisk part# assignment rule! */
