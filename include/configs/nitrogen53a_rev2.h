@@ -51,4 +51,7 @@
 #undef CONFIG_BOOTDELAY
 #define CONFIG_BOOTDELAY	0
 
+#undef CONFIG_BOOTCOMMAND
+#define CONFIG_BOOTCOMMAND	"for disk in 0 1 ; do fatload mmc $disk 70008000 nitrogen53_bootscript* && source 70008000 ; done ; errmsg=\"Error running bootscript!\" ; lecho $errmsg ; echo $errmsg ;"
+
 #endif
