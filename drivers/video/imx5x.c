@@ -443,6 +443,7 @@ static void disable_ipu_clock(void)
 	__REG(CLPCR) |= CLPCR_BYPASS_IPU_LPM_HS ;
 }
 
+void backlight_state(int enable);
 void init_display_pins(void);
 void init_lvds_pins(int ch,int lvds);
 void disable_lcd_panel(void);
@@ -499,6 +500,9 @@ void disable_lcd_panel(void)
 	__REG(IPU_CONF+0x23C) &= ~(3<<23);	// CUR_BUF
 
 	disable_ipu_clock();
+#ifdef CONFIG_MX53
+	backlight_state(0);
+#endif
         end_of_ram = gd->bd->bi_dram[0].start+gd->bd->bi_dram[0].size;
 }
 
@@ -795,6 +799,7 @@ static void init_display
 
 #ifdef CONFIG_MX53
 	init_lvds();
+	backlight_state(1);
 
 	if (lvds[disp]) {
 		clk_config(CONFIG_MX53_HCLK_FREQ, lcd->info.pixclock, LDB0_CLK+disp);

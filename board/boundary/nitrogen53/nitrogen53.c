@@ -585,6 +585,17 @@ static int const di0_prgb_pins[] = {
 	0
 };
 
+void backlight_state(int enable)
+{
+#ifdef GP_LCD_BACKLIGHT
+	/* Some boards enable backlight power supply with this (NitrogenA) */
+	gpio_set_value(GP_LCD_BACKLIGHT, enable);	/* high active */
+#endif
+#ifdef GP_LCD_3_3V_POWER_ENABLE
+	gpio_set_value(GP_LCD_3_3V_POWER_ENABLE, enable); /* high active */
+#endif
+}
+
 void init_display_pins(void)
 {
 	unsigned machid = get_machid();
@@ -612,14 +623,6 @@ void init_display_pins(void)
 	/* PWM backlight */
 	mxc_request_iomux(MX53_PIN_GPIO_1, IOMUX_CONFIG_ALT4);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_1, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
-
-#ifdef GP_LCD_BACKLIGHT
-	/* Some boards enable backlight power supply with this (NitrogenA) */
-	gpio_direction_output(GP_LCD_BACKLIGHT, 1);
-#endif
-#ifdef GP_LCD_3_3V_POWER_ENABLE
-	gpio_direction_output(GP_LCD_3_3V_POWER_ENABLE, 1);	/* Enable */
-#endif
 
 	/* backlight power enable for GE board, rts on UART3 for nitrogen53 */
 	gpio_direction_input(MAKE_GP(3, 31));
