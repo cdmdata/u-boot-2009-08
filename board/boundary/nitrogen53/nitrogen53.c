@@ -40,6 +40,21 @@
 
 #define GPIO_NUMBER(port, offset) (((port - 1) << 5) | offset)
 
+#define GP_LCD_BACKLIGHT		MAKE_GP(2, 16)		/* NitrogenA, EIM_A22 */
+
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
+#define I2C2_HUB_PIC16F616_TOUCH	MAKE_GP(3, 7)		/* EIM_DA7 */
+#define I2C2_HUB_CAMERA			MAKE_GP(3, 10)		/* EIM_DA10 */
+#define I2C2_HUB_TFP410_ACCEL		MAKE_GP(3, 11)		/* EIM_DA11 */
+#define I2C2_HUB_BATT_EDID		MAKE_GP(6, 11)		/* NANDF_CS0 */
+#define I2C2_HUB_OLD_EMPTY		MAKE_GP(3, 9)		/* EIM_DA9 */
+#define I2C2_HUB_RTC_ISL1208		MAKE_GP(6, 12)		/* NANDF_WE */
+#define I2C3_HUB_SC16IS7XX		MAKE_GP(6, 10)		/* NANDF_RB0 */
+#define GP_LCD_3_3V_POWER_ENABLE	MAKE_GP(2, 6)		/* PATA_DATA6 */
+#define GP_BT_RESET			MAKE_GP(3, 3)		/* EIM_DA3 */
+#endif
+
+
 //#define DEBUG		//if enabled, also enable in start.S
 #ifdef DEBUG
 void TransmitX(char ch);
@@ -598,8 +613,13 @@ void init_display_pins(void)
 	mxc_request_iomux(MX53_PIN_GPIO_1, IOMUX_CONFIG_ALT4);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_1, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
+#ifdef GP_LCD_BACKLIGHT
 	/* Some boards enable backlight power supply with this (NitrogenA) */
-	gpio_direction_output(MAKE_GP(2, 16), 1);
+	gpio_direction_output(GP_LCD_BACKLIGHT, 1);
+#endif
+#ifdef GP_LCD_3_3V_POWER_ENABLE
+	gpio_direction_output(GP_LCD_3_3V_POWER_ENABLE, 1);	/* Enable */
+#endif
 
 	/* backlight power enable for GE board, rts on UART3 for nitrogen53 */
 	gpio_direction_input(MAKE_GP(3, 31));
@@ -1206,10 +1226,12 @@ struct i2c_pads_info i2c_pad_info2 = {
 
 int board_init(void)
 {
+#ifdef GP_LCD_BACKLIGHT
 	/* Nitrogen A, disable 12V display power */
-	gpio_direction_output(MAKE_GP(2, 16), 0);
+	gpio_direction_output(GP_LCD_BACKLIGHT, 0);
 	mxc_request_iomux(MX53_PIN_EIM_A22, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_A22, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
+#endif
 
 	#ifdef CONFIG_MFG
 /* MFG firmware need reset usb to avoid host crash firstly */
@@ -1270,32 +1292,35 @@ int board_init(void)
 #endif
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
-#define I2C2_HUB_PIC16F616_TOUCH	MAKE_GP(3, 7)		/* EIM_DA7 */
-#define I2C2_HUB_CAMERA			MAKE_GP(3, 10)		/* EIM_DA10 */
-#define I2C2_HUB_TFP410_ACCEL		MAKE_GP(3, 11)		/* EIM_DA11 */
-#define I2C2_HUB_BATT_EDID		MAKE_GP(6, 11)		/* NANDF_CS0 */
-#define I2C2_HUB_OLD_EMPTY		MAKE_GP(3, 9)		/* EIM_DA9 */
-#define I2C3_HUB_SC16IS7XX		MAKE_GP(6, 10)		/* NANDF_RB0 */
 	gpio_direction_output(I2C2_HUB_PIC16F616_TOUCH, 0);	/* Disable */
 	gpio_direction_output(I2C2_HUB_CAMERA, 0);		/* Disable */
 	gpio_direction_output(I2C2_HUB_TFP410_ACCEL, 0);		/* Disable */
 	gpio_direction_output(I2C2_HUB_BATT_EDID, 0);		/* Disable */
 	gpio_direction_output(I2C2_HUB_OLD_EMPTY, 0);		/* Disable */
+	gpio_direction_output(I2C2_HUB_RTC_ISL1208, 0);		/* Disable */
 	gpio_direction_output(I2C3_HUB_SC16IS7XX, 0);		/* Disable */
+	gpio_direction_output(GP_LCD_3_3V_POWER_ENABLE, 0);	/* Disable */
+	gpio_direction_output(GP_BT_RESET, 0);			/* Disable */
 
 	mxc_request_iomux(MX53_PIN_EIM_DA7, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA11, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_CS0, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_NANDF_WE_B, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_ATA_DATA6, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA3, IOMUX_CONFIG_ALT1);
 
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA7, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA11, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_CS0, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_NANDF_WE_B, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_ATA_DATA6, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA3, PAD_CTL_NORMAL_LOW_OUT);
 #endif
 
 #ifdef CONFIG_MXC_FEC
