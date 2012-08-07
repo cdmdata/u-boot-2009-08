@@ -1183,17 +1183,27 @@ int board_mmc_init(bd_t *bis)
 #define PC_NONE	(PAD_CTL_PKE | PAD_CTL_PUE |	\
 	PAD_CTL_HYS | PAD_CTL_ODE | PAD_CTL_DSE_HIGH | PAD_CTL_SRE_FAST)
 
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
+#define PC_I2C1	PC_22K
+#define PC_I2C2	PC_NONE
+#define PC_I2C3	PC_22K
+#else
+#define PC_I2C1	PC_22K
+#define PC_I2C2	PC_NONE
+#define PC_I2C3	PC_NONE
+#endif
+
 
 /* I2C1,  */
 struct i2c_pads_info i2c_pad_info0 = {
        .scl = {
-               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D21__I2C1_SCL, PC_22K),
-               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D21__GPIO3_21, PC_22K),
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D21__I2C1_SCL, PC_I2C1),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D21__GPIO3_21, PC_I2C1),
                .gp = GPIO_NUMBER(3, 21)
        },
        .sda = {
-               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D28__I2C1_SDA, PC_22K),
-               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D28__GPIO3_28, PC_22K),
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D28__I2C1_SDA, PC_I2C1),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_D28__GPIO3_28, PC_I2C1),
                .gp = GPIO_NUMBER(3, 28)
        }
 };
@@ -1201,13 +1211,13 @@ struct i2c_pads_info i2c_pad_info0 = {
 /* I2C2,  */
 struct i2c_pads_info i2c_pad_info1 = {
        .scl = {
-               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_EB2__I2C2_SCL, PC_NONE),
-               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_EB2__GPIO2_30, PC_NONE),
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_EIM_EB2__I2C2_SCL, PC_I2C2),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_EIM_EB2__GPIO2_30, PC_I2C2),
                .gp = GPIO_NUMBER(2, 30)
        },
        .sda = {
-               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_KEY_ROW3__I2C2_SDA, PC_NONE),
-               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_KEY_ROW3__GPIO4_13, PC_NONE),
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_KEY_ROW3__I2C2_SDA, PC_I2C2),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_KEY_ROW3__GPIO4_13, PC_I2C2),
                .gp = GPIO_NUMBER(4, 13)
        }
 };
@@ -1215,13 +1225,13 @@ struct i2c_pads_info i2c_pad_info1 = {
 /* I2C3,  */
 struct i2c_pads_info i2c_pad_info2 = {
        .scl = {
-               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_3__I2C3_SCL, PC_NONE),
-               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_3__GPIO1_3, PC_NONE),
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_3__I2C3_SCL, PC_I2C3),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_3__GPIO1_3, PC_I2C3),
                .gp = GPIO_NUMBER(1, 3)
        },
        .sda = {
-               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_16__I2C3_SDA, PC_NONE),
-               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_16__GPIO7_11, PC_NONE),
+               .i2c_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_16__I2C3_SDA, PC_I2C3),
+               .gpio_mode = NEW_PAD_CTRL(MX53_PAD_GPIO_16__GPIO7_11, PC_I2C3),
                .gp = GPIO_NUMBER(7, 11)
        }
 };
