@@ -41,10 +41,12 @@ static int force_idle_bus(void *priv)
 	imx_iomux_v3_setup_pad(p->sda.gpio_mode);
 	imx_iomux_v3_setup_pad(p->scl.gpio_mode);
 
-	sda = gpio_get_value(p->sda.gp);
-	scl = gpio_get_value(p->scl.gp);
-	if ((sda & scl) == 1)
-		goto exit;		/* Bus is idle already */
+	for (i = 0; i < 15; i++) {
+		sda = gpio_get_value(p->sda.gp);
+		scl = gpio_get_value(p->scl.gp);
+		if ((sda & scl) == 1)
+			goto exit;		/* Bus is idle already */
+	}
 
 	printf("%s: sda=%d scl=%d sda.gp=0x%x scl.gp=0x%x\n", __func__,
 		sda, scl, p->sda.gp, p->scl.gp);
