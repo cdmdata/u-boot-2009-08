@@ -23,6 +23,9 @@
 #define __NITROGEN53_1G_H
 
 #include <configs/nitrogen53.h>
+#undef CONFIG_BOARD_NAME
+#define CONFIG_BOARD_NAME	"MX53-Nitrogen_1g"
+
 #define CONFIG_H5PS2G83AFR_S6	/* 1G total memory */
 						/* dgctrl0,    dgctrl1,    rddlctl,    wrdlctl */
 //#define CONFIG_H5PS2G83AFR_S6_CALIBRATION	0x015c0137, 0x013b013b, 0x29292626, 0x524c544a
