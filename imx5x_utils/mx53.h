@@ -14,6 +14,10 @@
 #endif
 //#define DDR_TYPE	H5PS2G83AFR_S5			//1GB
 
+#ifdef CONFIG_H5PS1G83EFR_S6C
+#define DDR_TYPE	H5PS1G83EFR_S6C			//512MB, 400 MHz
+#endif
+
 #ifndef DDR_TYPE
 #define DDR_TYPE	H5PS1G83EFR_S6C			//512MB, 400 MHz
 #endif
@@ -324,7 +328,10 @@
 	//H5PS1G83EFR_S6C DDR2-800(400Mhz), CL=6, tRCD=6, tRP=6
 	//512MB = 3 bank bits(8 banks) + 14 Row bits, 10 Column bits, + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	H5PS1G83EFR_S6C,       2, 400, 3, 14, 10, 6, 5, 6, 6, 6, 0x01770172, 0x0177017b, 0x25232523, 0x5250564b //v 2e:84
+#ifndef CONFIG_H5PS1G83EFR_S6C_CALIBRATION
+#define CONFIG_H5PS1G83EFR_S6C_CALIBRATION	0x01770172, 0x0177017b, 0x25232523, 0x5250564b
+#endif
+	ddr_type	H5PS1G83EFR_S6C,       2, 400, 3, 14, 10, 6, 5, 6, 6, 6, CONFIG_H5PS1G83EFR_S6C_CALIBRATION //v 2e:84
 
 	.word		0
 	.endm
