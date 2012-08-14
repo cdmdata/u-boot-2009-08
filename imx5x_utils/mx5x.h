@@ -286,6 +286,12 @@
 	.equiv	_DP_MFD_320,	(2 - 1)
 	.equiv	_DP_CTL_320,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART)
 
+//(1/4 + 6) * 96 / 2 = 300
+	.equiv	_DP_OP_300,	MAKE_OP(6, 2)
+	.equiv	_DP_MFN_300,	1
+	.equiv	_DP_MFD_300,	(4 - 1)
+	.equiv	_DP_CTL_300,	(0x0220 | _DP_CTL_DIV1 | _DP_CTL_RESTART)
+
 //(0/2 + 9) * 96 / 2 = 432
 // 432 / 2 = 216
 	.equiv	_DP_OP_216,	MAKE_OP(9, 2)

@@ -135,6 +135,11 @@
 	.equiv	_DP_MFD_400,	DP_MFD_400
 	.equiv	_DP_CTL_400,	DP_CTL_400
 
+	.equiv	_DP_OP_300,	DP_OP_300
+	.equiv	_DP_MFN_300,	DP_MFN_300
+	.equiv	_DP_MFD_300,	DP_MFD_300
+	.equiv	_DP_CTL_300,	DP_CTL_300
+
 	.equiv	_DP_OP_216,	DP_OP_216
 	.equiv	_DP_MFN_216,	DP_MFN_216
 	.equiv	_DP_MFD_216,	DP_MFD_216

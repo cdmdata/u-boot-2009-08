@@ -424,6 +424,12 @@
 #define DP_MFD_400	(3 - 1)
 #define DP_CTL_400	(0x1220 | DP_CTL_RESTART)
 
+//(1/4 + 6) * 96 / 2 = 300
+#define DP_OP_300	MAKE_OP(6, 2)
+#define DP_MFN_300	1
+#define DP_MFD_300	(4 - 1)
+#define DP_CTL_300	(0x1220 | DP_CTL_RESTART)
+
 #if 0
 //Too low, output must be 300 - 800
 //(3/4 + 6) * 96 / 3 = 216
