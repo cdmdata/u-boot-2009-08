@@ -207,6 +207,7 @@ int ram_test(unsigned *ram_base)
 	unsigned *p_end = &ram_base[1<<10];	//test 4K of memory
 	unsigned expected;
 	unsigned val[4];
+	delayMicro(30);		/* 10 gives errors on nitrogen53k, 15 ok */
 	while (p < p_end) {
 		p[0] = ((unsigned)p);
 		p[1] = ~((unsigned)p);
