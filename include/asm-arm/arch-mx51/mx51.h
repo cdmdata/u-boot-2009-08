@@ -430,6 +430,13 @@
 #define DP_CTL_216	(0x0220 | DP_CTL_RESTART)
 #endif
 
+#define CHIP_REV_1_0            0x10
+#define CHIP_REV_1_1            0x11
+#define CHIP_REV_2_0            0x20
+
+#define BOARD_REV_1_0           0x0
+#define BOARD_REV_2_0           0x1
+
 /* IIM */
 #define IIM_STAT_OFF            0x00
 #define IIM_STAT_BUSY           (1 << 7)

@@ -52,7 +52,7 @@
 #endif
 
 #ifdef CONFIG_ANDROID_RECOVERY
-#include "../common/recovery.h"
+#include "../../freescale/common/recovery.h"
 #include <part.h>
 #include <ext2fs.h>
 #include <linux/mtd/mtd.h>
