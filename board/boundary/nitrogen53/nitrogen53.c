@@ -40,25 +40,25 @@
 
 #define GPIO_NUMBER(port, offset) (((port - 1) << 5) | offset)
 
-#define GP_LCD_BACKLIGHT		MAKE_GP(2, 16)		/* NitrogenA, EIM_A22 */
+#define GP_LCD_BACKLIGHT		GPIO_NUMBER(2, 16)	/* NitrogenA, EIM_A22 */
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
-#define I2C2_HUB_PIC16F616_TOUCH	MAKE_GP(3, 7)		/* EIM_DA7 */
-#define I2C2_HUB_CAMERA			MAKE_GP(3, 10)		/* EIM_DA10 */
-#define I2C2_HUB_TFP410_ACCEL		MAKE_GP(3, 11)		/* EIM_DA11 */
-#define I2C2_HUB_BATT_EDID		MAKE_GP(6, 11)		/* NANDF_CS0 */
-#define I2C2_HUB_OLD_EMPTY		MAKE_GP(3, 9)		/* EIM_DA9 */
-#define I2C2_HUB_RTC_ISL1208		MAKE_GP(6, 12)		/* NANDF_WE */
-#define I2C3_HUB_SC16IS7XX		MAKE_GP(6, 10)		/* NANDF_RB0 */
-#define GP_LCD_3_3V_POWER_ENABLE	MAKE_GP(2, 6)		/* PATA_DATA6 */
-#define GP_BT_RESET			MAKE_GP(3, 3)		/* EIM_DA3 */
+#define I2C2_HUB_PIC16F616_TOUCH	GPIO_NUMBER(3, 7)	/* EIM_DA7 */
+#define I2C2_HUB_CAMERA			GPIO_NUMBER(3, 10)	/* EIM_DA10 */
+#define I2C2_HUB_TFP410_ACCEL		GPIO_NUMBER(3, 11)	/* EIM_DA11 */
+#define I2C2_HUB_BATT_EDID		GPIO_NUMBER(6, 11)	/* NANDF_CS0 */
+#define I2C2_HUB_OLD_EMPTY		GPIO_NUMBER(3, 9)	/* EIM_DA9 */
+#define I2C2_HUB_RTC_ISL1208		GPIO_NUMBER(6, 12)	/* NANDF_WE */
+#define I2C3_HUB_SC16IS7XX		GPIO_NUMBER(6, 10)	/* NANDF_RB0 */
+#define GP_LCD_3_3V_POWER_ENABLE	GPIO_NUMBER(2, 6)	/* PATA_DATA6 */
+#define GP_BT_RESET			GPIO_NUMBER(3, 3)	/* EIM_DA3 */
 #endif
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
-#define N53K_I2C2_HUB_EDID		MAKE_GP(3, 8)		/* EIM_DA8 */
-#define N53K_I2C2_HUB_BATTERY		MAKE_GP(3, 9)		/* EIM_DA9 */
-#define N53K_I2C2_HUB_AMBIENT		MAKE_GP(3, 10)		/* EIM_DA10 */
-#define N53K_I2C2_HUB_CAMERA		MAKE_GP(6, 10)		/* NANDF_RB0 */
+#define N53K_I2C2_HUB_EDID		GPIO_NUMBER(3, 8)	/* EIM_DA8 */
+#define N53K_I2C2_HUB_BATTERY		GPIO_NUMBER(3, 9)	/* EIM_DA9 */
+#define N53K_I2C2_HUB_AMBIENT		GPIO_NUMBER(3, 10)	/* EIM_DA10 */
+#define N53K_I2C2_HUB_CAMERA		GPIO_NUMBER(6, 10)	/* NANDF_RB0 */
 #endif
 
 
@@ -104,7 +104,6 @@ static u32 system_rev;
 static enum boot_device boot_dev;
 
 #define GPIO_DIR 4
-#define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
 
 unsigned get_machid(void)
 {
@@ -620,8 +619,8 @@ void init_display_pins(void)
 		pins++ ;
 	}
 
-	gpio_direction_output(MAKE_GP(2, 29), 1);		//tfp410, i2c_mode
-	gpio_direction_input(MAKE_GP(4,15));			//tfp410, interrupt
+	gpio_direction_output(GPIO_NUMBER(2, 29), 1);		//tfp410, i2c_mode
+	gpio_direction_input(GPIO_NUMBER(4,15));			//tfp410, interrupt
 	mxc_request_iomux(MX53_PIN_EIM_EB1, IOMUX_CONFIG_ALT1);		//gpio2[29] - i2c_mode
 	mxc_iomux_set_pad(MX53_PIN_EIM_EB1, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
 	mxc_request_iomux(MX53_PIN_KEY_ROW4, IOMUX_CONFIG_ALT1);	//gpio4[15] - interrupt pin
@@ -632,12 +631,12 @@ void init_display_pins(void)
 	mxc_iomux_set_pad(MX53_PIN_GPIO_1, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
 	/* backlight power enable for GE board, rts on UART3 for nitrogen53 */
-	gpio_direction_input(MAKE_GP(3, 31));
+	gpio_direction_input(GPIO_NUMBER(3, 31));
 	mxc_request_iomux(MX53_PIN_EIM_D31, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D31, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE | PAD_CTL_PKE_ENABLE | PAD_CTL_PUE_PULL);
 
 	/* gpio2[20] - Display enable for chimei 7" panel */
-	gpio_direction_output(MAKE_GP(2, 20), 1);
+	gpio_direction_output(GPIO_NUMBER(2, 20), 1);
 	mxc_request_iomux(MX53_PIN_EIM_A18, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_A18, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 
@@ -670,9 +669,9 @@ void init_display_pins(void)
 	mxc_request_iomux(PIN_N53_I2C_CONNECTOR_BUFFER, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(PIN_N53_I2C_CONNECTOR_BUFFER, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
 #endif
-	gpio_direction_output(MAKE_GP(2, 29), 0);		//tfp410, i2c_mode
+	gpio_direction_output(GPIO_NUMBER(2, 29), 0);		//tfp410, i2c_mode
 	udelay(5);
-	gpio_direction_output(MAKE_GP(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
+	gpio_direction_output(GPIO_NUMBER(2, 29), 1);		//tfp410 low to high is reset, i2c sel mode
 	if (machid == MACH_TYPE_MX53_NITROGEN_V1)
 		tfp410_bus = (void *)I2C1_BASE_ADDR;
 
@@ -686,7 +685,7 @@ void init_display_pins(void)
 		tfp410_i2c_addr++;
 		if (tfp410_i2c_addr > 0x39) {
 			printf("tfp410 init failed, machid = %x\n", machid);
-			gpio_direction_output(MAKE_GP(2, 29), 0);		//put back into non-i2c mode
+			gpio_direction_output(GPIO_NUMBER(2, 29), 0);		//put back into non-i2c mode
 			break;
 		}
 	}
@@ -779,13 +778,13 @@ s32 spi_get_cfg(struct imx_spi_dev_t *dev)
 void spi_io_init(struct imx_spi_dev_t *dev, int active)
 {
 	if (dev->ss == 1) {
-		gpio_direction_output(MAKE_GP(3, 19), active ? 0 : 1);
+		gpio_direction_output(GPIO_NUMBER(3, 19), active ? 0 : 1);
 	}
 }
 
 void setup_spi(void)
 {
-	gpio_direction_output(MAKE_GP(3, 19), 1);	/* SS1 low active */
+	gpio_direction_output(GPIO_NUMBER(3, 19), 1);	/* SS1 low active */
 	/* de-select SS1 of instance: ecspi1. */
 	mxc_request_iomux(MX53_PIN_EIM_D19, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D19, 0x104);
@@ -813,7 +812,7 @@ void setup_spi(void)
 static void setup_fec(void)
 {
 	/* gp7[13] - low active reset pin*/
-	gpio_direction_output(MAKE_GP(7, 13), 0);
+	gpio_direction_output(GPIO_NUMBER(7, 13), 0);
 	mxc_request_iomux(MX53_PIN_GPIO_18, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_GPIO_18, 0x0);
 
@@ -892,7 +891,7 @@ static void setup_fec(void)
 
 
 	udelay(50);
-	gpio_direction_output(MAKE_GP(7, 13), 1);
+	gpio_direction_output(GPIO_NUMBER(7, 13), 1);
 }
 #endif
 
@@ -992,28 +991,28 @@ int esdhc_gpio_init(bd_t *bis)
  */
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
 #ifdef CONFIG_K2
-#define N53_WL1271_WL_EN	MAKE_GP(2, 3)	/* ATA_DATA3, high active en */
-#define N53_WL1271_BT_EN	MAKE_GP(2, 2)	/* ATA_DATA2, high active en */
-#define N53_WL1271_BT_FUNC5	MAKE_GP(2, 0)	/* ATA_DATA0, input (HOST_WU) */
-#define N53_WL1271_INT		MAKE_GP(2, 1)	/* ATA_DATA1 - wlan_irq */
-#define N53_EMMC_RESET		MAKE_GP(7, 10)	/* ATA_CS_1 - eMMC reset */
+#define N53_WL1271_WL_EN	GPIO_NUMBER(2, 3)	/* ATA_DATA3, high active en */
+#define N53_WL1271_BT_EN	GPIO_NUMBER(2, 2)	/* ATA_DATA2, high active en */
+#define N53_WL1271_BT_FUNC5	GPIO_NUMBER(2, 0)	/* ATA_DATA0, input (HOST_WU) */
+#define N53_WL1271_INT		GPIO_NUMBER(2, 1)	/* ATA_DATA1 - wlan_irq */
+#define N53_EMMC_RESET		GPIO_NUMBER(7, 10)	/* ATA_CS_1 - eMMC reset */
 #else
-#define N53_WL1271_WL_EN	MAKE_GP(3, 0)	/* EIM_DA0, high active en */
-#define N53_WL1271_BT_EN	MAKE_GP(3, 1)	/* EIM_DA1, high active en */
-#define N53_WL1271_BT_FUNC2	MAKE_GP(1, 9)	/* GPIO_9, output (BT_WU) */
-#define N53_WL1271_BT_FUNC5	MAKE_GP(3, 9)	/* EIM_DA9, input (HOST_WU) */
-#define N53_WL1271_INT		MAKE_GP(7, 9)	/* ATA_CS_0 - wlan_irq */
-#define N53_EMMC_RESET		MAKE_GP(3, 8)	/* EIM_DA8 - eMMC reset */
+#define N53_WL1271_WL_EN	GPIO_NUMBER(3, 0)	/* EIM_DA0, high active en */
+#define N53_WL1271_BT_EN	GPIO_NUMBER(3, 1)	/* EIM_DA1, high active en */
+#define N53_WL1271_BT_FUNC2	GPIO_NUMBER(1, 9)	/* GPIO_9, output (BT_WU) */
+#define N53_WL1271_BT_FUNC5	GPIO_NUMBER(3, 9)	/* EIM_DA9, input (HOST_WU) */
+#define N53_WL1271_INT		GPIO_NUMBER(7, 9)	/* ATA_CS_0 - wlan_irq */
+#define N53_EMMC_RESET		GPIO_NUMBER(3, 8)	/* EIM_DA8 - eMMC reset */
 #endif
 
 #else
-#define N53_WL1271_WL_EN	MAKE_GP(3, 0)	/* EIM_DA0, high active en */
-#define N53_WL1271_BT_EN	MAKE_GP(3, 1)	/* EIM_DA1, high active en */
-#define N53_WL1271_BT_FUNC2	MAKE_GP(5, 25)	/* CSI0_D7, output (BT_WU) */
-#define N53_WL1271_BT_FUNC5	MAKE_GP(1, 6)	/* GPIO_6, input (HOST_WU) */
-#define N53_WL1271_INT		MAKE_GP(2, 24)	/* EIM_CS1 - wlan_irq */
+#define N53_WL1271_WL_EN	GPIO_NUMBER(3, 0)	/* EIM_DA0, high active en */
+#define N53_WL1271_BT_EN	GPIO_NUMBER(3, 1)	/* EIM_DA1, high active en */
+#define N53_WL1271_BT_FUNC2	GPIO_NUMBER(5, 25)	/* CSI0_D7, output (BT_WU) */
+#define N53_WL1271_BT_FUNC5	GPIO_NUMBER(1, 6)	/* GPIO_6, input (HOST_WU) */
+#define N53_WL1271_INT		GPIO_NUMBER(2, 24)	/* EIM_CS1 - wlan_irq */
 
-#define N53_EMMC_RESET		MAKE_GP(5, 2)	/* EIM_A25 - eMMC reset */
+#define N53_EMMC_RESET		GPIO_NUMBER(5, 2)	/* EIM_A25 - eMMC reset */
 #endif
 
 			gpio_direction_output(N53_EMMC_RESET, 0);
@@ -1260,7 +1259,7 @@ int board_init(void)
 	val &= ~0x1; /*RS bit*/
 	writel(val, OTG_BASE_ADDR + USBCMD);
 #endif
-	gpio_direction_output(MAKE_GP(5, 0), 0);		//USB Hub reset, low power reset state
+	gpio_direction_output(GPIO_NUMBER(5, 0), 0);		//USB Hub reset, low power reset state
 	mxc_request_iomux(MX53_PIN_EIM_WAIT, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_WAIT, PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH);
 
@@ -1289,10 +1288,10 @@ int board_init(void)
 #define PAD_CTL_NORMAL_LOW_OUT	PAD_CTL_360K_PD		/* pull down disabled */
 
 #ifdef CONFIG_BQ2416X_CHARGER
-#define I2C2_HUB_EDID		MAKE_GP(3, 8)		/* EIM_DA8 */
-#define I2C2_HUB_BQ24163	MAKE_GP(3, 9)		/* EIM_DA9 */
-#define I2C2_HUB_AMBIENT	MAKE_GP(3, 10)		/* EIM_DA10 */
-#define I2C2_HUB_CAMERA		MAKE_GP(6, 10)		/* NANDF_RB0 */
+#define I2C2_HUB_EDID		GPIO_NUMBER(3, 8)		/* EIM_DA8 */
+#define I2C2_HUB_BQ24163	GPIO_NUMBER(3, 9)		/* EIM_DA9 */
+#define I2C2_HUB_AMBIENT	GPIO_NUMBER(3, 10)		/* EIM_DA10 */
+#define I2C2_HUB_CAMERA		GPIO_NUMBER(6, 10)		/* NANDF_RB0 */
 	gpio_direction_output(I2C2_HUB_EDID, 0);		/* Disable */
 	gpio_direction_output(I2C2_HUB_BQ24163, 0);	/* Disable */
 	gpio_direction_output(I2C2_HUB_AMBIENT, 0);	/* Disable */
@@ -1549,7 +1548,7 @@ int misc_init_r(void)
 	/* gpio3[23] - KEEPON */
 	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D23, PAD_CTL_100K_PU | PAD_CTL_HYS_ENABLE);	//pullup disabled
-	gpio_direction_output(MAKE_GP(3, 23), 1);
+	gpio_direction_output(GPIO_NUMBER(3, 23), 1);
 
 	rv = iim_read_mac_addr(macAddrROM);
 	if (rv) {
@@ -1626,7 +1625,7 @@ int board_late_init(void)
 	/* gpio3[22] - Power button */
 	mxc_request_iomux(MX53_PIN_EIM_D22, IOMUX_CONFIG_ALT1);
 	mxc_iomux_set_pad(MX53_PIN_EIM_D22, N53_BUTTON_100KPU_PAD_CTL);
-	gpio_direction_input(MAKE_GP(3, 22));
+	gpio_direction_input(GPIO_NUMBER(3, 22));
 
 	uart = get_uart_base();
 	if (uart == UART1_BASE_ADDR) {
@@ -1748,8 +1747,8 @@ U_BOOT_CMD(
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
 #include <power_key.h>
-#define POWER_KEY MAKE_GP(3,22)
-#define POWER_DOWN MAKE_GP(3,23)
+#define POWER_KEY GPIO_NUMBER(3,22)
+#define POWER_DOWN GPIO_NUMBER(3,23)
 
 static int prev_power_key = -1 ;
 static unsigned long when_pressed ;
@@ -1779,10 +1778,10 @@ struct button_key {
 };
 
 static struct button_key const buttons[] = {
-       {"back",		MAKE_GP(3, 26),	'B'},
-       {"home",		MAKE_GP(3, 29),	'H'},
-       {"menu",		MAKE_GP(3, 31),	'M'},
-       {"search",	MAKE_GP(3, 27),	'S'},
+       {"back",		GPIO_NUMBER(3, 26),	'B'},
+       {"home",		GPIO_NUMBER(3, 29),	'H'},
+       {"menu",		GPIO_NUMBER(3, 31),	'M'},
+       {"search",	GPIO_NUMBER(3, 27),	'S'},
 };
 
 /*
