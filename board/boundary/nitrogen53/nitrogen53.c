@@ -54,6 +54,13 @@
 #define GP_BT_RESET			MAKE_GP(3, 3)		/* EIM_DA3 */
 #endif
 
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+#define N53K_I2C2_HUB_EDID		MAKE_GP(3, 8)		/* EIM_DA8 */
+#define N53K_I2C2_HUB_BATTERY		MAKE_GP(3, 9)		/* EIM_DA9 */
+#define N53K_I2C2_HUB_AMBIENT		MAKE_GP(3, 10)		/* EIM_DA10 */
+#define N53K_I2C2_HUB_CAMERA		MAKE_GP(6, 10)		/* NANDF_RB0 */
+#endif
+
 
 //#define DEBUG		//if enabled, also enable in start.S
 #ifdef DEBUG
@@ -1278,9 +1285,6 @@ int board_init(void)
 		printf("reg 0x3a (LDO9) of DA9053 failed\n");
 #endif
 
-#ifdef CONFIG_I2C_MXC
-	setup_i2c(1, CONFIG_SYS_I2C2_SPEED, 0x7f, &i2c_pad_info1);
-#endif
 
 #define PAD_CTL_NORMAL_LOW_OUT	PAD_CTL_360K_PD		/* pull down disabled */
 
@@ -1335,7 +1339,26 @@ int board_init(void)
 	mxc_iomux_set_pad(MX53_PIN_ATA_DATA6, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA3, PAD_CTL_NORMAL_LOW_OUT);
 #endif
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+	gpio_direction_output(N53K_I2C2_HUB_EDID, 0);		/* Disable */
+	gpio_direction_output(N53K_I2C2_HUB_BATTERY, 0);	/* Disable */
+	gpio_direction_output(N53K_I2C2_HUB_AMBIENT, 0);	/* Disable */
+	gpio_direction_output(N53K_I2C2_HUB_CAMERA, 0);		/* Disable */
 
+	mxc_request_iomux(MX53_PIN_EIM_DA8, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
+
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA8, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
+#endif
+
+#ifdef CONFIG_I2C_MXC
+	setup_i2c(1, CONFIG_SYS_I2C2_SPEED, 0x7f, &i2c_pad_info1);
+#endif
 #ifdef CONFIG_MXC_FEC
 	setup_fec();
 #endif
