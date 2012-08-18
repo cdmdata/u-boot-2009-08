@@ -28,7 +28,7 @@ LIB	= $(obj)lib$(CPU).a
 START	:= start.o
 COBJS-y	= cpu.o iomux-v3.o soc.o
 COBJS-$(CONFIG_I2C_MXC) += i2c.o
-COBJS-$(CONFIG_CMD_RESETMODE) += cmd_resetmode.o
+COBJS-$(CONFIG_CMD_BMODE) += cmd_bmode.o
 COBJS	:= $(sort $(COBJS-y))
 
 SOBJS	:= xmodemReceive.o

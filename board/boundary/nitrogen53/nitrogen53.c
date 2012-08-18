@@ -30,7 +30,7 @@
 #include <asm/arch/iomux-mx53.h>
 #include <asm/gpio.h>
 #include <asm/imx-common/mxc_i2c.h>
-#include <asm/imx-common/resetmode.h>
+#include <asm/imx-common/boot_mode.h>
 #include <asm/errno.h>
 #include <imx_spi.h>
 #include <netdev.h>
@@ -1522,8 +1522,8 @@ static int get_env_mac(unsigned char *mac)
 	return -1;
 }
 
-#ifdef CONFIG_CMD_RESETMODE
-static const struct reset_mode board_reset_modes[] = {
+#ifdef CONFIG_CMD_BMODE
+static const struct boot_mode board_boot_modes[] = {
 	/* 4 bit bus width */
 	{"mmc0",	MAKE_CFGVAL(0x40, 0x20, 0x00, 0x12)},	/* esdhc1 */
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
@@ -1542,8 +1542,8 @@ int misc_init_r(void)
 	unsigned found = 0 ;
 	int rv ;
 
-#ifdef CONFIG_CMD_RESETMODE
-	add_board_resetmodes(board_reset_modes);
+#ifdef CONFIG_CMD_BMODE
+	add_board_boot_modes(board_boot_modes);
 #endif
 	/* gpio3[23] - KEEPON */
 	mxc_request_iomux(MX53_PIN_EIM_D23, IOMUX_CONFIG_ALT1);
