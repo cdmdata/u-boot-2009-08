@@ -1244,7 +1244,7 @@ struct i2c_pads_info i2c_pad_info2 = {
 };
 #endif
 
-static char board_init_done;
+static char watch_on_key;
 
 int board_init(void)
 {
@@ -1354,7 +1354,7 @@ int board_init(void)
 #ifdef CONFIG_BQ2416X_CHARGER
 	bq2416x_init();
 #endif
-	board_init_done = 1;
+	watch_on_key = 1;
 	return 0;
 }
 
@@ -2119,7 +2119,7 @@ static char was_high_sometime;
 static char prime_power_down;
 
 /*
- * Low isn't valid until at least once it was sampled high
+ * On-key isn't valid until sampled high for .1 seconds
  * Needed for holding button at power-on.
  */
 void check_power_key(void)
@@ -2129,40 +2129,44 @@ void check_power_key(void)
 	unsigned long cur_time;
 	u8 buf[1] = { 0 };
 
-	if (!board_init_done)	/* Wait for I2C bus */
+	if (!watch_on_key)	/* Wait for I2C bus */
 		return;
+	watch_on_key = 0;	/* prevent recursion */
 	cur_time = get_timer(0);
 	if ((unsigned long)(cur_time - when_tested) < 10)
-		return;
+		goto exit;
+	when_tested = cur_time;
 	rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
 			    DA9052_STATUSA_REG, 1,
 			    buf, sizeof (buf));
 	if (0 != rval)
-		return;
+		goto exit;
 
 #ifdef CONFIG_BQ2416X_WATCHDOG
 	bq2416x_watchdog(cur_time);
 #endif
-	when_tested = cur_time;
 	newval = (buf[0] & 1);		/* high means not pressed */
 	if (prev_power_key != newval) {
 		prev_power_key = newval;
-		was_high_sometime |= newval;
 		when_change = cur_time;
-	} else if (was_high_sometime) {
+	} else {
 		unsigned long elapsed = (unsigned long)(cur_time - when_change);
 		if (!newval) {
-			if (elapsed >= 200) {
+			if (was_high_sometime && (elapsed >= 200)) {
 				/* press for .2 sec to prime powerdown */
 				prime_power_down = 1;
 			}
-		} else if (prime_power_down) {
-			if (elapsed >= 100) {
+		} else if (elapsed >= 100) {
+			if (prime_power_down) {
 				/* release for .1 sec to initiate powerdown */
 				printf( "power down\n");
 				poweroff(0,0,0,0);
+				prime_power_down = 0;
 			}
+			was_high_sometime |= 1;
 		}
 	}
+exit:
+	watch_on_key = 1;
 }
 #endif
