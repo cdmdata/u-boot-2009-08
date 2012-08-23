@@ -59,6 +59,7 @@
 #define N53K_I2C2_HUB_BATTERY		GPIO_NUMBER(3, 9)	/* EIM_DA9 */
 #define N53K_I2C2_HUB_AMBIENT		GPIO_NUMBER(3, 10)	/* EIM_DA10 */
 #define N53K_I2C2_HUB_CAMERA		GPIO_NUMBER(6, 10)	/* NANDF_RB0 */
+#define N53K_POWER_KEEP_ON		GPIO_NUMBER(6, 12)	/* NANDF_WE */
 #endif
 
 
@@ -1343,16 +1344,18 @@ int board_init(void)
 	gpio_direction_output(N53K_I2C2_HUB_BATTERY, 0);	/* Disable */
 	gpio_direction_output(N53K_I2C2_HUB_AMBIENT, 0);	/* Disable */
 	gpio_direction_output(N53K_I2C2_HUB_CAMERA, 0);		/* Disable */
-
+	gpio_direction_output(N53K_POWER_KEEP_ON, 1);		/* enable power */
 	mxc_request_iomux(MX53_PIN_EIM_DA8, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_NANDF_WE_B, IOMUX_CONFIG_ALT1);
 
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA8, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
+	mxc_iomux_set_pad(MX53_PIN_NANDF_WE_B, PAD_CTL_100K_PU);	/* Pull up disabled */
 #endif
 
 #ifdef CONFIG_I2C_MXC
@@ -2108,6 +2111,7 @@ int poweroff(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
 			&poweroff_regs[1], sizeof(poweroff_regs) - 1);
 	if (rval)
 		printf("%s: error writing power-down sequence\n", __func__);
+	gpio_set_value(N53K_POWER_KEEP_ON, 0);	/* power off */
 	/* 1/2 sec delay so that no device is in use */
 	udelay(500000);
 	printf("!!Should not get here\n");
@@ -2122,11 +2126,14 @@ U_BOOT_CMD(
 
 #include <power_key.h>
 
-static int prev_power_key = -1 ;
-static unsigned long when_pressed;
+static unsigned long when_change;
 static unsigned long when_tested;
-static int do_power_down = 0 ;
-
+static char prev_power_key = -1 ;
+static char was_high_sometime = 0;
+/*
+ * Low isn't valid until at least once it was sampled high
+ * Needed for holding button at power-on.
+ */
 void check_power_key(void)
 {
 	int rval;
@@ -2146,22 +2153,15 @@ void check_power_key(void)
 	bq2416x_watchdog(cur_time);
 #endif
 	when_tested = cur_time;
-	newval = (buf[0] & 1) ^ 1;	/* high means not pressed */
+	newval = (buf[0] & 1);		/* high means not pressed */
 	if (prev_power_key != newval) {
 		prev_power_key = newval;
-		if (newval)
-                        when_pressed = cur_time;
-	} else if (1 == prev_power_key) {
-		if ((unsigned long)(cur_time - when_pressed) >= 200) {
-			do_power_down = 1;
-			when_pressed = cur_time;
-		}
-	} else if (do_power_down) {
-		/* Debounce so that power is not switching on and off */
-		if ((unsigned long)(cur_time - when_pressed) >= 100) {
+		was_high_sometime |= newval;
+		when_change = cur_time;
+	} else if (was_high_sometime && !newval) {
+		if ((unsigned long)(cur_time - when_change) >= 300) {
 			printf( "power down\n");
 			poweroff(0,0,0,0);
-			do_power_down = 0;
 		}
 	}
 }
