@@ -2115,7 +2115,9 @@ U_BOOT_CMD(
 static unsigned long when_change;
 static unsigned long when_tested;
 static char prev_power_key = -1 ;
-static char was_high_sometime = 0;
+static char was_high_sometime;
+static char prime_power_down;
+
 /*
  * Low isn't valid until at least once it was sampled high
  * Needed for holding button at power-on.
@@ -2147,12 +2149,20 @@ void check_power_key(void)
 		prev_power_key = newval;
 		was_high_sometime |= newval;
 		when_change = cur_time;
-	} else if (was_high_sometime && !newval) {
-		if ((unsigned long)(cur_time - when_change) >= 300) {
-			printf( "power down\n");
-			poweroff(0,0,0,0);
+	} else if (was_high_sometime) {
+		unsigned long elapsed = (unsigned long)(cur_time - when_change);
+		if (!newval) {
+			if (elapsed >= 200) {
+				/* press for .2 sec to prime powerdown */
+				prime_power_down = 1;
+			}
+		} else if (prime_power_down) {
+			if (elapsed >= 100) {
+				/* release for .1 sec to initiate powerdown */
+				printf( "power down\n");
+				poweroff(0,0,0,0);
+			}
 		}
 	}
 }
-
 #endif
