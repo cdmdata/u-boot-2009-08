@@ -1244,6 +1244,8 @@ struct i2c_pads_info i2c_pad_info2 = {
 };
 #endif
 
+static char board_init_done;
+
 int board_init(void)
 {
 #ifdef GP_LCD_BACKLIGHT
@@ -1369,6 +1371,7 @@ int board_init(void)
 	setup_i2c(2, CONFIG_SYS_I2C3_SPEED, 0x7f, &i2c_pad_info2);
 	setup_core_voltages();
 #endif
+	board_init_done = 1;
 	return 0;
 }
 
@@ -2138,9 +2141,12 @@ void check_power_key(void)
 {
 	int rval;
 	int newval;
-	unsigned long cur_time = get_timer(0);
+	unsigned long cur_time;
 	u8 buf[1] = { 0 };
 
+	if (!board_init_done)	/* Wait for I2C bus */
+		return;
+	cur_time = get_timer(0);
 	if ((unsigned long)(cur_time - when_tested) < 10)
 		return;
 	rval = bus_i2c_read(DA90_I2C_BUS, DA90_I2C_ADDR,
