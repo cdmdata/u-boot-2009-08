@@ -371,7 +371,6 @@ static struct i2c_parms *i2c_get_parms(void *base)
 	while (i < ARRAY_SIZE(srdata.i2c_data)) {
 		if (p->base == base)
 			return p;
-		printf("base: %p\n", p->base);
 		p++;
 		i++;
 	}
