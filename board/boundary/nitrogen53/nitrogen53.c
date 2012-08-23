@@ -1307,7 +1307,6 @@ int board_init(void)
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
-	bq2416x_init();
 #endif
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_A
@@ -1370,6 +1369,9 @@ int board_init(void)
 #ifdef CONFIG_I2C_MXC
 	setup_i2c(2, CONFIG_SYS_I2C3_SPEED, 0x7f, &i2c_pad_info2);
 	setup_core_voltages();
+#endif
+#ifdef CONFIG_BQ2416X_CHARGER
+	bq2416x_init();
 #endif
 	board_init_done = 1;
 	return 0;
