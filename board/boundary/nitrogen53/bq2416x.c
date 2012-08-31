@@ -68,7 +68,12 @@ int bq2416x_reg_read(unsigned reg)
 }
 
 unsigned char bq2416x_init_values[] = {
-	0x80, 0x00, 0x0c, 0x8e, 0x00, 0x32, 0x00, 0x28
+	0x80, 0x00,
+	/* bq24168 PSEL high = 100mA limit, PSEL low=1.5A limit */
+	0x4c,		/* BQ24163_CONTROL, 900 mA usb charge */
+	0x8e, 0x00,
+	0x52,		/* BQ24163_BATT_CURRENT, measured 1330 mA */
+	0x00, 0x28
 };
 
 int bq2416x_init(void)
