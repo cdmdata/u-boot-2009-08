@@ -1019,7 +1019,9 @@ int esdhc_gpio_init(bd_t *bis)
 			gpio_direction_output(N53_EMMC_RESET, 0);
 			gpio_direction_input(N53_WL1271_INT);
 			gpio_direction_output(N53_WL1271_WL_EN, 0);
+#if CONFIG_MACH_TYPE != MACH_TYPE_MX53_NITROGEN_A
 			gpio_direction_output(N53_WL1271_BT_EN, 0);
+#endif
 			gpio_direction_input(N53_WL1271_BT_FUNC5);
 #ifdef N53_WL1271_BT_FUNC2
 			gpio_direction_output(N53_WL1271_BT_FUNC2, 0);
