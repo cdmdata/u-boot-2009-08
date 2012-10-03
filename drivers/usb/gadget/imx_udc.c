@@ -612,10 +612,11 @@ static void mxc_udc_recv_setup(void)
 {
 	u8 tmp;
 	struct usb_device_request *s = &mxc_udc.ep0_urb->device_request;
-	int in = (s->bmRequestType & USB_DIR_IN);
+	int in;
 
 	ENTRY
 	mxc_udc_read_setup_pkt(s);
+	in = (s->bmRequestType & USB_DIR_IN);
 	if (ep0_recv_setup(mxc_udc.ep0_urb)) {
 		mxc_ep0_stall();
 		return;
