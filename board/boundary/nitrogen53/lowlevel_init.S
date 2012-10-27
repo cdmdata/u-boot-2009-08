@@ -110,55 +110,109 @@
 	str	r1, [r0, #0x4]
 .endm /* init_aips */
 
-	.equiv	_DP_OP_1000,	DP_OP_1000
-	.equiv	_DP_MFN_1000,	DP_MFN_1000
-	.equiv	_DP_MFD_1000,	DP_MFD_1000
-	.equiv	_DP_CTL_1000,	DP_CTL_1000
+/* Assuming 24MHz input clock with doubler ON
+ * fdck_2 = 4 * fref * (MFI + (MFN/MFD))/PDF
+ * fdck_2 = (MFN/MFD + MFI) * 96 /PDF
+ *
+ * (MFI >= 5) && (MFI <= 15)
+ * (PDF >= 1) && (PDF <= 16)
+ * (MFD >= 1) && (MFD <= 0x3fffffe)
+ * (MFN >= -0x3fffffe) && (MFN <= 0x3fffffe) && (|MFN| <= MFD)
+ *
+ * BRM = 0 if MFD < 8
+ * BRM = 1 if MFD >= 8
+ */
+#define MAKE_OP(mfi, pdf) (((mfi) << 4) | (pdf - 1))
 
-	.equiv	_DP_OP_850,	DP_OP_850
-	.equiv	_DP_MFN_850,	DP_MFN_850
-	.equiv	_DP_MFD_850,	DP_MFD_850
-	.equiv	_DP_CTL_850,	DP_CTL_850
+#define DP_CTL_RESTART	0x10
+#define DP_CTL_BRMO	0x02
 
-	.equiv	_DP_OP_800,	DP_OP_800
-	.equiv	_DP_MFN_800,	DP_MFN_800
-	.equiv	_DP_MFD_800,	DP_MFD_800
-	.equiv	_DP_CTL_800,	DP_CTL_800
+/* (5/12 + 10) * 96 / 1 = 1000 */
+	.equiv	_DP_OP_1000,	MAKE_OP(10, 1)
+	.equiv	_DP_MFN_1000,	5
+	.equiv	_DP_MFD_1000,	(12 - 1)
+	.equiv	_DP_CTL_1000,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
 
-	.equiv	_DP_OP_700,	DP_OP_700
-	.equiv	_DP_MFN_700,	DP_MFN_700
-	.equiv	_DP_MFD_700,	DP_MFD_700
-	.equiv	_DP_CTL_700,	DP_CTL_700
+/* (180/180 + 8) * 96 / 1 = 864 */
+	.equiv	_DP_OP_864,	MAKE_OP(8, 1)
+	.equiv	_DP_MFN_864,	180
+	.equiv	_DP_MFD_864,	(180 - 1) /* PL Dither mode */
+	.equiv	_DP_CTL_864,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
 
-	.equiv	_DP_OP_665,	DP_OP_665
-	.equiv	_DP_MFN_665,	DP_MFN_665
-	.equiv	_DP_MFD_665,	DP_MFD_665
-	.equiv	_DP_CTL_665,	DP_CTL_665
+/* (41/48 + 8) * 96 / 1 = 850 */
+	.equiv	_DP_OP_850,	MAKE_OP(8, 1)
+	.equiv	_DP_MFN_850,	41
+	.equiv	_DP_MFD_850,	(48 - 1)
+	.equiv	_DP_CTL_850,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
 
-	.equiv	_DP_OP_600,	DP_OP_600
-	.equiv	_DP_MFN_600,	DP_MFN_600
-	.equiv	_DP_MFD_600,	DP_MFD_600
-	.equiv	_DP_CTL_600,	DP_CTL_600
+#define DP_MFN_800_DIT	60 /* PL Dither mode */
+/* (1/3 + 8) * 96 / 1 = 800 */
+	.equiv	_DP_OP_800,	MAKE_OP(8, 1)
+	.equiv	_DP_MFN_800,	1
+	.equiv	_DP_MFD_800,	(3 - 1)
+	.equiv	_DP_CTL_800,	(0x1220 | DP_CTL_RESTART)
 
-	.equiv	_DP_OP_532,	DP_OP_532
-	.equiv	_DP_MFN_532,	DP_MFN_532
-	.equiv	_DP_MFD_532,	DP_MFD_532
-	.equiv	_DP_CTL_532,	DP_CTL_532
+/* (7/24 + 7) * 96 / 1 = 700 */
+	.equiv	_DP_OP_700,	MAKE_OP(7, 1)
+	.equiv	_DP_MFN_700,	7
+	.equiv	_DP_MFD_700,	(24 - 1)
+	.equiv	_DP_CTL_700,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
 
-	.equiv	_DP_OP_400,	DP_OP_400
-	.equiv	_DP_MFN_400,	DP_MFN_400
-	.equiv	_DP_MFD_400,	DP_MFD_400
-	.equiv	_DP_CTL_400,	DP_CTL_400
+/* (89/96 + 6) * 96 / 1 = 665 */
+	.equiv	_DP_OP_665,	MAKE_OP(6, 1)
+	.equiv	_DP_MFN_665,	89
+	.equiv	_DP_MFD_665,	(96 - 1)
+	.equiv	_DP_CTL_665,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
 
-	.equiv	_DP_OP_300,	DP_OP_300
-	.equiv	_DP_MFN_300,	DP_MFN_300
-	.equiv	_DP_MFD_300,	DP_MFD_300
-	.equiv	_DP_CTL_300,	DP_CTL_300
+/* (1/4 + 6) * 96 / 1 = 600 */
+	.equiv	_DP_OP_600,	MAKE_OP(6, 1)
+	.equiv	_DP_MFN_600,	1
+	.equiv	_DP_MFD_600,	(4 - 1)
+	.equiv	_DP_CTL_600,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
 
-	.equiv	_DP_OP_216,	DP_OP_216
-	.equiv	_DP_MFN_216,	DP_MFN_216
-	.equiv	_DP_MFD_216,	DP_MFD_216
-	.equiv	_DP_CTL_216,	DP_CTL_216
+/* (13/24 + 5) * 96 / 1 = 532 */
+	.equiv	_DP_OP_532,	MAKE_OP(5, 1)
+	.equiv	_DP_MFN_532,	13
+	.equiv	_DP_MFD_532,	(24 - 1)
+	.equiv	_DP_CTL_532,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+/* (23/48 + 9) * 96 / 2 = 455 */
+	.equiv	_DP_OP_455,	MAKE_OP(9, 2)
+	.equiv	_DP_MFN_455,	23
+	.equiv	_DP_MFD_455,	(48 - 1)
+	.equiv	_DP_CTL_455,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
+
+/* (1/3 + 8) * 96 / 2 = 400 */
+	.equiv	_DP_OP_400,	MAKE_OP(8, 2)
+	.equiv	_DP_MFN_400,	1
+	.equiv	_DP_MFD_400,	(3 - 1)
+	.equiv	_DP_CTL_400,	(0x1220 | DP_CTL_RESTART)
+
+/* (1/4 + 6) * 96 / 2 = 300 */
+	.equiv	_DP_OP_300,	MAKE_OP(6, 2)
+	.equiv	_DP_MFN_300,	1
+	.equiv	_DP_MFD_300,	(4 - 1)
+	.equiv	_DP_CTL_300,	(0x1220 | DP_CTL_RESTART)
+
+#if 0
+/*
+ * Too low, output must be 300 - 800
+ * (3/4 + 6) * 96 / 3 = 216
+ */
+	.equiv	_DP_OP_216,	MAKE_OP(6, 3)
+	.equiv	_DP_MFN_216,	3
+	.equiv	_DP_MFD_216,	(4 - 1)
+	.equiv	_DP_CTL_216,	(0x1220 | DP_CTL_RESTART)
+#else
+/*
+ * (0/2 + 9) * 96 / 2 = 432
+ * 432 / 2 = 216
+ */
+	.equiv	_DP_OP_216,	MAKE_OP(9, 2)
+	.equiv	_DP_MFN_216,	0
+	.equiv	_DP_MFD_216,	(2 - 1)
+	.equiv	_DP_CTL_216,	(0x0220 | DP_CTL_RESTART)
+#endif
 
 .macro pll_op_mfd_mfn r_pll, dp_op, dp_mfd, dp_mfn
 	mov	r0, #\dp_op
