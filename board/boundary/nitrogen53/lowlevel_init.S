@@ -251,8 +251,6 @@
 	bne	1b
 .endm
 
-#define rClk  r7
-
 .macro init_clock	rClk, rPll1, rPll2, rPll3
 	ldr	\rClk, =CCM_BASE_ADDR
 
@@ -267,9 +265,9 @@
 
 //disable auto restart
 	mov	r0, #0
-	str     r0, [\rPll1, #PLL_DP_CONFIG]
-	str     r0, [\rPll2, #PLL_DP_CONFIG]
-	str     r0, [\rPll3, #PLL_DP_CONFIG]
+	str	r0, [\rPll1, #PLL_DP_CONFIG]
+	str	r0, [\rPll2, #PLL_DP_CONFIG]
+	str	r0, [\rPll3, #PLL_DP_CONFIG]
 	print_debug_ch '2'
 
 	/* Gate of clocks to the peripherals first */
@@ -381,12 +379,12 @@ lowlevel_init:
 	mov	r8,lr
 	print_debug_ch '0'
 #ifdef ENABLE_IMPRECISE_ABORT
-	mrs	r1, spsr	    /* save old spsr */
-	mrs	r0, cpsr	    /* read out the cpsr */
-	bic	r0, r0, #0x100      /* clear the A bit */
-	msr	spsr, r0	    /* update spsr */
+	mrs	r1, spsr	/* save old spsr */
+	mrs	r0, cpsr	/* read out the cpsr */
+	bic	r0, r0, #0x100	/* clear the A bit */
+	msr	spsr, r0	/* update spsr */
 	add	lr, pc, #0x8	/* update lr */
-	movs	pc, lr	     /* update cpsr */
+	movs	pc, lr		/* update cpsr */
 	nop
 	nop
 	nop
