@@ -100,18 +100,21 @@
 
 /* AIPS setup - Only setup MPROTx registers.
  * The PACR default values are good.*/
-.macro init_aips
+.macro init_aips	rAips1, rAips2
 	/*
 	 * Set all MPROTx to be non-bufferable, trusted for R/W,
 	 * not forced to user-mode.
 	 */
-	ldr	r0, =AIPS1_BASE_ADDR
-	ldr	r1, =0x77777777
-	str	r1, [r0, #0x0]
-	str	r1, [r0, #0x4]
-	ldr	r0, =AIPS2_BASE_ADDR
-	str	r1, [r0, #0x0]
-	str	r1, [r0, #0x4]
+	ldr	r0, =0x77777777
+	str	r0, [\rAips1, #0x0]
+	str	r0, [\rAips1, #0x4]
+	str	r0, [\rAips2, #0x0]
+	str	r0, [\rAips2, #0x4]
+	/*
+	 * Clear the on and off peripheral modules Supervisor Protect bit
+	 * for SDMA to access them. Did not change the AIPS control registers
+	 * (offset 0x20) access type
+	 */
 .endm /* init_aips */
 
 /* M4IF setup */
@@ -550,7 +553,9 @@ lowlevel_init:
 	init_l2cc
 
 	print_debug_ch 'd'
-	init_aips
+	ldr	r4, =AIPS1_BASE_ADDR
+	ldr	r5, =AIPS2_BASE_ADDR
+	init_aips	r4, r5
 
 	print_debug_ch 'e'
 	init_m4if	r4
