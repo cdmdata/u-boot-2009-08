@@ -193,7 +193,7 @@
 	.equiv	_DP_OP_600,	MAKE_OP(6, 1)
 	.equiv	_DP_MFN_600,	1
 	.equiv	_DP_MFD_600,	(4 - 1)
-	.equiv	_DP_CTL_600,	(0x1220 | DP_CTL_RESTART | DP_CTL_BRMO)
+	.equiv	_DP_CTL_600,	(0x1220 | DP_CTL_RESTART)
 
 /* (13/24 + 5) * 96 / 1 = 532 */
 	.equiv	_DP_OP_532,	MAKE_OP(5, 1)
