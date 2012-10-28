@@ -440,14 +440,14 @@
 	start_pllf \rPll3, 216
 
 	/* Set the platform clock dividers */
-	ldr	r2, =ARM_BASE_ADDR
+	ldr	r1, =ARM_BASE_ADDR
 #ifdef CONFIG_MX51
 	ldr	r0, =0x00000725
 #else
 	mov	r0, #0x0124
 #endif
 #define PLATFORM_ICGC		0x14
-	str	r0, [r2, #PLATFORM_ICGC]
+	str	r0, [r1, #PLATFORM_ICGC]
 
 #ifdef CONFIG_MX51
 	/*
