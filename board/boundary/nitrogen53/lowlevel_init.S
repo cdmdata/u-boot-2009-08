@@ -377,7 +377,8 @@
 .globl lowlevel_init
 lowlevel_init:
 	mov	r8,lr
-	print_debug_ch '0'
+
+	print_debug_ch 'a'
 #ifdef ENABLE_IMPRECISE_ABORT
 	mrs	r1, spsr	/* save old spsr */
 	mrs	r0, cpsr	/* read out the cpsr */
@@ -391,21 +392,22 @@ lowlevel_init:
 	nop
 	msr	spsr, r1	    /* restore old spsr */
 #endif
-	print_debug_ch '1'
 
 	init_arm_erratum
 
-	print_debug_ch '1'
+	print_debug_ch 'b'
 	init_l1cc
 
-	print_debug_ch '2'
+	print_debug_ch 'c'
 	init_l2cc
 
-	print_debug_ch '3'
+	print_debug_ch 'd'
 	init_aips
 
-	print_debug_ch '4'
+	print_debug_ch 'e'
 	.balignl	32,0xe1a00000   //nop code
 	init_clock	r7, r4, r5, r6
 
+	print_debug_ch 'i'
+	print_debug_ch '\n'
 	mov	pc, r8
