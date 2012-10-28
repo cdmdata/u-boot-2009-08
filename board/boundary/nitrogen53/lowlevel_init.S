@@ -84,13 +84,17 @@
  */
 .macro init_l2cc
 	/* explicitly disable L2 cache */
+	/* in Auxiliary Control Register */
 	mrc	15, 0, r0, c1, c0, 1
 	bic	r0, r0, #0x2
 	mcr	15, 0, r0, c1, c0, 1
 
 	/* reconfigure L2 cache aux control reg */
-	mov	r0, #0xC0 | 0x4		/* tag RAM, data RAM */
-	orr	r0, r0, #(1 << 24) | (1 << 23) | (1 << 22)	/* disable write allocate (delay, combine, allocate) */
+	mov	r0, #0xC4				/* tag/data RAM */
+	/* disable write allocate, combine, delay */
+	orr	r0, r0, #(1 << 22) | (1 << 23) | (1 << 24)
+
+	/* Write L2 Cache Auxiliary Control Register */
 	mcr	15, 1, r0, c9, c0, 2
 .endm /* init_l2cc */
 
