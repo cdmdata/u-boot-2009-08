@@ -299,7 +299,6 @@
 .endm
 
 .macro init_clock	rClk, rPll1, rPll2, rPll3
-	ldr	\rClk, =CCM_BASE_ADDR
 
 #ifdef CONFIG_MX51
 	/* Disable IPU and HSC handshake */
@@ -310,10 +309,6 @@
 #endif
 	str	r0, [\rClk, #CLKCTL_CCDR]
 	print_debug_ch '1'
-
-	ldr	\rPll1, =PLL1_BASE_ADDR
-	ldr	\rPll2, =PLL2_BASE_ADDR
-	ldr	\rPll3, =PLL3_BASE_ADDR
 
 /* disable auto restart */
 	mov	r0, #0
@@ -562,7 +557,12 @@ lowlevel_init:
 
 	print_debug_ch 'h'
 	.balignl	32,0xe1a00000   /* nop code */
-	init_clock	r7, r4, r5, r6
+
+	ldr	r4, =CCM_BASE_ADDR
+	ldr	r5, =PLL1_BASE_ADDR
+	ldr	r6, =PLL2_BASE_ADDR
+	ldr	r7, =PLL3_BASE_ADDR
+	init_clock	r4, r5, r6, r7
 
 	print_debug_ch 'i'
 	print_debug_ch '\n'
