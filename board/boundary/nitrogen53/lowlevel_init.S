@@ -110,6 +110,27 @@
 	str	r1, [r0, #0x4]
 .endm /* init_aips */
 
+/* M4IF setup */
+.macro init_m4if	rM4if
+#ifdef CONFIG_MX51
+	ldr	\rM4if, =M4IF_BASE_ADDR
+	/* VPU and IPU given higher priority (0x4)
+	 * IPU accesses with ID=0x1 given highest priority (=0xA)
+	 */
+	ldr	r0, =0x00000203
+	str	r0, [\rM4if, #0x40]
+
+	mov	r0, #0x0
+	str	r0, [\rM4if, #0x44]
+
+	ldr	r0, =0x00120125
+	str	r0, [\rM4if, #0x9C]
+
+	ldr	r0, =0x001901A3
+	str	r0, [\rM4if, #0x48]
+#endif
+.endm /* init_m4if */
+
 /* Assuming 24MHz input clock with doubler ON
  * fdck_2 = 4 * fref * (MFI + (MFN/MFD))/PDF
  * fdck_2 = (MFN/MFD + MFI) * 96 /PDF
@@ -405,6 +426,9 @@ lowlevel_init:
 	init_aips
 
 	print_debug_ch 'e'
+	init_m4if	r4
+
+	print_debug_ch 'h'
 	.balignl	32,0xe1a00000   //nop code
 	init_clock	r7, r4, r5, r6
 
