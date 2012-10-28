@@ -495,7 +495,7 @@
 	str	r0, [\rClk, #CLKCTL_CSCDR1]
 #endif
 	/* Restore the default values in the Gate registers */
-	mvn	r0, #0
+	mvn	r0, #~0xFFFFFFFF
 	str	r0, [\rClk, #CLKCTL_CCGR0]
 	str	r0, [\rClk, #CLKCTL_CCGR1]
 	str	r0, [\rClk, #CLKCTL_CCGR2]
@@ -506,7 +506,7 @@
 #ifdef CONFIG_MX53
 	str	r0, [\rClk, #CLKCTL_CCGR7]
 #endif
-	mov	r0, #0
+	mov	r0, #0x0
 	str	r0, [\rClk, #CLKCTL_CCDR]
 
 	/* for cko - for ARM div by 8 */
@@ -522,7 +522,7 @@
 
 .globl lowlevel_init
 lowlevel_init:
-	mov	r8,lr
+	mov	r8, lr
 
 	print_debug_ch 'a'
 #ifdef CONFIG_MX51
