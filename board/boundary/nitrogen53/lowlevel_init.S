@@ -324,7 +324,6 @@
 	str	r0, [\rClk, #CLKCTL_CCGR1]
 	str	r0, [\rClk, #CLKCTL_CCGR2]
 	str	r0, [\rClk, #CLKCTL_CCGR3]
-	str	r0, [\rClk, #CLKCTL_CCGR7]
 
 	mov	r0, #0x00030000
 	str	r0, [\rClk, #CLKCTL_CCGR4]
@@ -343,6 +342,8 @@
 #else
 	ldr	r0, =0x0303
 	str	r0, [\rClk, #CLKCTL_CCGR6]
+	mov	r0,#0
+	str	r0, [\rClk, #CLKCTL_CCGR7]
 #endif
 
 	/* Switch ARM to step clock (clock source 4) */
@@ -490,6 +491,7 @@
 	ldr	r0, =0x00C30321
 	str	r0, [\rClk, #CLKCTL_CSCDR1]
 #endif
+	divisor_change_wait \rClk
 
 #ifdef CONFIG_MX53
 	ldr	r0, [\rClk, #CLKCTL_CSCDR1]
