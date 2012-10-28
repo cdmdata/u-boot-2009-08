@@ -395,11 +395,24 @@
 
 .section ".text.init", "x"
 
+#define GPIO_DR 0
+#define GPIO_DIR 4
+
 .globl lowlevel_init
 lowlevel_init:
 	mov	r8,lr
 
 	print_debug_ch 'a'
+#ifdef CONFIG_MX51
+/* make gp1[23] a high output */
+	ldr	r1, =GPIO1_BASE_ADDR
+	ldr	r0, [r1, #GPIO_DR]
+	orr	r0, r0, #1 << 23
+	str	r0, [r1, #GPIO_DR]
+	ldr	r0, [r1, #GPIO_DIR]
+	orr	r0, r0, #1 << 23
+	str	r0, [r1, #GPIO_DIR]
+#endif
 
 	init_arm_erratum
 
