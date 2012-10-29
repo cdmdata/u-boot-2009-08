@@ -535,7 +535,7 @@
 	movls	r0, r0, LSL r1
 	subls	r0, r0, #1
 	orrls	r2, r2, r0, LSL #11	//orr if rows is 13-16
-	str	r1, [r4, #ESD_REF] /* ESDREF, (1)32k refresh cycle rate, n+1 refreshes/cycle */
+	str	r2, [r4, #ESD_REF] /* ESDREF, (1)32k refresh cycle rate, n+1 refreshes/cycle */
 	BigMov	r1, 0x00033337
 	str	r1, [r4, #ESD_ODTCTRL]
 	mov	r1, #0
