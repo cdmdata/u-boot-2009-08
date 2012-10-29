@@ -52,6 +52,7 @@
 #define I2C3_HUB_SC16IS7XX		GPIO_NUMBER(6, 10)	/* NANDF_RB0 */
 #define GP_LCD_3_3V_POWER_ENABLE	GPIO_NUMBER(2, 6)	/* PATA_DATA6 */
 #define GP_BT_RESET			GPIO_NUMBER(3, 3)	/* EIM_DA3 */
+#define GP_PWM1_OUTPUT			GPIO_NUMBER(1, 9)	/* GPIO_9 */
 #endif
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
@@ -1322,6 +1323,9 @@ int board_init(void)
 	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_ATA_DATA6, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA3, PAD_CTL_NORMAL_LOW_OUT);
+
+        mxc_request_iomux(MX53_PIN_GPIO_9, IOMUX_CONFIG_ALT1);
+	gpio_direction_output(GP_PWM1_OUTPUT, 0);	/* turn off torch LED */
 #endif
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
 	gpio_direction_output(N53K_I2C2_HUB_EDID, 0);		/* Disable */
