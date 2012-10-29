@@ -54,4 +54,6 @@
 #undef CONFIG_BOOTCOMMAND
 #define CONFIG_BOOTCOMMAND	"for disk in 0 1 ; do fatload mmc $disk 70008000 nitrogen53_bootscript* && source 70008000 ; done ; errmsg=\"Error running bootscript!\" ; lecho $errmsg ; echo $errmsg ;"
 
+#define CONFIG_BQ20Z75_I2C_BUS ((void *)I2C2_BASE_ADDR)
+
 #endif
