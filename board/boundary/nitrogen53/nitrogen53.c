@@ -47,11 +47,13 @@
 #define I2C2_HUB_CAMERA			GPIO_NUMBER(3, 10)	/* EIM_DA10 */
 #define I2C2_HUB_TFP410_ACCEL		GPIO_NUMBER(3, 11)	/* EIM_DA11 */
 #define I2C2_HUB_BATT_EDID		GPIO_NUMBER(6, 11)	/* NANDF_CS0 */
+#define I2C2_HUB_BATSELECT		GPIO_NUMBER(3, 6)	/* requires BATT_EDID */
 #define I2C2_HUB_OLD_EMPTY		GPIO_NUMBER(3, 9)	/* EIM_DA9 */
 #define I2C2_HUB_RTC_ISL1208		GPIO_NUMBER(6, 12)	/* NANDF_WE */
 #define I2C3_HUB_SC16IS7XX		GPIO_NUMBER(6, 10)	/* NANDF_RB0 */
 #define GP_LCD_3_3V_POWER_ENABLE	GPIO_NUMBER(2, 6)	/* PATA_DATA6 */
 #define GP_BT_RESET			GPIO_NUMBER(3, 3)	/* EIM_DA3 */
+#define GP_PWM1_OUTPUT			GPIO_NUMBER(1, 9)	/* GPIO_9 */
 #endif
 
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
@@ -1297,6 +1299,7 @@ int board_init(void)
 	gpio_direction_output(I2C2_HUB_CAMERA, 0);		/* Disable */
 	gpio_direction_output(I2C2_HUB_TFP410_ACCEL, 0);		/* Disable */
 	gpio_direction_output(I2C2_HUB_BATT_EDID, 0);		/* Disable */
+	gpio_direction_output(I2C2_HUB_BATSELECT, 0);
 	gpio_direction_output(I2C2_HUB_OLD_EMPTY, 0);		/* Disable */
 	gpio_direction_output(I2C2_HUB_RTC_ISL1208, 0);		/* Disable */
 	gpio_direction_output(I2C3_HUB_SC16IS7XX, 0);		/* Disable */
@@ -1312,6 +1315,7 @@ int board_init(void)
 	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_ATA_DATA6, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA3, IOMUX_CONFIG_ALT1);
+        mxc_request_iomux(MX53_PIN_EIM_DA6, IOMUX_CONFIG_ALT1);
 
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA7, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
@@ -1322,6 +1326,9 @@ int board_init(void)
 	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_ATA_DATA6, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA3, PAD_CTL_NORMAL_LOW_OUT);
+
+        mxc_request_iomux(MX53_PIN_GPIO_9, IOMUX_CONFIG_ALT1);
+	gpio_direction_output(GP_PWM1_OUTPUT, 0);	/* turn off torch LED */
 #endif
 #if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
 	gpio_direction_output(N53K_I2C2_HUB_EDID, 0);		/* Disable */
@@ -1760,6 +1767,202 @@ void check_power_key(void)
 		}
 	}
 }
+
+struct battery_reg {
+	char const *regname;
+	unsigned char regnum;
+	unsigned char len;
+};
+
+static struct battery_reg const battery_regs[] = {
+	{ "ManufacturerAccess",
+	  0x00, 2 },
+	{ "RemainingCapacityAlarm",
+	  0x01, 2 },
+	{ "RemainingTimeAlarm",
+	  0x02, 2 },
+	{ "BatteryMode",
+	  0x03, 2 },
+	{ "AtRate",
+	  0x04, 2 },
+	{ "AtRateTimeToFull",
+	  0x05, 2 },
+	{ "AtRateTimeToEmpty",
+	  0x06, 2 },
+	{ "AtRateOK",
+	  0x07, 2 },
+	{ "Temperature",
+	  0x08, 2 },
+	{ "Voltage",
+	  0x09, 2 },
+	{ "Current",
+	  0x0a, 2 },
+	{ "AverageCurrent",
+	  0x0b, 2 },
+	{ "MaxError",
+	  0x0c, 1 },
+	{ "RelativeStateOfCharge",
+	  0x0d, 1 },
+	{ "AbsoluteStateOfCharge",
+	  0x0e, 1 },
+	{ "RemainingCapacity",
+	  0x0f, 2 },
+	{ "FullChargeCapacity",
+	  0x10, 2 },
+	{ "RunTimeToEmpty",
+	  0x11, 2 },
+	{ "AverageTimeToEmpty",
+	  0x12, 2 },
+	{ "AverageTimeToFull",
+	  0x13, 2 },
+	{ "ChargingCurrent",
+	  0x14, 2 },
+	{ "ChargingVoltage",
+	  0x15, 2 },
+	{ "BatteryStatus",
+	  0x16, 2 },
+	{ "CycleCount",
+	  0x17, 2 },
+	{ "DesignCapacity",
+	  0x18, 2 },
+	{ "DesignVoltage",
+	  0x19, 2 },
+	{ "SpecificationInfo",
+	  0x1a, 2 },
+	{ "ManufactureDate",
+	  0x1b, 2 },
+	{ "SerialNumber",
+	  0x1c, 2 },
+	{ "ManufacturerName",
+	  0x20, 12 },
+	{ "DeviceName",
+	  0x21, 8 },
+	{ "DeviceChemistry",
+	  0x22, 5 },
+	{ "ManufacturerData",
+	  0x23, 15 },
+	{ "Authenticate",
+	  0x2f, 21 },
+	{ "CellVoltage4",
+	  0x3c, 2 },
+	{ "CellVoltage3",
+	  0x3d, 2 },
+	{ "CellVoltage2",
+	  0x3e, 2 },
+	{ "CellVoltage1",
+	  0x3f, 2 },
+	{ "AFEData",
+	  0x45, 12 },
+	{ "FETControl",
+	  0x46, 1 },
+	{ "StateOfHealth",
+	  0x4f, 1 },
+	{ "SafetyStatus",
+	  0x51, 2 },
+	{ "PFStatus",
+	  0x53, 2 },
+	{ "OperationStatus",
+	  0x54, 2 },
+	{ "ChargingStatus",
+	  0x55, 2 },
+	{ "PackVoltage",
+	  0x5a, 2 },
+	{ "AverageVoltage",
+	  0x5d, 2 },
+	{ "UnSealKey",
+	  0x60, 4 },
+	{ "FullAccessKey",
+	  0x61, 4 },
+	{ "PFKey",
+	  0x62, 4 },
+	{ "AuthenKey3",
+	  0x63, 4 },
+	{ "AuthenKey2",
+	  0x64, 4 },
+	{ "AuthenKey1",
+	  0x65, 4 },
+	{ "AuthenKey0",
+	  0x66, 4 },
+	{ "ManufacturerInfo",
+	  0x70, 32 },
+	{ "SenseResistor",
+	  0x71, 2 },
+};
+
+#define BATTERYBUFSIZE 32
+
+static struct battery_reg const *findreg(char const *name)
+{
+	int i;
+	for(i=0; i < ARRAY_SIZE(battery_regs); i++){
+		if (0 == strcmp(battery_regs[i].regname,name)) {
+			return battery_regs+i;
+		}
+	}
+	return 0;
+}
+
+static int readbatreg( struct battery_reg const *reg,
+		       unsigned bat,
+		       unsigned char *buf)
+{
+	int rval = 0 ;
+	gpio_set_value(I2C2_HUB_BATT_EDID,1);
+	gpio_set_value(I2C2_HUB_BATSELECT,bat);
+	rval = bus_i2c_read(CONFIG_BQ20Z75_I2C_BUS, 0x0b, reg->regnum, 1, buf, reg->len);
+	gpio_set_value(I2C2_HUB_BATT_EDID,0);
+	return rval ;
+}
+
+int batreg(cmd_tbl_t *cmdtp, int flag, int argc, char *argv[])
+{
+	if (2 <= argc) {
+		unsigned bat = simple_strtoul(argv[1],0,0);
+		if (2 > bat) {
+			if (3 <= argc) {
+				struct battery_reg const *reg = findreg(argv[2]);
+				if (reg) {
+					int rval = 0 ;
+					unsigned char buf[BATTERYBUFSIZE];
+					rval = readbatreg(reg,bat,buf);
+					if (0 == rval) {
+						printf("-------%s\n", reg->regname);
+						print_buffer (reg->regnum, buf, 1, reg->len, 16);
+					}
+					else
+						printf("Error reading battery register %s\n", reg->regname);
+					return rval ;
+				}
+				else
+					printf("undefined register %s\n",argv[2]);
+			} else {
+				int i;
+				for (i=0; i < ARRAY_SIZE(battery_regs); i++) {
+					struct battery_reg const *reg = battery_regs+i;
+					int rval = 0 ;
+					unsigned char buf[BATTERYBUFSIZE];
+					rval = readbatreg(reg,bat,buf);
+					if (0 == rval) {
+						printf("-------%s\n", reg->regname);
+						print_buffer (reg->regnum, buf, 1, reg->len, 16);
+					}
+				}
+			} /* dump all registers */
+		} else
+			printf("Invalid battery number: use 0 or 1\n");
+	}
+
+	cmd_usage(cmdtp);
+	return -1 ;
+}
+
+U_BOOT_CMD(
+	   batreg, 3, 0, batreg,
+	   "read or set battery register",
+	   "Usage: batreg 0|1 [regname [value]]\n"
+);
+
+
 #endif
 
 struct button_key {
