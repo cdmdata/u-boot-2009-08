@@ -257,7 +257,7 @@ static unsigned char da9052_init_data[] = {
 #endif
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
 //		0x34, 0x73,		/* on,  LDO3, 3.0V (73:3.0V) default (7f:3.3v) */
-		0x2e, 0x60,		/* on,  VBUCKCORE, 1.300V  (0x73:1.775V) if old rev of board*/
+		0x2e, 0x61,		/* on,  VBUCKCORE, 1.325V  (0x73:1.775V) if old rev of board*/
 		0x2f, 0x62,		/* on,  VBUCK_PRO, 1.350V (62:1.350V) */
 		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
 		0x3c, 0x7f,		/* go:core, pro, mem, LDO2, LDO3 */
