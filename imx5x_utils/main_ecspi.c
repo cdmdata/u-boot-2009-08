@@ -35,6 +35,7 @@ int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	unsigned offset_bits;
 	unsigned block_size;
 	unsigned bytes, ivt_offset;
+	unsigned i = 0;
 	read_block_rtn read_rtn;
 //	my_printf("pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
 	if (!ram_test((unsigned *)ram_base)) {
@@ -47,7 +48,14 @@ int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	ci.end = NULL;
 	ecspi_init(base);
 
-	offset_bits = identify_chip_read_rtn(base, &block_size, &read_rtn);
+	for (;;) {
+		offset_bits = identify_chip_read_rtn(base, &block_size, &read_rtn);
+		if (offset_bits)
+			break;
+		i++;
+		if (i > 7)
+			return -9;
+	}
 	page = offset / block_size;
 	diff = offset - (page * block_size);
 	debug_pr("page=%x diff=%x block_size=%x\n", page, diff, block_size);
