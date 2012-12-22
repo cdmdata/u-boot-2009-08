@@ -266,6 +266,7 @@ mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
 	struct mmc_cmd cmd;
 	struct mmc_data data;
 	int timeout = 1000;
+	int ret;
 
 	if ((start + blkcnt) > mmc->block_dev.lba) {
 		printf("MMC: block number 0x%lx exceeds max(0x%lx)\n",
@@ -291,8 +292,9 @@ mmc_write_blocks(struct mmc *mmc, ulong start, lbaint_t blkcnt, const void*src)
 	data.blocksize = mmc->write_bl_len;
 	data.flags = MMC_DATA_WRITE;
 
-	if (mmc_send_cmd(mmc, &cmd, &data)) {
-		printf("mmc write failed\n");
+	ret = mmc_send_cmd(mmc, &cmd, &data);
+	if (ret) {
+		printf("mmc write failed %d\n", ret);
 		return 0;
 	}
 
