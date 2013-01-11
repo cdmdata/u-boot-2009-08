@@ -68,7 +68,7 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int
 #endif
 
 #ifdef CONFIG_ANDROID_RECOVERY
-#include "../common/recovery.h"
+#include "../../freescale/common/recovery.h"
 #include <part.h>
 #include <ext2fs.h>
 #include <linux/mtd/mtd.h>

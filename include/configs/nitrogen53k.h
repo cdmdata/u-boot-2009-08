@@ -26,6 +26,15 @@
 #define CONFIG_H5PS2G83AFR_S6	/* 1G total memory */
 #define CONFIG_K2	/* Next rev of Nitrogenk */
 
+/*Recovery stuff */
+#define CONFIG_ANDROID_RECOVERY
+#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC \
+	"setenv bootargs ${bootargs} init=/init root=/dev/mmcblk0p4 rootfs=ext4"
+#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+	"run bootargs_base bootargs_android_recovery;mmc read 0 ${loadaddr} 0x800 0x1800;bootm"
+#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
+#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+
 #undef CONFIG_MACH_TYPE
 #define CONFIG_MACH_TYPE	MACH_TYPE_MX53_NITROGEN_K
 #undef CONFIG_BOARD_NAME
