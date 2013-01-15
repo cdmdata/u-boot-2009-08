@@ -38,7 +38,7 @@
 #include <fsl_esdhc.h>
 #include <fdt_support.h>
 #include <asm/io.h>
-
+#include <watchdog.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -254,8 +254,10 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 				"Card requires power cycle\n");
 	}
 
-	if (irqstat & CMD_ERR)
+	if (irqstat & CMD_ERR) {
+		printf("%s: CMD_ERR, irqstat=0x%08x\n", __func__, irqstat);
 		return COMM_ERR;
+	}
 
 	if (irqstat & IRQSTAT_CTOE)
 		return TIMEOUT;
@@ -283,20 +285,20 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 
 	/* Workaround for ESDHC errata ENGcm03648 */
 	if (!cfg->is_usdhc && !data && (cmd->resp_type & MMC_RSP_BUSY)) {
-		int timeout = 2500;
+		ulong elapsed;
+		ulong start_time = get_timer(0);
 
 		/* Poll on DATA0 line for cmd with busy signal for 250 ms */
-		while (timeout > 0 && !(readl(&regs->prsstat) & PRSSTAT_DAT0)) {
-			udelay(100);
-			timeout--;
+		while (!(readl(&regs->prsstat) & PRSSTAT_DAT0)) {
+			WATCHDOG_RESET();
+			elapsed = get_timer(start_time);
+			if (elapsed > (CONFIG_SYS_HZ / 4)) {
+				writel(sysctl_restore, &regs->sysctl);
+				printf("Timeout waiting for DAT0 to go high!\n");
+				return TIMEOUT;
+			}
 		}
-
 		writel(sysctl_restore, &regs->sysctl);
-
-		if (timeout <= 0) {
-			printf("Timeout waiting for DAT0 to go high!\n");
-			return TIMEOUT;
-		}
 	}
 
 	/* Copy the response to the response buffer */
@@ -358,12 +360,16 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 	}
 
 	/* Reset CMD and DATA portions of the controller on error */
-	if (readl(&regs->irqstat) & 0xFFFF0000) {
+	irqstat = readl(&regs->irqstat);
+	if (irqstat & 0xFFFF0000) {
 		writel(readl(&regs->sysctl) | SYSCTL_RSTC | SYSCTL_RSTD,
 			&regs->sysctl);
 		while (readl(&regs->sysctl) & (SYSCTL_RSTC | SYSCTL_RSTD))
 			;
 
+		printf("%s: irqstat=0x%08x cmdarg=0x%08x mixctrl=0x%08x xfertyp=0x%08x\n",
+				__func__, irqstat, cmd->cmdarg, mixctrl, xfertyp);
+		writel(-1, &regs->irqstat);
 		return COMM_ERR;
 	}
 	writel(-1, &regs->irqstat);
@@ -397,6 +403,7 @@ void set_sysctl(struct mmc *mmc, uint clock)
 		if ((sdhc_clk / (div * pre_div)) <= clock)
 			break;
 
+	printf("mmc clock set to %d\n", sdhc_clk / (div * pre_div));
 	pre_div >>= 1;
 	div -= 1;
 
