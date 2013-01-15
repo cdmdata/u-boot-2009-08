@@ -665,7 +665,7 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
 #endif /* #ifndef CONFIG_MX50_ENABLE_USDHC_SDR */
 
 	mmc->f_min = 400000;
-	mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 52000000);
+	mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 26000000);
 
 	if (cfg->is_usdhc) {
 		mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 208000000);
