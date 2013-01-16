@@ -292,9 +292,9 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 		while (!(readl(&regs->prsstat) & PRSSTAT_DAT0)) {
 			WATCHDOG_RESET();
 			elapsed = get_timer(start_time);
-			if (elapsed > (CONFIG_SYS_HZ / 4)) {
+			if (elapsed > (CONFIG_SYS_HZ)) {
 				writel(sysctl_restore, &regs->sysctl);
-				printf("Timeout waiting for DAT0 to go high!\n");
+				printf("Timeout waiting for DAT0 to go high!!\n");
 				return TIMEOUT;
 			}
 		}
