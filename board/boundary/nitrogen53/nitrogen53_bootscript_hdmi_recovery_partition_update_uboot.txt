@@ -1,0 +1,92 @@
+mw.l 0x53fa8008 0xa1	# set 24BPP for LVDS channel
+
+lecho "check U-Boot" ;
+echo "check U-Boot" ;
+if fatload mmc 0 72000000 u-boot-nitrogen53*.bin ; then
+      if sf probe 1 27000000 ; then
+           if sf read 0x72400000 0x400 $filesize ; then
+               if cmp.b 0x72000000 0x72400000 $filesize ; then
+                   lecho "..." ;
+               else
+                   lecho "Need U-Boot upgrade" ;
+                   echo "Need U-Boot upgrade" ;
+                   lecho "Program in 10 seconds" ;
+                   echo "Program in 10 seconds" ;
+                   for n in 9 8 7 6 5 4 3 2 1 0 ; do
+                        lecho $n ; echo $n ; 
+                        sleep 1 ;
+                   done
+		   lecho "erasing" ; echo "erasing" ;
+                   sf erase 0 0x40000 ;
+		   # two steps to prevent bricking
+		   lecho "programming" ; echo "programming" ;
+                   sf write 0x72000400 0x800 $filesize
+                   sf write 0x72000000 0x400 0x400
+		   lecho "verifying" ; echo "verifying" ;
+                   if sf read 0x72400000 0x400 $filesize ; then
+                       if cmp.b 0x72000000 0x72400000 $filesize ; then
+                           while lecho "U-Boot upgraded. Cycle power" ; do
+				echo "U-Boot upgraded. Cycle power" ;
+				sleep 120
+			   done			   
+                       else
+                           lecho "Read verification error" ;
+                           echo "Read verification error" ;
+                       fi
+                   else
+                        lecho "Error re-reading EEPROM" ;
+                        echo "Error re-reading EEPROM" ;
+                   fi
+               fi
+           else
+               lecho "Error reading boot loader from EEPROM" ;
+               echo "Error reading boot loader from EEPROM" ;
+           fi
+      else
+           lecho "Error initializing EEPROM" ;
+           echo "Error initializing EEPROM" ;
+      fi ;
+else
+     lecho "No U-Boot image found on SD card" ;
+     echo "No U-Boot image found on SD card" ;
+fi
+
+
+
+#check for recovery command
+#wipe 1088 bytes (the size of the boot message struct)
+mw.l 0x72000000 0x000000 0x110
+if fatload mmc 0 72000000 .bcb ; then
+	#write "recovery" to memory following the 1088 bytes
+	mw.l 0x72000440 0x6f636572
+	mw.l 0x72000444 0x79726576 
+	
+	#compare
+	if cmp.l 0x72000000 0x72000440 1 && cmp.l 0x72000004 0x72000444 1 ; then
+		setenv ramdisk initrd_recovery.u-boot;
+	else
+		setenv ramdisk initrd.u-boot;	
+	fi
+fi
+
+if fatload mmc 0 72000000 nitrogen-logo*.bmp ; then
+bmp display 72000000 ;
+else
+if fatload mmc 0 72000000 logo*.bmp ; then
+bmp display 72000000 ;
+fi
+fi
+
+echo "Booting with ramdisk: 0:${ramdisk}";
+set bootargs ldb=single,di=0,ch0_map=SPWG video=mxcdi0fb:raw:49000000,1024,600,1,0,1,0,104,144,40,10,11,3,1,0,888 vmalloc=256M
+
+if fatload mmc 0 72000000 uImage53* ; then
+if fatload mmc 0 72400000 ${ramdisk} ; then
+bootm 72000000 72400000 ;
+else
+echo "No ram-disk" ;
+fi
+else
+echo "No Linux kernel" ;
+fi
+
