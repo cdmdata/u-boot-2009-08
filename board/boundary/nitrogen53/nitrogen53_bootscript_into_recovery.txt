@@ -1,0 +1,29 @@
+mw.l 0x53fa8008 0xa1	# set 24BPP for LVDS channel
+
+#update bootcmd
+setenv bootcmd 'if fatload mmc 0 70008000 nitrogen53_bootscript* ; then source 70008000 ; else if fatload mmc 1 70008000 nitrogen53_bootscript* ; then source 70008000 ; fi; fi;'
+saveenv
+
+setenv ramdisk initrd_recovery.u-boot;
+	
+if fatload mmc 0 72000000 nitrogen-logo*.bmp ; then
+bmp display 72000000 ;
+else
+if fatload mmc 0 72000000 logo*.bmp ; then
+bmp display 72000000 ;
+fi
+fi
+
+echo "Booting with ramdisk: ${ramdisk}";
+set bootargs ldb=single,di=0,ch0_map=SPWG video=mxcdi0fb:raw:49000000,1024,600,1,0,1,0,104,144,40,10,11,3,1,0,888 vmalloc=256M
+
+if fatload mmc 0 72000000 uImage53* ; then
+if fatload mmc 0 72400000 ${ramdisk} ; then
+bootm 72000000 72400000 ;
+else
+echo "No ram-disk" ;
+fi
+else
+echo "No Linux kernel" ;
+fi
+
