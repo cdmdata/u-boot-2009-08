@@ -1336,17 +1336,27 @@ int board_init(void)
 	gpio_direction_output(N53K_I2C2_HUB_AMBIENT, 0);	/* Disable */
 	gpio_direction_output(N53K_I2C2_HUB_CAMERA, 0);		/* Disable */
 	gpio_direction_output(N53K_POWER_KEEP_ON, 1);		/* enable power */
+	gpio_direction_output(GPIO_NUMBER(6, 15), 0);		/* Camera Xclk */
+	gpio_direction_output(GPIO_NUMBER(2, 22), 1);		/* Camera power down */
+	gpio_direction_output(GPIO_NUMBER(4, 14), 0);		/* Camera reset */
+
 	mxc_request_iomux(MX53_PIN_EIM_DA8, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA9, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_EIM_DA10, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_RB0, IOMUX_CONFIG_ALT1);
 	mxc_request_iomux(MX53_PIN_NANDF_WE_B, IOMUX_CONFIG_ALT1);
+	mxc_request_iomux(MX53_PIN_NANDF_CS2, IOMUX_CONFIG_ALT1);	/* Camera XClk */
+	mxc_request_iomux(MX53_PIN_EIM_A16, IOMUX_CONFIG_ALT1);		/* Camera pwdn */
+	mxc_request_iomux(MX53_PIN_KEY_COL4, IOMUX_CONFIG_ALT1);	/* Camera reset */
 
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA8, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA9, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_EIM_DA10, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_RB0, PAD_CTL_NORMAL_LOW_OUT);
 	mxc_iomux_set_pad(MX53_PIN_NANDF_WE_B, PAD_CTL_100K_PU);	/* Pull up disabled */
+	mxc_iomux_set_pad(MX53_PIN_NANDF_CS2, PAD_CTL_NORMAL_LOW_OUT);	/* Camera XClk */
+	mxc_iomux_set_pad(MX53_PIN_EIM_A16, PAD_CTL_100K_PU);		/* Camera pwdn */
+	mxc_iomux_set_pad(MX53_PIN_KEY_COL4, PAD_CTL_NORMAL_LOW_OUT);	/* Camera reset */
 #endif
 
 #ifdef CONFIG_I2C_MXC
