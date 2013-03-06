@@ -37,7 +37,7 @@
 #define CONFIG_LCD_PINS_OFF	/* only LVDS panel used */
 
 #undef CONFIG_PWM2_DUTY
-#define CONFIG_PWM2_DUTY	230	/* 230 out of 256 */
+#define CONFIG_PWM2_DUTY	40	/* was 230 out of 256 for previous rev */
 
 #undef CONFIG_UART_BASE_ADDR
 #undef CONFIG_TFP410_BUS
