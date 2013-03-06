@@ -34,6 +34,7 @@
 #undef CONFIG_TFP410_LDO10
 #define CONFIG_TF410_OFF
 #define CONFIG_W3
+#define CONFIG_LCD_PINS_OFF	/* only LVDS panel used */
 
 #undef CONFIG_PWM2_DUTY
 #define CONFIG_PWM2_DUTY	230	/* 230 out of 256 */

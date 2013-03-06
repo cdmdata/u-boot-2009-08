@@ -616,8 +616,13 @@ void init_display_pins(void)
 	unsigned int pad = PAD_CTL_HYS_NONE | PAD_CTL_DRV_MEDIUM | PAD_CTL_SRE_FAST ;
 	int const *pins = di0_prgb_pins ;
 	unsigned pwm_base = PWM2_BASE_ADDR;
+#ifdef CONFIG_LCD_PINS_OFF
+	unsigned alt = IOMUX_CONFIG_ALT1;
+#else
+	unsigned alt = IOMUX_CONFIG_ALT0;
+#endif
 	while (*pins) {
-		mxc_request_iomux(*pins,IOMUX_CONFIG_ALT0);
+		mxc_request_iomux(*pins, alt);
 		mxc_iomux_set_pad(*pins,pad);
 		pins++ ;
 	}
