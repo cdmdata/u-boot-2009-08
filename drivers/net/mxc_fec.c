@@ -759,12 +759,16 @@ extern void mxc_fec_eth_set_mac_addr(const unsigned char *macaddr)
 	set_hw_mac(fecp, macaddr);
 }
 
+void inline __board_fec_enable_phy(int on) {}
+void board_fec_enable_phy(int on) __attribute__((weak, alias("__board_fec_enable_phy")));
+
 int fec_init(struct eth_device *dev, bd_t *bd)
 {
 	struct fec_info_s *info = dev->priv;
 	volatile fec_t *fecp = (fec_t *) (info->iobase);
 	int i;
 
+	board_fec_enable_phy(1);
 	fec_reset(dev);
 
 	fec_localhw_setup((fec_t *)fecp);
@@ -882,6 +886,7 @@ void fec_halt(struct eth_device *dev)
 {
 	struct fec_info_s *info = dev->priv;
 
+	board_fec_enable_phy(0);
 	fec_reset(dev);
 
 	info->rxIdx = info->txIdx = 0;

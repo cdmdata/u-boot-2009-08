@@ -821,6 +821,13 @@ void setup_spi(void)
 
 #ifdef CONFIG_MXC_FEC
 
+void board_fec_enable_phy(int on)
+{
+	gpio_direction_output(GPIO_NUMBER(7, 13), on);
+	if (on)
+		udelay(50);
+}
+
 static void setup_fec(void)
 {
 	/* gp7[13] - low active reset pin*/
@@ -900,10 +907,6 @@ static void setup_fec(void)
 	mxc_request_iomux(MX53_PIN_FEC_MDIO, IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX53_PIN_FEC_MDIO, 0x1FC);
 	mxc_iomux_set_input(MUX_IN_FEC_FEC_MDI_SELECT_INPUT, 0x1);
-
-
-	udelay(50);
-	gpio_direction_output(GPIO_NUMBER(7, 13), 1);
 }
 #endif
 
