@@ -32,6 +32,7 @@
 #define CONFIG_BOARD_NAME	"MX53-Nitrogen_K"
 
 #undef CONFIG_TFP410_LDO10
+#define CONFIG_TF410_OFF
 #define CONFIG_W3
 
 #undef CONFIG_PWM2_DUTY

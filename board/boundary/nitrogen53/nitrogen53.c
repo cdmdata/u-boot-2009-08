@@ -679,7 +679,11 @@ void init_display_pins(void)
 		tfp410_bus = (void *)I2C1_BASE_ADDR;
 
 	/* Init tfp410 */
+#ifdef CONFIG_TF410_OFF
+	buf[0] = 0xbc;
+#else
 	buf[0] = 0xbd;
+#endif
 	for (;;) {
 		if (!bus_i2c_write(tfp410_bus, tfp410_i2c_addr, 0x8, 1, buf, 1)) {
 			printf("tfp410 found at 0x%x\n", tfp410_i2c_addr);
