@@ -27,6 +27,9 @@
 #define CONFIG_K2	/* Next rev of Nitrogenk */
 
 /*Recovery stuff */
+#undef CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC
+#undef CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC
+
 #define CONFIG_ANDROID_RECOVERY
 #define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC \
 	"setenv bootargs ${bootargs} init=/init root=/dev/mmcblk0p4 rootfs=ext4"
