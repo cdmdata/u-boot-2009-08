@@ -23,7 +23,7 @@ if fatload mmc 0 72000000 u-boot-nitrogen53*.bin ; then
                         sleep 1 ;
                    done
 		   lecho "erasing" ; echo "erasing" ;
-                   sf erase 0 0x40000 ;
+                   sf erase 0 0x50000 ;
 		   # two steps to prevent bricking
 		   lecho "programming" ; echo "programming" ;
                    sf write 0x72000400 0x800 $filesize
