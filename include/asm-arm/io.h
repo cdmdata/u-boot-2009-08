@@ -184,6 +184,7 @@ extern void __raw_readsl(unsigned int addr, void *data, int longlen);
  */
 extern void * __ioremap(unsigned long offset, size_t size, unsigned long flags);
 extern void __iounmap(void *addr);
+extern unsigned long iomem_to_phys(unsigned long virt);
 
 /*
  * Generic ioremap support.

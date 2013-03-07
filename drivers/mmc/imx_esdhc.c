@@ -1,9 +1,8 @@
 /*
- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
- * Terry Lv, Jason Liu
- *
  * Copyright 2007, Freescale Semiconductor, Inc
  * Andy Fleming
+ *
+ * Copyright (C) 2008-2011 Freescale Semiconductor, Inc.
  *
  * Based vaguely on the pxa mmc code:
  * (C) Copyright 2003
@@ -39,7 +38,7 @@
 #include <fsl_esdhc.h>
 #include <fdt_support.h>
 #include <asm/io.h>
-
+#include <watchdog.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -67,12 +66,17 @@ struct fsl_esdhc {
 	uint	autoc12err;
 	uint	hostcapblt;
 	uint	wml;
-	char	reserved1[8];
+	uint	mixctrl;
+	char	reserved1[4];
 	uint	fevt;
 	char	reserved2[12];
 	uint dllctrl;
 	uint dllstatus;
-	char	reserved3[148];
+	uint clktunectrlstatus;
+	char	reserved3[84];
+	uint vendorspec;
+	uint	mmcboot;
+	char	reserved4[52];
 	uint	hostver;
 };
 
@@ -82,7 +86,7 @@ uint esdhc_xfertyp(struct mmc_cmd *cmd, struct mmc_data *data)
 	uint xfertyp = 0;
 
 	if (data) {
-		xfertyp |= XFERTYP_DPSEL | XFERTYP_AC12EN;
+		xfertyp |= XFERTYP_DPSEL;
 
 		if (data->blocks > 1) {
 			xfertyp |= XFERTYP_MSBSEL;
@@ -103,6 +107,9 @@ uint esdhc_xfertyp(struct mmc_cmd *cmd, struct mmc_data *data)
 		xfertyp |= XFERTYP_RSPTYP_48_BUSY;
 	else if (cmd->resp_type & MMC_RSP_PRESENT)
 		xfertyp |= XFERTYP_RSPTYP_48;
+
+	if (cmd->cmdidx == MMC_CMD_STOP_TRANSMISSION)
+		xfertyp |= XFERTYP_CMDTYP_ABORT;
 
 	return XFERTYP_CMD(cmd->cmdidx) | xfertyp;
 }
@@ -159,9 +166,9 @@ static int esdhc_setup_data(struct mmc *mmc, struct mmc_data *data)
 static int
 esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 {
-	uint	xfertyp;
+	uint	xfertyp, mixctrl;
 	uint	irqstat;
-	u32	tmp;
+	u32	tmp, sysctl_restore = 0;
 	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
 	volatile struct fsl_esdhc *regs = (struct fsl_esdhc *)cfg->esdhc_base;
 
@@ -179,13 +186,6 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 
 	while (readl(&regs->prsstat) & PRSSTAT_DLA);
 
-	/* Wait at least 8 SD clock cycles before the next command */
-	/*
-	 * Note: This is way more than 8 cycles, but 1ms seems to
-	 * resolve timing issues with some cards
-	 */
-	udelay(10000);
-
 	/* Set up for a data transfer if we have one */
 	if (data) {
 		int err;
@@ -198,28 +198,108 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 	/* Figure out the transfer arguments */
 	xfertyp = esdhc_xfertyp(cmd, data);
 
-	if (mmc->bus_width == EMMC_MODE_4BIT_DDR ||
-		mmc->bus_width == EMMC_MODE_8BIT_DDR)
+	if (mmc->card_caps & EMMC_MODE_4BIT_DDR ||
+		mmc->card_caps & EMMC_MODE_8BIT_DDR)
 		xfertyp |= XFERTYP_DDR_EN;
+
+	/* ESDHC errata ENGcm03648: Turn off auto-clock gate for commands
+	 * with busy signaling and no data
+	 */
+	if (!cfg->is_usdhc && !data && (cmd->resp_type & MMC_RSP_BUSY)) {
+		sysctl_restore = readl(&regs->sysctl);
+		writel(sysctl_restore | 0xF, &regs->sysctl);
+	}
 
 	/* Send the command */
 	writel(cmd->cmdarg, &regs->cmdarg);
+
+	/* write lower-half of xfertyp to mixctrl */
+	mixctrl = xfertyp & 0xFFFF;
+	/* Keep the bits 22-25 of the register as is */
+	mixctrl |= (readl(&regs->mixctrl) & (0xF << 22));
+	writel(mixctrl, &regs->mixctrl);
+
 	writel(xfertyp, &regs->xfertyp);
 
 	/* Mask all irqs */
 	writel(0, &regs->irqsigen);
 
 	/* Wait for the command to complete */
-	while (!(readl(&regs->irqstat) & IRQSTAT_CC));
+	while (!(readl(&regs->irqstat) & (IRQSTAT_CC | IRQSTAT_CTOE)))
+		;
 
 	irqstat = readl(&regs->irqstat);
 	writel(irqstat, &regs->irqstat);
 
-	if (irqstat & CMD_ERR)
+	/* Reset CMD and DATA portions on error */
+	if (irqstat & (CMD_ERR | IRQSTAT_CTOE)) {
+		writel(readl(&regs->sysctl) | SYSCTL_RSTC, &regs->sysctl);
+		while (readl(&regs->sysctl) & SYSCTL_RSTC)
+			;
+
+		if (data) {
+			writel(readl(&regs->sysctl) | SYSCTL_RSTD,
+				&regs->sysctl);
+			while (readl(&regs->sysctl) & SYSCTL_RSTD)
+				;
+		}
+
+		/* Restore auto-clock gate if error */
+		if (!cfg->is_usdhc && !data && (cmd->resp_type & MMC_RSP_BUSY))
+			writel(sysctl_restore, &regs->sysctl);
+
+		/* If this was CMD11, then notify that power cycle is needed */
+		if (cmd->cmdidx == SD_CMD_SWITCH_UHS18V)
+			printf("CMD11 to switch to 1.8V mode failed."
+				"Card requires power cycle\n");
+	}
+
+	if (irqstat & CMD_ERR) {
+		printf("%s: CMD_ERR, irqstat=0x%08x\n", __func__, irqstat);
 		return COMM_ERR;
+	}
 
 	if (irqstat & IRQSTAT_CTOE)
 		return TIMEOUT;
+
+	/* Switch voltage to 1.8V if CMD11 succeeded */
+	if (cmd->cmdidx == SD_CMD_SWITCH_UHS18V) {
+		/* Set SD_VSELECT to switch to 1.8V */
+		u32 reg;
+		reg = readl(&regs->vendorspec);
+		reg |= VENDORSPEC_VSELECT;
+		writel(reg, &regs->vendorspec);
+
+		/* Sleep for 5 ms - max time for card to switch to 1.8V */
+		udelay(5000);
+
+		/* Turn on SD clock */
+		writel(reg | VENDORSPEC_FRC_SDCLK_ON, &regs->vendorspec);
+
+		while (!(readl(&regs->prsstat) & PRSSTAT_DAT0))
+			;
+
+		/* restore SD clock status */
+		writel(reg, &regs->vendorspec);
+	}
+
+	/* Workaround for ESDHC errata ENGcm03648 */
+	if (!cfg->is_usdhc && !data && (cmd->resp_type & MMC_RSP_BUSY)) {
+		ulong elapsed;
+		ulong start_time = get_timer(0);
+
+		/* Poll on DATA0 line for cmd with busy signal for 250 ms */
+		while (!(readl(&regs->prsstat) & PRSSTAT_DAT0)) {
+			WATCHDOG_RESET();
+			elapsed = get_timer(start_time);
+			if (elapsed > (CONFIG_SYS_HZ)) {
+				writel(sysctl_restore, &regs->sysctl);
+				printf("Timeout waiting for DAT0 to go high!!\n");
+				return TIMEOUT;
+			}
+		}
+		writel(sysctl_restore, &regs->sysctl);
+	}
 
 	/* Copy the response to the response buffer */
 	if (cmd->resp_type & MMC_RSP_136) {
@@ -279,9 +359,19 @@ esdhc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data)
 		while (!(readl(&regs->irqstat) & IRQSTAT_TC)) ;
 	}
 
-	if (readl(&regs->irqstat) & 0xFFFF0000)
-		return COMM_ERR;
+	/* Reset CMD and DATA portions of the controller on error */
+	irqstat = readl(&regs->irqstat);
+	if (irqstat & 0xFFFF0000) {
+		writel(readl(&regs->sysctl) | SYSCTL_RSTC | SYSCTL_RSTD,
+			&regs->sysctl);
+		while (readl(&regs->sysctl) & (SYSCTL_RSTC | SYSCTL_RSTD))
+			;
 
+		printf("%s: irqstat=0x%08x cmdarg=0x%08x mixctrl=0x%08x xfertyp=0x%08x\n",
+				__func__, irqstat, cmd->cmdarg, mixctrl, xfertyp);
+		writel(-1, &regs->irqstat);
+		return COMM_ERR;
+	}
 	writel(-1, &regs->irqstat);
 
 	return 0;
@@ -303,12 +393,24 @@ void set_sysctl(struct mmc *mmc, uint clock)
 	} else
 		pre_div = 2;
 
+	/* For the case where clock requested is equal to SDHC clock,
+	 * the pre_div should be 1.
+	 */
+	if (clock == sdhc_clk)
+		pre_div = 1;
+
 	for (div = 1; div <= 16; div++)
 		if ((sdhc_clk / (div * pre_div)) <= clock)
 			break;
 
+	printf("mmc clock set to %d\n", sdhc_clk / (div * pre_div));
 	pre_div >>= 1;
 	div -= 1;
+
+	/* for USDHC, pre_div requires another shift in DDR mode */
+	if (cfg->is_usdhc && (mmc->card_caps & EMMC_MODE_4BIT_DDR ||
+		mmc->card_caps & EMMC_MODE_8BIT_DDR))
+		pre_div >>= 1;
 
 	clk = (pre_div << 8) | (div << 4);
 
@@ -337,16 +439,78 @@ static void esdhc_dll_setup(struct mmc *mmc)
 {
 	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
 	struct fsl_esdhc *regs = (struct fsl_esdhc *)cfg->esdhc_base;
+	uint dll_control;
+	u32 target_delay = ESDHC_DLL_TARGET_DEFAULT_VAL;
 
-	uint dll_control = readl(&regs->dllctrl);
-	dll_control &= ~(ESDHC_DLLCTRL_SLV_OVERRIDE_VAL_MASK |
-		ESDHC_DLLCTRL_SLV_OVERRIDE);
-	dll_control |= ((ESDHC_DLLCTRL_SLV_OVERRIDE_VAL <<
-		ESDHC_DLLCTRL_SLV_OVERRIDE_VAL_SHIFT) |
-		ESDHC_DLLCTRL_SLV_OVERRIDE);
+/* For DDR mode operation, provide target delay parameter for each SD port.
+ * Use cfg->esdhc_base to distinguish the SD port #. The delay for each port
+ * is dependent on signal layout for that particular port. If the following
+ * CONFIG is not defined, then the default target delay value will be used.
+ */
+#ifdef CONFIG_GET_DDR_TARGET_DELAY
+	target_delay = get_ddr_delay(cfg);
+#endif
 
-	writel(dll_control, &regs->dllctrl);
+	/* For i.MX50 TO1, need to force slave override mode */
+	if (get_board_rev() == (0x50000 | CHIP_REV_1_0) ||
+			((get_board_rev() & 0xff000) == 0x53000)) {
+		dll_control = readl(&regs->dllctrl);
 
+		dll_control &= ~(ESDHC_DLLCTRL_SLV_OVERRIDE_VAL_MASK |
+			ESDHC_DLLCTRL_SLV_OVERRIDE);
+		dll_control |= ((ESDHC_DLLCTRL_SLV_OVERRIDE_VAL <<
+			ESDHC_DLLCTRL_SLV_OVERRIDE_VAL_SHIFT) |
+			ESDHC_DLLCTRL_SLV_OVERRIDE);
+
+		writel(dll_control, &regs->dllctrl);
+	} else {
+
+		/* on USDHC, enable DLL only for clock > 25 MHz */
+		if (cfg->is_usdhc && mmc->clock <= 25000000)
+			return;
+
+		/* Disable auto clock gating for PERCLK, HCLK, and IPGCLK */
+		writel(readl(&regs->sysctl) | 0x7, &regs->sysctl);
+		/* Stop SDCLK while delay line is calibrated */
+		writel(readl(&regs->sysctl) &= ~SYSCTL_SDCLKEN, &regs->sysctl);
+
+		/* Reset DLL */
+		writel(readl(&regs->dllctrl) | 0x2, &regs->dllctrl);
+
+		dll_control = 0;
+
+		/* Enable DLL */
+		if (cfg->is_usdhc)
+			dll_control |= 0x01000001;
+		else
+			dll_control |= 0x00000001;
+
+		writel(dll_control, &regs->dllctrl);
+
+		/* Set target delay */
+		if (cfg->is_usdhc) {
+			dll_control &= ~USDHC_DLLCTRL_TARGET_MASK;
+			dll_control |= (((target_delay & USDHC_DLL_LOW_MASK) <<
+				USDHC_DLLCTRL_TARGET_LOW_SHIFT) |
+				((target_delay >> USDHC_DLL_HIGH_SHIFT) <<
+				USDHC_DLLCTRL_TARGET_HIGH_SHIFT));
+			writel(dll_control, &regs->dllctrl);
+		} else {
+			dll_control &= ~ESDHC_DLLCTRL_TARGET_MASK;
+			dll_control |= (target_delay << ESDHC_DLLCTRL_TARGET_SHIFT);
+			writel(dll_control, &regs->dllctrl);
+		}
+
+		/* Wait for slave lock */
+		while ((readl(&regs->dllstatus) & ESDHC_DLLSTS_SLV_LOCK_MASK) !=
+			ESDHC_DLLSTS_SLV_LOCK_MASK)
+			;
+
+		/* Re-enable auto clock gating */
+		writel(readl(&regs->sysctl) | SYSCTL_SDCLKEN, &regs->sysctl);
+		/* Re-enable SDCLK */
+		writel(readl(&regs->sysctl) &= ~0x7, &regs->sysctl);
+	}
 }
 
 static void esdhc_set_ios(struct mmc *mmc)
@@ -368,15 +532,29 @@ static void esdhc_set_ios(struct mmc *mmc)
 	} else if (mmc->bus_width == 8) {
 		tmp = readl(&regs->proctl) | PROCTL_DTW_8;
 		writel(tmp, &regs->proctl);
-	} else if (mmc->bus_width == EMMC_MODE_4BIT_DDR) {
-		tmp = readl(&regs->proctl) | PROCTL_DTW_4;
-		writel(tmp, &regs->proctl);
-		esdhc_dll_setup(mmc);
-	} else if (mmc->bus_width == EMMC_MODE_8BIT_DDR) {
-		tmp = readl(&regs->proctl) | PROCTL_DTW_8;
-		writel(tmp, &regs->proctl);
-		esdhc_dll_setup(mmc);
 	}
+
+	if (mmc->card_caps & EMMC_MODE_4BIT_DDR ||
+		mmc->card_caps & EMMC_MODE_8BIT_DDR)
+		esdhc_dll_setup(mmc);
+}
+
+static void esdhc_uhsi_tuning(struct mmc *mmc, uint val)
+{
+	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
+	struct fsl_esdhc *regs = (struct fsl_esdhc *)cfg->esdhc_base;
+	u32 mixctrl;
+
+	/* No tuning needed for 50 MHz or lower */
+	if (mmc->card_uhs_mode < SD_UHSI_FUNC_SDR50)
+		return;
+
+	mixctrl = readl(&regs->mixctrl);
+	mixctrl |= USDHC_MIXCTRL_EXE_TUNE | \
+		USDHC_MIXCTRL_SMPCLK_SEL | \
+		USDHC_MIXCTRL_FBCLK_SEL;
+	writel(mixctrl, &regs->mixctrl);
+	writel((val << 8), &regs->clktunectrlstatus);
 }
 
 static int esdhc_init(struct mmc *mmc)
@@ -391,6 +569,15 @@ static int esdhc_init(struct mmc *mmc)
 
 	while (readl(&regs->sysctl) & SYSCTL_RSTA)
 		;
+
+	/* RSTA doesn't reset MMC_BOOT register, so manually reset it */
+	writel(0, &regs->mmcboot);
+	/* Reset MIX_CTRL and CLK_TUNE_CTRL_STATUS regs to 0 */
+	writel(0, &regs->mixctrl);
+	writel(0, &regs->clktunectrlstatus);
+
+	/* Put VEND_SPEC to default value */
+	writel(VENDORSPEC_INIT, &regs->vendorspec);
 
 #ifdef CONFIG_IMX_ESDHC_V1
 	tmp = readl(&regs->sysctl) | (SYSCTL_HCKEN | SYSCTL_IPGEN);
@@ -442,8 +629,18 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
 	mmc->send_cmd = esdhc_send_cmd;
 	mmc->set_ios = esdhc_set_ios;
 	mmc->init = esdhc_init;
+	mmc->set_tuning = esdhc_uhsi_tuning;
+
+/* Enable uSDHC if the config is defined (only for i.MX50 in SDR mode) */
+#ifdef CONFIG_MX50_ENABLE_USDHC_SDR
+	enable_usdhc();
+#endif
+
+	if (cfg->is_usdhc)
+		sprintf(mmc->name, "FSL_USDHC");
 
 	caps = readl(&regs->hostcapblt);
+
 	if (caps & ESDHC_HOSTCAPBLT_VS30)
 		mmc->voltages |= MMC_VDD_29_30 | MMC_VDD_30_31;
 	if (caps & ESDHC_HOSTCAPBLT_VS33)
@@ -452,14 +649,33 @@ int fsl_esdhc_initialize(bd_t *bis, struct fsl_esdhc_cfg *cfg)
 	mmc->host_caps = MMC_MODE_4BIT;
 
 	if (caps & ESDHC_HOSTCAPBLT_HSS)
-		mmc->host_caps |= MMC_MODE_HS_52MHz | MMC_MODE_HS;
+		mmc->host_caps |= MMC_MODE_HS_52MHz | MMC_MODE_HS | MMC_MODE_HC;
 
-	if (((readl(&regs->hostver) & ESDHC_HOSTVER_VVN_MASK)
-		>> ESDHC_HOSTVER_VVN_SHIFT) >= ESDHC_HOSTVER_DDR_SUPPORT)
+	/* Do not advertise DDR capability for uSDHC on MX50 since
+	*  it is to be used in SDR mode only. Use eSDHC for DDR mode.
+	*/
+#ifndef CONFIG_MX50_ENABLE_USDHC_SDR
+	if (cfg->is_usdhc)
 		mmc->host_caps |= EMMC_MODE_4BIT_DDR;
 
+#ifdef CONFIG_EMMC_DDR_PORT_DETECT
+	if (detect_mmc_emmc_ddr_port(cfg))
+		mmc->host_caps |= EMMC_MODE_4BIT_DDR;
+#endif
+#endif /* #ifndef CONFIG_MX50_ENABLE_USDHC_SDR */
+
 	mmc->f_min = 400000;
-	mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 50000000);
+	mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 26000000);
+
+	if (cfg->is_usdhc) {
+		mmc->f_max = MIN(mxc_get_clock(MXC_ESDHC_CLK), 208000000);
+		mmc->tuning_max = USDHC_TUNE_CTRL_MAX;
+		mmc->tuning_min = USDHC_TUNE_CTRL_MIN;
+		mmc->tuning_step = USDHC_TUNE_CTRL_STEP;
+	}
+
+	if (cfg->port_supports_uhs18v)
+		mmc->host_caps |= SD_UHSI_CAP_ALL_MODES;
 
 	mmc_register(mmc);
 

@@ -1056,3 +1056,74 @@ int arch_cpu_init(void)
 	return 0;
 }
 #endif
+
+void set_usboh3_clk(void)
+{
+	unsigned int reg;
+
+	reg = readl(MXC_CCM_CSCMR1) &
+		 ~MXC_CCM_CSCMR1_USBOH3_CLK_SEL_MASK;
+	reg |= 1 << MXC_CCM_CSCMR1_USBOH3_CLK_SEL_OFFSET;
+	writel(reg, MXC_CCM_CSCMR1);
+
+	reg = readl(MXC_CCM_CSCDR1);
+	reg &= ~MXC_CCM_CSCDR1_USBOH3_CLK_PODF_MASK;
+	reg &= ~MXC_CCM_CSCDR1_USBOH3_CLK_PRED_MASK;
+	reg |= 4 << MXC_CCM_CSCDR1_USBOH3_CLK_PRED_OFFSET;
+	reg |= 1 << MXC_CCM_CSCDR1_USBOH3_CLK_PODF_OFFSET;
+
+	writel(reg, MXC_CCM_CSCDR1);
+}
+
+void set_usb_phy1_clk(void)
+{
+	unsigned int reg;
+
+	reg = readl(MXC_CCM_CSCMR1);
+	reg &= ~MXC_CCM_CSCMR1_USB_PHY_CLK_SEL;
+	writel(reg, MXC_CCM_CSCMR1);
+}
+
+void enable_usboh3_clk(unsigned char enable)
+{
+	unsigned int reg;
+
+	reg = readl(MXC_CCM_CCGR2);
+	if (enable)
+		reg |= 1 << MXC_CCM_CCGR2_CG14_OFFSET;
+	else
+		reg &= ~(1 << MXC_CCM_CCGR2_CG14_OFFSET);
+	writel(reg, MXC_CCM_CCGR2);
+}
+
+#ifdef CONFIG_I2C_MXC
+/* i2c_num can be from 0 - 2 */
+int enable_i2c_clk(unsigned char enable, unsigned i2c_num)
+{
+	u32 reg;
+	u32 mask;
+
+	if (i2c_num > 2)
+		return -EINVAL;
+	mask = MXC_CCM_CCGR_CG_MASK << ((i2c_num + 9) << 1);
+	reg = __raw_readl(MXC_CCM_CCGR1);
+	if (enable)
+		reg |= mask;
+	else
+		reg &= ~mask;
+	__raw_writel(reg, MXC_CCM_CCGR1);
+	return 0;
+}
+#endif
+
+void enable_usb_phy1_clk(unsigned char enable)
+{
+	unsigned int reg;
+
+	reg = readl(MXC_CCM_CCGR4);
+	if (enable)
+		reg |= 1 << MXC_CCM_CCGR4_CG5_OFFSET;
+	else
+		reg &= ~(1 << MXC_CCM_CCGR4_CG5_OFFSET);
+	writel(reg, MXC_CCM_CCGR4);
+}

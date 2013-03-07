@@ -388,7 +388,15 @@ static int ahci_init_one(int pdev)
 	int rc;
 	struct ahci_probe_ent *probe_ent = NULL;
 
-	probe_ent = malloc(sizeof(struct ahci_probe_ent));
+	probe_ent = sata_dev_desc[pdev].priv;
+	if (probe_ent) {
+		int i;
+		for (i = 0; i < probe_ent->n_ports; i++) {
+			free(probe_ent->port[i].cmd_slot_release);
+		}
+	} else {
+		probe_ent = malloc(sizeof(struct ahci_probe_ent));
+	}
 	memset(probe_ent, 0, sizeof(struct ahci_probe_ent));
 	probe_ent->dev = pdev;
 
@@ -408,7 +416,8 @@ static int ahci_init_one(int pdev)
 	ahci_print_info(probe_ent);
 
 #ifdef CONFIG_ARCH_MMU
-	dma_buf = (u8 *)memalign(ATA_MAX_SECTORS * ATA_SECT_SIZE, 4);
+	if (!dma_buf)
+		dma_buf = (u8 *)memalign(4096, ATA_MAX_SECTORS * ATA_SECT_SIZE);
 	if (NULL == dma_buf) {
 		printf("Fail to alloc buf for dma access!\n");
 		return 0;
@@ -430,7 +439,7 @@ static int ahci_fill_sg(struct ahci_probe_ent *probe_ent,
 	struct ahci_ioports *pp = &(probe_ent->port[port]);
 #ifdef CONFIG_ARCH_MMU
 	struct ahci_sg *ahci_sg =
-	    (struct ahci_sg *)ioremap_nocache(iomem_to_phys(pp->cmd_tbl_sg),
+	    (struct ahci_sg *)ioremap_nocache(iomem_to_phys((unsigned long)pp->cmd_tbl_sg),
 		    0);
 #else
 	struct ahci_sg *ahci_sg = pp->cmd_tbl_sg;
@@ -469,8 +478,9 @@ static void ahci_fill_cmd_slot(struct ahci_ioports *pp, u32 cmd_slot, u32 opts)
 {
 #ifdef CONFIG_ARCH_MMU
 	struct ahci_cmd_hdr *cmd_hdr =
-	    (struct ahci_cmd_hdr *)ioremap_nocache(iomem_to_phys(pp->cmd_slot
-				+ AHCI_CMD_SLOT_SZ * cmd_slot), 0);
+	    (struct ahci_cmd_hdr *)ioremap_nocache(iomem_to_phys(
+			    (unsigned long)pp->cmd_slot +
+			    AHCI_CMD_SLOT_SZ * cmd_slot), 0);
 #else
 	struct ahci_cmd_hdr *cmd_hdr = (struct ahci_cmd_hdr *)(pp->cmd_slot +
 					AHCI_CMD_SLOT_SZ * cmd_slot);
@@ -557,7 +567,7 @@ static int ahci_port_start(struct ahci_probe_ent *probe_ent,
 	struct sata_port_regs *port_mmio =
 		(struct sata_port_regs *)pp->port_mmio;
 	u32 port_status;
-	u32 mem;
+	char *mem;
 	int timeout = 1000;
 
 	debug("Enter start port: %d\n", port);
@@ -568,64 +578,47 @@ static int ahci_port_start(struct ahci_probe_ent *probe_ent,
 		return -1;
 	}
 
-	mem = (u32)malloc(AHCI_PORT_PRIV_DMA_SZ + 1024);
+	mem = memalign(1024, AHCI_PORT_PRIV_DMA_SZ);
 	if (!mem) {
-		free(pp);
 		printf("No mem for table!\n");
 		return -ENOMEM;
 	}
 
-	mem = (mem + 0x400) & (~0x3ff);	/* Aligned to 1024-bytes */
-	memset((u8 *)mem, 0, AHCI_PORT_PRIV_DMA_SZ);
-
+	memset(mem, 0, AHCI_PORT_PRIV_DMA_SZ);
+	pp->cmd_slot_release = mem;
+#ifdef CONFIG_ARCH_MMU
+	mem = ioremap_nocache(iomem_to_phys((ulong)mem),
+			AHCI_PORT_PRIV_DMA_SZ);
+#endif
 	/*
 	 * First item in chunk of DMA memory: 32-slot command table,
 	 * 32 bytes each in size
 	 */
-#ifdef CONFIG_ARCH_MMU
-	pp->cmd_slot =
-	(struct ahci_cmd_hdr *)ioremap_nocache(iomem_to_phys((ulong)mem),
-		AHCI_CMD_SLOT_SZ);
-#else
 	pp->cmd_slot = (struct ahci_cmd_hdr *)mem;
-#endif
 	debug("cmd_slot = 0x%x\n", pp->cmd_slot);
 	mem += (AHCI_CMD_SLOT_SZ * DWC_AHSATA_MAX_CMD_SLOTS);
 
 	/*
 	 * Second item: Received-FIS area, 256-Byte aligned
 	 */
-#ifdef CONFIG_ARCH_MMU
-	pp->rx_fis = (u32)ioremap_nocache(iomem_to_phys((ulong)mem),
-		AHCI_RX_FIS_SZ);
-#else
-	pp->rx_fis = mem;
-#endif
+	pp->rx_fis = (u32)mem;
 	mem += AHCI_RX_FIS_SZ;
 
 	/*
 	 * Third item: data area for storing a single command
 	 * and its scatter-gather table
 	 */
-#ifdef CONFIG_ARCH_MMU
-	pp->cmd_tbl = (u32)ioremap_nocache(iomem_to_phys((ulong)mem),
-		AHCI_CMD_TBL_HDR);
-#else
-	pp->cmd_tbl = mem;
-#endif
+	pp->cmd_tbl = (u32)mem;
 	debug("cmd_tbl_dma = 0x%x\n", pp->cmd_tbl);
 
 	mem += AHCI_CMD_TBL_HDR;
 
 	writel_with_flush(0x00004444, &(port_mmio->dmacr));
+	pp->cmd_tbl_sg = (struct ahci_sg *)mem;
 #ifdef CONFIG_ARCH_MMU
-	pp->cmd_tbl_sg =
-		(struct ahci_sg *)ioremap_nocache(iomem_to_phys((ulong)mem),
-		AHCI_CMD_TBL_HDR);
-	writel_with_flush(iomem_to_phys(pp->cmd_slot), &(port_mmio->clb));
+	writel_with_flush(iomem_to_phys((unsigned long)pp->cmd_slot), &(port_mmio->clb));
 	writel_with_flush(iomem_to_phys(pp->rx_fis), &(port_mmio->fb));
 #else
-	pp->cmd_tbl_sg = (struct ahci_sg *)mem;
 	writel_with_flush((u32)pp->cmd_slot, &(port_mmio->clb));
 	writel_with_flush(pp->rx_fis, &(port_mmio->fb));
 #endif

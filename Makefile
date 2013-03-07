@@ -189,6 +189,7 @@ LIBS += lib_generic/lzma/liblzma.a
 LIBS += lib_generic/lzo/liblzo.a
 LIBS += $(shell if [ -f board/$(VENDOR)/common/Makefile ]; then echo \
 	"board/$(VENDOR)/common/lib$(VENDOR).a"; fi)
+LIBS += board/freescale/common/libfreescale.a
 LIBS += cpu/$(CPU)/lib$(CPU).a
 ifdef SOC
 LIBS += cpu/$(CPU)/$(SOC)/lib$(SOC).a
@@ -224,6 +225,7 @@ LIBS += drivers/pci/libpci.a
 LIBS += drivers/pcmcia/libpcmcia.a
 LIBS += drivers/power/libpower.a
 LIBS += drivers/spi/libspi.a
+LIBS += drivers/fastboot/libfastboot.a
 ifeq ($(CPU),mpc83xx)
 LIBS += drivers/qe/qe.a
 endif
@@ -3328,8 +3330,17 @@ nitrogen53a_rev1_config \
 nitrogen53a_rev2_config \
 nitrogen53a_config \
 nitrogen53k_config \
+nitrogen53_aos_config \
 nitrogen53_config	: unconfig
 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 nitrogen53 boundary mx53
+
+mx6q_sabreauto_config			\
+mx6q_sabreauto_iram_config	: unconfig
+	@[ -z "$(findstring iram_,$@)" ] || \
+		{ echo "TEXT_BASE = 0x00910000" >$(obj)board/freescale/mx6q_sabreauto/config.tmp ; \
+		  echo "... with iram configuration" ; \
+		}
+	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 mx6q_sabreauto freescale mx6
 
 omap2420h4_config	: unconfig
 	@$(MKCONFIG) $(@:_config=) arm arm1136 omap2420h4 NULL omap24xx

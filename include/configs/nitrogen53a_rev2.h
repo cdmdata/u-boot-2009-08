@@ -31,17 +31,22 @@
 #undef CONFIG_UART_BASE_ADDR
 #define CONFIG_UART_BASE_ADDR		UART3_BASE_ADDR
 
+#define CONFIG_H5PS1G83EFR_S6C	/* 512MB, 400 MHz */
+						/* dgctrl0,    dgctrl1,    rddlctl,    wrdlctl */
+#define CONFIG_H5PS1G83EFR_S6C_CALIBRATION	0x017d0204, 0x02040206, 0x25232723, 0x524c544a
+
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
 	"ethprime=FEC0\0"		\
 	"machid=c62\0"			\
 	"panel=raw:63500000,1024,768,1,0,1,0,104,152,48,4,23,3,1,1\0" \
 	"lvds=1,1\0" \
-	"clearenv=sf erase 0x5f000 0x1000 && echo 'environment reset to factory defaults'; \0" \
+	"upgradeu=fatload mmc 0 70008000 n53_upgrade && source 70008000\0" \
+	"clearenv=sf probe 1 && sf erase 0x5f000 0x1000 && echo 'environment reset to factory defaults'; \0" \
 
 #define CONFIG_POWER_KEY
 
-#define CONFIG_TFP410_HUB_EN	MAKE_GP(3, 11)
+#define CONFIG_TFP410_HUB_EN	GPIO_NUMBER(3, 11)
 #undef N53_I2C_CONNECTOR_BUFFER_ENABLE
 
 #undef CONFIG_PWM2_DUTY
@@ -49,5 +54,10 @@
 
 #undef CONFIG_BOOTDELAY
 #define CONFIG_BOOTDELAY	0
+
+#undef CONFIG_BOOTCOMMAND
+#define CONFIG_BOOTCOMMAND	"for disk in 0 1 ; do fatload mmc $disk 70008000 nitrogen53_bootscript* && source 70008000 ; done ; errmsg=\"Error running bootscript!\" ; lecho $errmsg ; echo $errmsg ;"
+
+#define CONFIG_BQ20Z75_I2C_BUS ((void *)I2C2_BASE_ADDR)
 
 #endif

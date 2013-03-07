@@ -207,6 +207,7 @@ int ram_test(unsigned *ram_base)
 	unsigned *p_end = &ram_base[1<<10];	//test 4K of memory
 	unsigned expected;
 	unsigned val[4];
+	delayMicro(30);		/* 10 gives errors on nitrogen53k, 15 ok */
 	while (p < p_end) {
 		p[0] = ((unsigned)p);
 		p[1] = ~((unsigned)p);
@@ -256,9 +257,9 @@ static unsigned char da9052_init_data[] = {
 #endif
 		0x33, 0x4c,		/* on,  LDO2, 0.893V (4c:0.9V) */
 //		0x34, 0x73,		/* on,  LDO3, 3.0V (73:3.0V) default (7f:3.3v) */
-		0x2e, 0x60,		/* on,  VBUCKCORE, 1.300V  (0x73:1.775V) if old rev of board*/
+		0x2e, 0x61,		/* on,  VBUCKCORE, 1.325V  (0x73:1.775V) if old rev of board*/
 		0x2f, 0x62,		/* on,  VBUCK_PRO, 1.350V (62:1.350V) */
-		0x30, 0x62,		/* on,  VBUCKMEM, 1.805V (62:1.775V) */
+		0x30, 0x62,		/* on,  VBUCKMEM, 1.800V (62:1.775V) */
 		0x3c, 0x7f,		/* go:core, pro, mem, LDO2, LDO3 */
 		0x31, 0x7d,		/* on,  VBUCK_PERI 2.489V (7d:2.450V) */
 //		0x32, 0x4e		/* on,  LDO1, 1.3V (4e:1.3V) */
@@ -268,7 +269,7 @@ static unsigned char da9052_init_data[] = {
 		0x38, 0x5e,		/* on,  LDO7, 2.75V (5e:2.70V) */
 /* LDO8 - leave on 1.8V, serial port messed up otherwise on newest board */
 //		0x39, 0x0c,		/* off, LDO8, camera db(4c:1.8V) */
-		0x3a, 0x1f,		/* off, LDO9, 2.8V camera(5f:2.75V) */
+		0x3a, 0x1f,		/* off, LDO9, 2.8V camera(5f:2.8V) */
 #ifdef CONFIG_DA9052_CHARGER_ENABLE
 		0x3e, 0xd7,		/* turn charger on, max 450mA from USB */
 		0x40, 0xf0,		/* max current for DCIN */

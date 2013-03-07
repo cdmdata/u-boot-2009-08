@@ -28,7 +28,7 @@
 
  /* High Level Configuration Options */
 #define CONFIG_ARMV7		1	/* This is armv7 Cortex-A8 CPU core */
-
+#define CONFIG_MXC_GPIO
 #define CONFIG_MXC		1
 #define CONFIG_MX53
 #define CONFIG_VIDEO_IMX5X	1
@@ -78,7 +78,38 @@
 #define CONFIG_MXC_UART 1
 #define CONFIG_UART_BASE_ADDR   UART2_BASE_ADDR
 #define CONFIG_TFP410_LDO10
-#define CONFIG_TFP410_BUS I2C2_BASE_ADDR
+#define CONFIG_TFP410_BUS ((void *)I2C2_BASE_ADDR)
+
+/*
+ * Android support Configs
+ */
+
+/* Android fastboot configs */
+#define CONFIG_USB_DEVICE
+#define CONFIG_IMX_UDC
+#define CONFIG_FASTBOOT
+#define CONFIG_FASTBOOT_STORAGE_EMMC_SATA
+#define CONFIG_FASTBOOT_STORAGE_SF
+//#define CONFIG_FASTBOOT_STORAGE_NAND
+#define CONFIG_FASTBOOT_VENDOR_ID      0x18d1
+#define CONFIG_FASTBOOT_PRODUCT_ID     0x0c01
+#define CONFIG_FASTBOOT_BCD_DEVICE     0x0311
+#define CONFIG_FASTBOOT_MANUFACTURER_STR  "Freescale"
+#define CONFIG_FASTBOOT_PRODUCT_NAME_STR "i.mx53 Nit"
+#define CONFIG_FASTBOOT_CONFIGURATION_STR  "Android fastboot"
+#define CONFIG_FASTBOOT_INTERFACE_STR         "Android fastboot"
+#define CONFIG_FASTBOOT_SERIAL_NUM   "12345"
+#define CONFIG_FASTBOOT_TRANSFER_BUF 0x80000000
+#define CONFIG_FASTBOOT_TRANSFER_BUF_SIZE 0x09400000 /* 148M byte */
+
+#define CONFIG_ANDROID_BOOT_PARTITION_MMC 1
+#define CONFIG_ANDROID_RECOVERY_PARTITION_MMC 2
+#define CONFIG_ANDROID_CACHE_PARTITION_MMC 6
+#define CONFIG_ANDROID_RECOVERY
+#define CONFIG_ANDROID_RECOVERY_BOOTARGS_MMC NULL
+#define CONFIG_ANDROID_RECOVERY_BOOTCMD_MMC  \
+        "booti mmc1 recovery"
+#define CONFIG_ANDROID_RECOVERY_CMD_FILE "/recovery/command"
 
 /* allow to overwrite serial and ethaddr */
 #define CONFIG_ENV_OVERWRITE
@@ -116,6 +147,7 @@
 #define CONFIG_REF_CLK_FREQ CONFIG_MX53_HCLK_FREQ
 
 #define CONFIG_CMD_SATA
+#define CONFIG_CMD_BMODE
 
 ///////////
 /*
@@ -183,7 +215,6 @@
  * I2C Configs
  */
 #ifdef CONFIG_CMD_I2C
-	#define CONFIG_HARD_I2C         1
 	#define CONFIG_I2C_MXC          1
 	#define CONFIG_SYS_I2C1_SPEED	400000
 	#define CONFIG_SYS_I2C2_SPEED	100000
@@ -227,10 +258,12 @@
 
 #define	CONFIG_EXTRA_ENV_SETTINGS	\
 	"ethprime=FEC0\0"		\
+	"upgradeu=fatload mmc 0 70008000 n53_upgrade && source 70008000\0" \
+	"clearenv=sf probe 1 && sf erase 0x5f000 0x1000 && echo 'environment reset to factory defaults';\0" \
 
 #define CONFIG_ARP_TIMEOUT	200UL
 
-#define CONFIG_BOOTCOMMAND	"fatload mmc 0 70008000 nitrogen53_bootscript* && source 70008000 ; errmsg='Error running bootscript!' ; lecho $errmsg ; echo $errmsg ;"
+#define CONFIG_BOOTCOMMAND	"fatload mmc 0 70008000 nitrogen53_bootscript* && source 70008000 ; errmsg=\"Error running bootscript!\" ; lecho $errmsg ; echo $errmsg ;"
 
 /*
  * Miscellaneous configurable options
@@ -271,9 +304,9 @@
  */
 #define CONFIG_NR_DRAM_BANKS	1
 #define PHYS_SDRAM_1		CSD0_BASE_ADDR
-#define PHYS_SDRAM_1_SIZE	(1024 * 1024 * 1024)	/* GE board has 1G */
+#define PHYS_SDRAM_1_SIZE	(1u * 1024 * 1024 * 1024)	/* GE board has 1G */
 #define iomem_valid_addr(addr, size) \
-	(addr >= PHYS_SDRAM_1 && addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE))
+	((addr >= PHYS_SDRAM_1) && (addr <= (PHYS_SDRAM_1 + PHYS_SDRAM_1_SIZE)))
 
 /*-----------------------------------------------------------------------
  * FLASH and environment organization
@@ -323,9 +356,9 @@
 #define CONFIG_CMD_SOURCE
 #define CONFIG_CMD_RUN
 
-#define DA90_I2C_BUS I2C1_BASE_ADDR
+#define DA90_I2C_BUS ((void *)I2C1_BASE_ADDR)
 #define DA90_I2C_ADDR 0x48
 #define CONFIG_CMD_DA90_I2C_PMIC
-#define N53_I2C_CONNECTOR_BUFFER_ENABLE		MAKE_GP(3, 10)
+#define N53_I2C_CONNECTOR_BUFFER_ENABLE		GPIO_NUMBER(3, 10)
 #define PIN_N53_I2C_CONNECTOR_BUFFER		MX53_PIN_EIM_DA10
 #endif				/* __CONFIG_H */

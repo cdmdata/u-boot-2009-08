@@ -430,6 +430,13 @@
 #define DP_CTL_216	(0x0220 | DP_CTL_RESTART)
 #endif
 
+#define CHIP_REV_1_0            0x10
+#define CHIP_REV_1_1            0x11
+#define CHIP_REV_2_0            0x20
+
+#define BOARD_REV_1_0           0x0
+#define BOARD_REV_2_0           0x1
+
 /* IIM */
 #define IIM_STAT_OFF            0x00
 #define IIM_STAT_BUSY           (1 << 7)
@@ -543,6 +550,7 @@ extern void set_pixel_clock(int which, unsigned hz);
 unsigned get_pixel_clock(unsigned which);
 extern void setup_display(void);
 extern void disable_lcd_panel(void);
+extern int enable_i2c_clk(unsigned char enable, unsigned i2c_num);
 
 
 #endif /* __ASSEMBLER__*/

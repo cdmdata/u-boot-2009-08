@@ -53,6 +53,32 @@ static unsigned end_of_ram;
 #ifdef CONFIG_MX53
 static unsigned lvds[2];
 #define IOMUXC_GPR2	((IOMUXC_BASE_ADDR)+8)
+
+#ifdef CONFIG_LVDS0_24BIT
+#define GPR2_LVDS0_WIDTH	(1 << 5)
+#else
+#define GPR2_LVDS0_WIDTH	(0 << 5)
+#endif
+
+#ifdef CONFIG_LVDS0_JEIDA
+#define GPR2_LVDS0_MAPPING	(1 << 6)
+#else
+#define GPR2_LVDS0_MAPPING	(0 << 6)
+#endif
+
+#ifdef CONFIG_LVDS1_24BIT
+#define GPR2_LVDS1_WIDTH	(1 << 7)
+#else
+#define GPR2_LVDS1_WIDTH	(0 << 7)
+#endif
+
+#ifdef CONFIG_LVDS1_JEIDA
+#define GPR2_LVDS1_MAPPING	(1 << 8)
+#else
+#define GPR2_LVDS1_MAPPING	(0 << 8)
+#endif
+
+#define GPR2_BASE_VALUE		(GPR2_LVDS0_WIDTH | GPR2_LVDS0_MAPPING | GPR2_LVDS1_WIDTH | GPR2_LVDS1_MAPPING)
 #endif
 
 struct display_channel_t {
@@ -443,6 +469,7 @@ static void disable_ipu_clock(void)
 	__REG(CLPCR) |= CLPCR_BYPASS_IPU_LPM_HS ;
 }
 
+void backlight_state(int enable);
 void init_display_pins(void);
 void init_lvds_pins(int ch,int lvds);
 void disable_lcd_panel(void);
@@ -464,7 +491,7 @@ DEBUG( "%s\n", __func__ );
 	while (readl(IPU_MEM_RST) & 0x80000000) ;
 
 #ifdef CONFIG_MX53
-	__REG(IOMUXC_GPR2) &= ~0x0f;
+	__REG(IOMUXC_GPR2) = __REG(IOMUXC_GPR2) & ~0x1ff | GPR2_BASE_VALUE;
 #endif
 	write_regs(init_dc_mappings,ARRAY_SIZE(init_dc_mappings));
 	check_regs("dcmap",init_dc_mappings,ARRAY_SIZE(init_dc_mappings));
@@ -499,6 +526,9 @@ void disable_lcd_panel(void)
 	__REG(IPU_CONF+0x23C) &= ~(3<<23);	// CUR_BUF
 
 	disable_ipu_clock();
+#ifdef CONFIG_MX53
+	backlight_state(0);
+#endif
         end_of_ram = gd->bd->bi_dram[0].start+gd->bd->bi_dram[0].size;
 }
 
@@ -795,6 +825,7 @@ static void init_display
 
 #ifdef CONFIG_MX53
 	init_lvds();
+	backlight_state(1);
 
 	if (lvds[disp]) {
 		clk_config(CONFIG_MX53_HCLK_FREQ, lcd->info.pixclock, LDB0_CLK+disp);

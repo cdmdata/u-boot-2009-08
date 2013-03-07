@@ -17,10 +17,11 @@
  * MA 02111-1307 USA
  */
 #include <common.h>
+#include <asm/gpio.h>
+#include <asm/imx-common/mxc_i2c.h>
 #include "bq2416x.h"
-void bus_i2c_init(unsigned base, int speed, int unused);
-int bus_i2c_write(unsigned base, uchar chip, uint addr, int alen, const uchar *buf, int len);
-int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int len);
+
+#define GPIO_NUMBER(port, offset) (((port - 1) << 5) | offset)
 
 #define BQ24163_STATUS_CTL	0
 #define BQ24163_SUPPLY_STATUS	1
@@ -36,7 +37,13 @@ int bus_i2c_read(unsigned base, uchar chip, uint addr, int alen, uchar *buf, int
 int bq2416x_reg_write(unsigned reg, unsigned char val)
 {
 	int ret;
+#ifdef CONFIG_BQ2416X_I2C_ENABLE
+	gpio_set_value(CONFIG_BQ2416X_I2C_ENABLE, 1); /* high active */
+#endif
 	ret = bus_i2c_write(CONFIG_BQ2416X_I2C_BUS, CONFIG_BQ2416X_I2C_ADDR, reg, 1, &val, 1);
+#ifdef CONFIG_BQ2416X_I2C_ENABLE
+	gpio_set_value(CONFIG_BQ2416X_I2C_ENABLE, 0);
+#endif
 	if (ret)
 		printf("%s: reg %x, val=%x failed\n", __func__, reg, val);
 	return ret;
@@ -46,7 +53,13 @@ int bq2416x_reg_read(unsigned reg)
 {
 	int ret;
 	unsigned char val;
+#ifdef CONFIG_BQ2416X_I2C_ENABLE
+	gpio_set_value(CONFIG_BQ2416X_I2C_ENABLE, 1); /* high active */
+#endif
 	ret = bus_i2c_read(CONFIG_BQ2416X_I2C_BUS, CONFIG_BQ2416X_I2C_ADDR, reg, 1, &val, 1);
+#ifdef CONFIG_BQ2416X_I2C_ENABLE
+	gpio_set_value(CONFIG_BQ2416X_I2C_ENABLE, 0);
+#endif
 	if (ret)
 		printf("%s: reg %x failed\n", __func__, reg);
 	else
@@ -55,7 +68,12 @@ int bq2416x_reg_read(unsigned reg)
 }
 
 unsigned char bq2416x_init_values[] = {
-	0x80, 0x00, 0x0c, 0x8e, 0x00, 0x32, 0x00, 0x28
+	0x80, 0x00,
+	/* bq24168 PSEL high = 100mA limit, PSEL low=1.5A limit */
+	0x4c,		/* BQ24163_CONTROL, 900 mA usb charge */
+	0x8e, 0x00,
+	0x52,		/* BQ24163_BATT_CURRENT, measured 1330 mA */
+	0x00, 0x28
 };
 
 int bq2416x_init(void)

@@ -52,7 +52,7 @@
 #endif
 
 #ifdef CONFIG_ANDROID_RECOVERY
-#include "../common/recovery.h"
+#include "../../freescale/common/recovery.h"
 #include <part.h>
 #include <ext2fs.h>
 #include <linux/mtd/mtd.h>
@@ -69,7 +69,7 @@ u32	mx51_io_base_addr;
 #define GPIO_DR 0
 #define GPIO_DIR 4
 #define GPIO_PSR 8
-#define MAKE_GP(port, offset) (((port - 1) << 5) | offset)
+#define GPIO_NUMBER(port, offset) (((port - 1) << 5) | offset)
 unsigned gp_base[] = {GPIO1_BASE_ADDR, GPIO2_BASE_ADDR, GPIO3_BASE_ADDR, GPIO4_BASE_ADDR};
 void Set_GPIO_output_val(unsigned gp, unsigned val)
 {
@@ -315,9 +315,6 @@ void setup_uart(void)
 	mxc_iomux_set_pad(MX51_PIN_UART1_RTS, pad);
 	mxc_request_iomux(MX51_PIN_UART1_CTS, IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_UART1_CTS, pad);
-	/* enable GPIO1_9 for CLK0 and GPIO1_8 for CLK02 */
-	writel(0x00000004, 0x73fa83e8);
-	writel(0x00000004, 0x73fa83ec);
 
 	debug_putc('x');
 //	printf("setup_uart clk_src=%i mult=%i div=%i\n", clk_src, mult, div);
@@ -419,9 +416,9 @@ s32 spi_get_cfg(struct imx_spi_dev_t *dev)
 void spi_io_init(struct imx_spi_dev_t *dev, int active)
 {
 	if (dev->ss == 0) {
-		Set_GPIO_output_val(MAKE_GP(4, 24), active ? 1 : 0);
+		Set_GPIO_output_val(GPIO_NUMBER(4, 24), active ? 1 : 0);
 	} else if (dev->ss == 1) {
-		Set_GPIO_output_val(MAKE_GP(4, 25), active ? 0 : 1);
+		Set_GPIO_output_val(GPIO_NUMBER(4, 25), active ? 0 : 1);
 	}
 }
 #endif
@@ -518,15 +515,15 @@ static void setup_pins(unsigned short * pins)
 
 static void setup_gpios(void)
 {
-	Set_GPIO_output_val(MAKE_GP(3, 3), 1);	/* Gpio connector pin 5 */
-	Set_GPIO_output_val(MAKE_GP(3, 4), 1);	/* Gpio connector pin 4 */
-	Set_GPIO_output_val(MAKE_GP(3, 5), 1);	/* Gpio connector pin 3 */
-	Set_GPIO_output_val(MAKE_GP(3, 6), 1);	/* Gpio connector pin 2 */
-	Set_GPIO_input(MAKE_GP(3, 7));		/* Gpio connector pin 9 */
-	Set_GPIO_input(MAKE_GP(3, 8));		/* Gpio connector pin 8 */
-	Set_GPIO_input(MAKE_GP(3, 9));		/* Gpio connector pin 7 */
-	Set_GPIO_input(MAKE_GP(3, 16));		/* Gpio connector pin 6 */
-	Set_GPIO_input(MAKE_GP(2, 1));		/* Pic16F616 interrupt */
+	Set_GPIO_output_val(GPIO_NUMBER(3, 3), 1);	/* Gpio connector pin 5 */
+	Set_GPIO_output_val(GPIO_NUMBER(3, 4), 1);	/* Gpio connector pin 4 */
+	Set_GPIO_output_val(GPIO_NUMBER(3, 5), 1);	/* Gpio connector pin 3 */
+	Set_GPIO_output_val(GPIO_NUMBER(3, 6), 1);	/* Gpio connector pin 2 */
+	Set_GPIO_input(GPIO_NUMBER(3, 7));		/* Gpio connector pin 9 */
+	Set_GPIO_input(GPIO_NUMBER(3, 8));		/* Gpio connector pin 8 */
+	Set_GPIO_input(GPIO_NUMBER(3, 9));		/* Gpio connector pin 7 */
+	Set_GPIO_input(GPIO_NUMBER(3, 16));		/* Gpio connector pin 6 */
+	Set_GPIO_input(GPIO_NUMBER(2, 1));		/* Pic16F616 interrupt */
 	setup_pins(gpio_pins);
 }
 
@@ -552,11 +549,11 @@ static void setup_i2c(unsigned int module_base)
 	}
 }
 
-void toggle_i2c(unsigned int module_base)
+int toggle_i2c(void *toggle_data)
 {
 	unsigned i;
-	unsigned sda_gp = MAKE_GP(2, 0);
-	unsigned scl_gp = MAKE_GP(2, 3);
+	unsigned sda_gp = GPIO_NUMBER(2, 0);
+	unsigned scl_gp = GPIO_NUMBER(2, 3);
 	Set_GPIO_input(sda_gp);
 	Set_GPIO_input(scl_gp);
 	//gpio mode
@@ -576,6 +573,7 @@ void toggle_i2c(unsigned int module_base)
 	//back to I2C mode
 	writel(0x14, IOMUXC_BASE_ADDR + 0x5c); /* i2c1 SDA, EIM_D16 */
 	writel(0x14, IOMUXC_BASE_ADDR + 0x68); /* i2c2 SCL, EIM_D19 */
+	return 0;
 }
 
 static void setup_core_voltage_i2c(void)
@@ -730,7 +728,7 @@ static void setup_core_voltage_spi(void)
 	val = 0x208;
 	pmic_reg(slave, 33, val, 1);
 	udelay(200);
-	Set_GPIO_output_val(MAKE_GP(2, 14), 0); /* lower reset line  */
+	Set_GPIO_output_val(GPIO_NUMBER(2, 14), 0); /* lower reset line  */
 
 	/* Reset the ethernet controller over GPIO */
 	writel(0x1, IOMUXC_BASE_ADDR + 0x0ac);
@@ -741,7 +739,7 @@ static void setup_core_voltage_spi(void)
 
 	udelay(500);
 
-	Set_GPIO_output_val(MAKE_GP(2, 14), 1); /* raise reset line */
+	Set_GPIO_output_val(GPIO_NUMBER(2, 14), 1); /* raise reset line */
 
 	spi_pmic_free(slave);
 }
@@ -753,8 +751,8 @@ static void setup_pmic(void)
 	 * eCSPI1 pads (for PMIC)
 	 */
 	unsigned int pad = PAD_CTL_HYS_ENABLE | PAD_CTL_DRV_HIGH | PAD_CTL_SRE_FAST ;
-	Set_GPIO_output_val(MAKE_GP(4, 24), 0);	/* SS0 high active */
-	Set_GPIO_output_val(MAKE_GP(4, 25), 1);	/* SS1 low active */
+	Set_GPIO_output_val(GPIO_NUMBER(4, 24), 0);	/* SS0 high active */
+	Set_GPIO_output_val(GPIO_NUMBER(4, 25), 1);	/* SS1 low active */
 	mxc_request_iomux(MX51_PIN_CSPI1_MOSI,IOMUX_CONFIG_ALT0);
 	mxc_iomux_set_pad(MX51_PIN_CSPI1_MOSI, pad);
 	mxc_request_iomux(MX51_PIN_CSPI1_MISO,IOMUX_CONFIG_ALT0);
@@ -1233,6 +1231,8 @@ int check_recovery_cmd_file(void)
 
 }
 #endif
+void bus_i2c_init(void *base, int speed, int unused,
+		int (*toggle_fn)(void *p), void *toggle_data);
 
 #ifdef BOARD_LATE_INIT
 int board_late_init(void)
@@ -1244,17 +1244,18 @@ int board_late_init(void)
 	mxc_request_iomux(MX51_PIN_DISPB2_SER_DIN, IOMUX_CONFIG_ALT4); /* GPIO3[5] */
 	__REG(IOMUXC_GPIO3_IPP_IND_G_IN_5_SELECT_INPUT) = 1 ; /* GPIO3[5] is connected to DISPB2_SER_DIN */
 
-	Set_GPIO_output_val(MAKE_GP(3, 5), 0);
-	Set_GPIO_output_val(MAKE_GP(3, 6), 1);
+	Set_GPIO_output_val(GPIO_NUMBER(3, 5), 0);
+	Set_GPIO_output_val(GPIO_NUMBER(3, 6), 1);
 	
 	/* GPIO1:2 is PWM0 and controls the backlight. Set it as GPIO and high */
 	mxc_request_iomux(MX51_PIN_GPIO1_2, IOMUX_CONFIG_ALT0);
-	Set_GPIO_output_val(MAKE_GP(1, 2), 1);
+	Set_GPIO_output_val(GPIO_NUMBER(1, 2), 1);
 
 	setup_display();
 
 #ifdef CONFIG_I2C_MXC
-	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
+	bus_i2c_init((void *)I2C1_BASE_ADDR, CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE,
+			toggle_i2c, NULL);
 //	if (!i2c_probe(0x34))
 //		setup_core_voltage_i2c();
 //	else

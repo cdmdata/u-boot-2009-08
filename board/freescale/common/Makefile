@@ -24,10 +24,10 @@
 include $(TOPDIR)/config.mk
 
 ifneq ($(OBJTREE),$(SRCTREE))
-$(shell mkdir -p $(obj)board/$(VENDOR)/common)
+$(shell mkdir -p $(obj)board/freescale/common)
 endif
 
-LIB	= $(obj)lib$(VENDOR).a
+LIB	= $(obj)libfreescale.a
 
 COBJS-${CONFIG_FSL_CADMUS}	+= cadmus.o
 COBJS-${CONFIG_FSL_VIA}		+= cds_via.o

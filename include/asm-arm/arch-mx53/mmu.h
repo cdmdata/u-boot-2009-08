@@ -138,7 +138,7 @@ union ARM_MMU_FIRST_LEVEL_DESCRIPTOR {
  * Translate the virtual address of ram space to physical address
  * It is dependent on the implementation of mmu_init
  */
-inline unsigned long iomem_to_phys(unsigned long virt)
+unsigned long iomem_to_phys(unsigned long virt)
 {
 	if (virt >= 0xB0000000)
 		return (unsigned long)((virt - 0xB0000000) + PHYS_SDRAM_1);

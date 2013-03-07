@@ -1,10 +1,9 @@
 /*
- * (C) Copyright 2008-2010 Freescale Semiconductor, Inc.
- * Terry Lv <r65388@freescale.com>
- *
  * Copyright (C) Freescale Semiconductor, Inc. 2006.
  * Author: Jason Jin<Jason.jin@freescale.com>
  *         Zhang Wei<wei.zhang@freescale.com>
+ *
+ * Copyright (C) 2008-2011 Freescale Semiconductor, Inc.
  *
  * See file CREDITS for list of people who contributed to this
  * project.
@@ -172,6 +171,7 @@ struct ahci_ioports {
 	u32	scr_addr;
 	u32	port_mmio;
 	struct ahci_cmd_hdr	*cmd_slot;
+	void	*cmd_slot_release;
 	struct ahci_sg		*cmd_tbl_sg;
 	u32	cmd_tbl;
 	u32	rx_fis;
