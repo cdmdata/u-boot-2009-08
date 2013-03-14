@@ -79,6 +79,7 @@ fi
 
 echo "Booting with ramdisk: 0:${ramdisk}";
 set bootargs ldb=single,di=0,ch0_map=SPWG video=mxcdi0fb:raw:49000000,1024,600,1,0,1,0,104,144,40,10,11,3,1,0,888 vmalloc=256M
+setenv  bootargs ${bootargs} androidboot.serialno=${serial_number}
 
 if fatload mmc 0 72000000 uImage53* ; then
 if fatload mmc 0 72400000 ${ramdisk} ; then
