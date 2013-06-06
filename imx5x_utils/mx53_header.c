@@ -14,6 +14,7 @@ void mx53_header_search(struct common_info *pinfo)
 		debug_pr("hdr=%x pself=%x buf=%x\n", hdr, pself, pinfo->buf);
 		if ((void*)pself >= pinfo->buf)
 			break;
+		debug_pr("barker=%x %x\n", hdr->barker, barker);
 		if (hdr->barker == barker) {
 			uint32_t end, dest, buf, initial_buf;
 			uint32_t cvt_src_to_dest = *pself - ((uint32_t)hdr);
@@ -41,7 +42,7 @@ void mx53_header_search(struct common_info *pinfo)
 			debug_pr("initial_buf=%x hdr=%x buf=%x end=%x file_size=%x\n", pinfo->initial_buf, pinfo->hdr, pinfo->buf, end, pinfo->file_size);
 			break;
 		}
-		pinfo->search += 0x400;	//search 1k at a time
+		pinfo->search += 0x40;	//header should be 64 byte aligned
 	}
 }
 
