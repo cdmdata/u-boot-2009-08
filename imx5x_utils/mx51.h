@@ -236,7 +236,8 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	movne	r0,#0
 	.endm
 
-	.macro iomux_dcd_data
+
+	.macro ddr_init_table
 	.word	0x73fa8418, 0x000000e0	//SW_PAD_CTL_PAD_EIM_D26, usb OTG power off
 	.word	0x73fa8084, 0x00000001	//SW_MUX_CTL_PAD_EIM_D26, ALT1 kpp column 7, GPIO on next board
 #if 1
@@ -269,8 +270,12 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.word	0x73fa822c, 0		//SW_MUX_CTL_PAD_UART1_TXD
 	.word	0x73fa8618, 0x1c5	//SW_PAD_CTL_UART1_RXD
 	.word	0x73fa861c, 0x1c5	//SW_PAD_CTL_UART1_TXD
-	.word	0
 #endif
+	.endm
+
+	.macro iod_iomuxc_basic_init
+	ddr_init_table
+	.word	0
 	.endm
 
 #define ESDM_ODT_NONE	0
@@ -501,7 +506,7 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 #define PAD_CSPI1_RDY	(HYS_ENABLE | PKE_ENABLE | KEEPER | DSE_LOW | SRE_FAST)
 #define PAD_CSPI1_SCLK	(HYS_ENABLE | PKE_ENABLE | KEEPER | R100K_PU | DSE_HIGH | SRE_FAST)
 
-	.macro ecspi1_iomux_dcd_data
+	.macro iod_iomuxc_setup_ecspi
 	.word	0x73fa8600, PAD_CSPI1_MOSI	//SW_PAD_CTL_CSPI1_MOSI
 	.word	0x73fa8604, PAD_CSPI1_MISO	//SW_PAD_CTL_CSPI1_MISO
 	.word	0x73fa8608, PAD_CSPI1_SS0	//SW_PAD_CTL_CSPI1_SS0
@@ -516,11 +521,11 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.word	0
 	.endm
 
-	.macro i2c1_iomux_dcd_data
+	.macro iod_iomuxc_setup_i2c1
 	.word	0
 	.endm
 
-	.macro ddr_single_iomux_dcd_data
+	.macro iod_iomuxc_ddr_single
 	.word	0x73fa84bc, 0x000000c3	//SW_PAD_CTL_PAD_DRAM_SDQS0, Enable pull down
 	.word	0x73fa84c0, 0x000000c3	//SW_PAD_CTL_PAD_DRAM_SDQS1, Enable pull down
 	.word	0x73fa84c4, 0x000000c3	//SW_PAD_CTL_PAD_DRAM_SDQS2, Enable pull down
@@ -528,7 +533,7 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.word	0
 	.endm
 
-	.macro ddr_differential_iomux_dcd_data
+	.macro iod_iomuxc_ddr_differential
 	.word	0x73fa84bc, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS0, Disable pull down
 	.word	0x73fa84c0, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS1, Disable pull down
 	.word	0x73fa84c4, 0x00000043	//SW_PAD_CTL_PAD_DRAM_SDQS2, Disable pull down
@@ -536,12 +541,12 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.word	0
 	.endm
 
-	.macro miso_gp_iomux_dcd_data
+	.macro iod_iomuxc_miso_gp
 	.word	0x73fa8214, ALT3	//SW_MUX_CTL_PAD_CSPI1_MISO, gpio4[23], alt 3
 	.word	0
 	.endm
 
-	.macro miso_ecspi_iomux_dcd_data
+	.macro iod_iomuxc_miso_ecspi
 	.word	0x73fa8214, 0		//SW_MUX_CTL_PAD_CSPI1_MISO, gpio4[23], alt 3
 	.word	0
 	.endm
@@ -609,7 +614,7 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 #define PAD_SD1_DATA3	(KEEPER | PKE_ENABLE | DSE_HIGH | R47K_PU | SRE_FAST)	//reset val: 0x20c4, 100K pull down
 #define PAD_SD1_CD	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
 #define PAD_SD1_WP	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
-	.macro mmc_iomux_dcd_data
+	.macro iod_iomuxc_setup_mmc
 	.word	0x73fa879c, PAD_SD1_CMD		//SW_PAD_CTL_SD1_CMD
 	.word	0x73fa87a0, PAD_SD1_CLK		//SW_PAD_CTL_SD1_CLK
 	.word	0x73fa87a4, PAD_SD1_DATA0	//SW_PAD_CTL_SD1_DATA0

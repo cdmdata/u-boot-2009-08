@@ -733,7 +733,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 #endif
 
 #define _IOM	IOMUXC_BASE_ADDR
-	.macro iomux_dcd_data
+	.macro ddr_init_table
 	.word	_IOM+0x554, DQVAL	/* DQM3: */
 	.word	_IOM+0x558, DQVAL | 0x40	/* SDQS3: pue=1 but PKE=0 */
 	.word	_IOM+0x560, DQVAL	/* DQM2: */
@@ -758,6 +758,10 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	_IOM+0x724, IOMUXC_DDR_TYPE	/* GRP_DDR_TYPE: A0-A15,CAS,CS0-1,D0-D31,DQM0-3,RAS,SDBA0-2,SDCKE0-1,SDCLK_0-1,SDODT0-1,SDQS0-3,SDWE */
 	.word	_IOM+0x728, DQVAL	/* GRP_B2DS: D16-D23 */
 	.word	_IOM+0x72c, DQVAL	/* GRP_B3DS: D24-D31 */
+	.endm
+
+	.macro iod_iomuxc_basic_init
+	ddr_init_table
 #if 1
 //uart1 rxd:PATA_DMACK, txd:PATA_DIOW
 //Note: Serial downloader assumes UART1_TXD is CSI0_DAT10, UART1_RXD is CSI0_DAT11
@@ -791,7 +795,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	0
 	.endm
 
-	.macro ddr_single_iomux_dcd_data
+	.macro iod_iomuxc_ddr_single
 	/* Enable pull down */
 	.word	_IOM+0x57c, DQVAL | 0x40 | 0x80	/* SDQS0: pue=1 PKE=1 */
 	.word	_IOM+0x590, DQVAL | 0x40 | 0x80	/* SDQS1: pue=1 PKE=1 */
@@ -800,7 +804,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	0
 	.endm
 
-	.macro ddr_differential_iomux_dcd_data
+	.macro iod_iomuxc_ddr_differential
 	/* Disable pull down */
 	.word	_IOM+0x57c, DQVAL | 0x40	/* SDQS0: pue=1 but PKE=0 */
 	.word	_IOM+0x590, DQVAL | 0x40	/* SDQS1: pue=1 but PKE=0 */
@@ -927,7 +931,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 #define PAD_CSPI1_RDY	(HYS_ENABLE | DSE_LOW)
 #define PAD_CSPI1_SCLK	(HYS_ENABLE | DSE_HIGH)
 
-	.macro ecspi1_iomux_dcd_data
+	.macro iod_iomuxc_setup_ecspi
 	.word	_IOM+0x468, PAD_CSPI1_MOSI	//SW_PAD_CTL_EIM_D18 - ECSPI1_MOSI
 	.word	_IOM+0x464, PAD_CSPI1_MISO	//SW_PAD_CTL_EIM_D17 - ECSPI1_MISO
 	.word	_IOM+0x46c, PAD_CSPI1_SS1	//SW_PAD_CTL_EIM_D19 - ECSPI1_SS1
@@ -944,7 +948,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	0
 	.endm
 
-	.macro i2c1_iomux_dcd_data
+	.macro iod_iomuxc_setup_i2c1
 	.word	_IOM+0x14c, ALT5 | SION	//Mux: EIM_D28, SDA of i2c1
 	.word	_IOM+0x494, HYS_ENABLE | PKE_ENABLE | PULL | R22K_PU | OPENDRAIN_ENABLE | DSE_HIGH | SRE_FAST
 	.word	_IOM+0x818, 1		//Select EIM_D28
@@ -954,12 +958,12 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.word	0
 	.endm
 
-	.macro miso_gp_iomux_dcd_data
+	.macro iod_iomuxc_miso_gp
 	.word	_IOM+0x11c, 1		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
 	.word	0
 	.endm
 
-	.macro miso_ecspi_iomux_dcd_data
+	.macro iod_iomuxc_miso_ecspi
 	.word	_IOM+0x11c, 4		//SW_MUX_CTL_PAD_EIM_D17, alt4 ECSPI1_MISO, alt1 gpio3[17]
 	.word	0
 	.endm
@@ -1034,7 +1038,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 #define PAD_SD1_DATA3	(KEEPER | PKE_ENABLE | DSE_HIGH | R75K_PU)	//reset val: 0x20c4, 100K pull down
 #define PAD_SD1_CD	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
 #define PAD_SD1_WP	(HYS_ENABLE | R100K_PU)	//reset val: 0x01a5, 100K pull up
-	.macro mmc_iomux_dcd_data
+	.macro iod_iomuxc_setup_mmc
 	.word	_IOM+0x66c, PAD_SD1_DATA0	//SW_PAD_CTL_SD1_DATA0
 	.word	_IOM+0x670, PAD_SD1_DATA1	//SW_PAD_CTL_SD1_DATA1
 	.word	_IOM+0x674, PAD_SD1_CMD		//SW_PAD_CTL_SD1_CMD

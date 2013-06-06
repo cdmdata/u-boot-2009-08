@@ -188,8 +188,7 @@ init_tab:
 init_tab_end:
 	.align	2
 
-Basic_Init_IOMux:
-	adr	r3, IOMUX_TABLE
+Basic_Init1:
 	mov	r2,#0x1
 Basic_Init:
 10:	ldr	r0, [r3], #4
@@ -203,8 +202,7 @@ Basic_Init:
 	ldr	r1, [r3], #4
 	str	r1, [r0]
 	b	10b
-IOMUX_TABLE:
-	iomux_dcd_data
+
 unexpected_PREV_value_str:
 	.asciz	"Unexpected PREV value\n"
 
@@ -221,7 +219,9 @@ done_str:
 fuse_name_table:
 	fuse_table
 
-
+	.align	2
+Basic_Init_IOMux:
+	choose_data	iomuxc_basic_init
 
 	.section .text.uart_rtns,"x"
 

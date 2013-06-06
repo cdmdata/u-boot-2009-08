@@ -348,7 +348,8 @@ Basic_Init_ESD:
 	b	Basic_Init
 #endif
 Basic_Init_IOMux:
-	adr	r3, IOMUX_TABLE
+	choose_data	iomuxc_basic_init
+
 Basic_Init1:
 	mov	r2,#0x1
 Basic_Init:
@@ -371,9 +372,6 @@ Basic_Init:
 #endif
 	b	10b
 
-
-IOMUX_TABLE:
-	iomux_dcd_data
 
 #ifdef mx51
 ESD_TABLE:
@@ -418,32 +416,18 @@ get_mmc_base:
 iomuxc_setup_ecspi:
 	ecspi_gp_setup
 	ecspi_clk_setup CCM_BASE
-	adr	r3, ECSPI1_IOMUX_TABLE
-	b	Basic_Init1
-ECSPI1_IOMUX_TABLE:
-	ecspi1_iomux_dcd_data
+	choose_data	iomuxc_setup_ecspi
 ///
 	.section .text.iomuxc_setup_i2c1,"x"
 iomuxc_setup_i2c1:
 	i2c1_clk_setup CCM_BASE
-	adr	r3, I2C1_IOMUX_TABLE
-	b	Basic_Init1
-I2C1_IOMUX_TABLE:
-	i2c1_iomux_dcd_data
+	choose_data	iomuxc_setup_i2c1
 ///
-	.section .text.iomuxc_miso_gp,"x"
-iomuxc_miso_gp:
-	adr	r3, MISO_GP_TABLE
-	b	Basic_Init1
-MISO_GP_TABLE:
-	miso_gp_iomux_dcd_data
-
-	.section .text.iomuxc_miso_ecspi,"x"
-iomuxc_miso_ecspi:
-	adr	r3, MISO_ECSPI_TABLE
-	b	Basic_Init1
-MISO_ECSPI_TABLE:
-	miso_ecspi_iomux_dcd_data
+	create_function iomuxc_setup_mmc
+	create_function iomuxc_ddr_single
+	create_function iomuxc_ddr_differential
+	create_function iomuxc_miso_gp
+	create_function iomuxc_miso_ecspi
 
 	.section .text.ecspi_ss_active,"x"
 ecspi_ss_active:
@@ -459,27 +443,6 @@ ecspi_ss_inactive:
 ecspi_read_miso:
 	ecspi_ss_get_miso
 	mov	pc, lr
-
-	.section .text.iomuxc_setup_mmc,"x"
-iomuxc_setup_mmc:
-	adr	r3, MMC_IOMUX_TABLE
-	b	Basic_Init1
-MMC_IOMUX_TABLE:
-	mmc_iomux_dcd_data
-
-	.section .text.iomuxc_ddr_single,"x"
-iomuxc_ddr_single:
-	adr	r3, DDR_SINGLE_IOMUX_TABLE
-	b	Basic_Init1
-DDR_SINGLE_IOMUX_TABLE:
-	ddr_single_iomux_dcd_data
-
-	.section .text.iomuxc_ddr_differential,"x"
-iomuxc_ddr_differential:
-	adr	r3, DDR_DIFF_IOMUX_TABLE
-	b	Basic_Init1
-DDR_DIFF_IOMUX_TABLE:
-	ddr_differential_iomux_dcd_data
 
 	.section .text.mmc_read_cd,"x"
 mmc_read_cd:

@@ -357,4 +357,16 @@
 	cmp r0, #0x0
 	bne 1b
 	.endm
+
+	.macro choose_data	function
+	adr	r3, 99f
+	b	Basic_Init1
+99:	iod_\function
+	.endm
+
+	.macro	create_function function
+	.section .text.\function,"x"
+\function:
+	choose_data	\function
+	.endm
 #endif
