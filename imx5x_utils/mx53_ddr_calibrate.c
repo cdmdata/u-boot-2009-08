@@ -743,6 +743,16 @@ unsigned update_rtn(struct check_outside_in *p, unsigned cur, unsigned cur_mask)
 				ret |= 0xff << i;
 				if (cur)
 					ave = cur;
+			} else if (p->reg == ESD_DGCTRL0) {
+				unsigned cycle_div2 = p->cdelay >> 1;
+				if (high > cycle_div2) {
+					unsigned g = high - cycle_div2;
+					if (ave < g) {
+						my_printf("high=%x low=%x ave=%x good=%x cdelay=%x\n",
+							high, low, ave, g, p->cdelay);
+						ave = g;
+					}
+				}
 			}
 		}
 		vals[i >> 3] = ave;
@@ -1088,6 +1098,7 @@ int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	unsigned esd_base = ESD_BASE;
 #if 1
 	unsigned val;
+	my_printf("start\n");
 	enter_config_mode(esd_base);
 //	val = IO_READ(esd_base, ESD_ZQHWCTRL);
 //	my_printf("ZQHWCTRL: %x, ZQSWCTRL: %x\n", val, IO_READ(esd_base, ESD_ZQSWCTRL));
