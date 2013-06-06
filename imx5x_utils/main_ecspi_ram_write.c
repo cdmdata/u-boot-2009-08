@@ -77,6 +77,8 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	unsigned char *destX = ram_base + 0x03f00000;
 	unsigned len;
 	void *src;
+	int plug;
+
 //	my_printf("ram_base=%x ecspi_base=%x\n", ram_base, base);
 //	my_printf("pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
 	check_page_size(base);
@@ -89,7 +91,7 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 		return 0;	/* 0 is failure */
 	}
 	ci.initial_buf = destX;
-	ci.search = destX + 0x400;
+	ci.search = destX + 0x40;
 	ci.buf = src = (destX + 0x80000);
 	ci.hdr = 0;
 	ci.cur_end = ci.end = ci.dest = 0;
@@ -107,13 +109,15 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 		if (ci.buf != src)
 			my_memcpy(ci.buf, src, ci.end - ci.buf);
 	rtn = common_exec_program(&ci);
-	if (pstart)
-		*pstart = ci.dest;
+	plug = ((((int)pstart) < 0x100) || (((int)pbytes) < 0x100) || (((int)pivt_offset) < 0x100)) ? 0 : 1;
+	if (((int)pstart| (int)pbytes | (int)pivt_offset) & 3)
+		plug = 0;
 	len = ci.end - ci.dest;
-	if (pbytes)
+	if (plug) {
+		*pstart = ci.dest;
 		*pbytes = len;
-	if (pivt_offset)
 		*pivt_offset = ci.hdr - ci.dest;
+	}
 	my_printf("OK len=0x%x file_size=0x%x rtn=0x%x\n", len, ci.file_size, rtn);
 #if 1
 	if (rtn) {
@@ -123,6 +127,8 @@ int plug_main2(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	}
 #endif
 	flush_uart();
+	if (!plug && rtn)
+		((exec_rtn)rtn)();
 	return (rtn) ? 1 : 0;	/* 1 is success, 0 is failure */
 }
 
