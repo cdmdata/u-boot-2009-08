@@ -1,5 +1,6 @@
 	.global assem_start
 	.global get_ecspi_base
+	.global drive_power_on
 	.global get_mmc_base
 	.global iomuxc_setup_i2c1
 	.global iomuxc_setup_ecspi
@@ -402,6 +403,11 @@ get_tapeout_version:
 get_ecspi_base:
 	BigMov	r0,ECSPI_BASE
 	mov	pc, lr
+
+	.section .text.drive_power_on,"x"
+drive_power_on:
+	keep_power_on
+	mov     pc, lr
 
 	.section .text.get_mmc_base,"x"
 get_mmc_base:

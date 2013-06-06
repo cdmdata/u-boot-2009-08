@@ -549,6 +549,9 @@ dcd_ptr2:	.word	dcd		//0x14 dcd_ptr
 	.macro init_gps
 	.endm
 
+	.macro keep_power_on
+	.endm
+
 #define GP4_MISO_BIT	23
 #define GP4_SS0_BIT	24
 #define GP4_SS1_BIT	25

@@ -75,6 +75,7 @@ void write_ubl(int base, unsigned char* ubl, unsigned length, unsigned offset)
 }
 
 int xmodem_load(unsigned char * dest);
+void drive_power_on(void);
 
 int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 {
@@ -84,6 +85,8 @@ int plug_main(void **pstart, unsigned *pbytes, unsigned *pivt_offset)
 	unsigned char *dest  = ram_base + 0x00600000;
 	unsigned char *destX = ram_base + 0x03f00000;
 	unsigned len;
+
+	drive_power_on();
 	my_printf("ram_base=%x ecspi_base=%x\n", ram_base, base);
 	my_printf("pstart=%x pbytes=%x pivt_offset=%x\n", pstart, pbytes, pivt_offset);
 	if (!ram_test((unsigned *)ram_base)) {

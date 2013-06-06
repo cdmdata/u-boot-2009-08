@@ -979,6 +979,19 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	str	r0, [r1, #GPIO_DIR]
 	.endm
 
+	.macro keep_power_on
+//for nitrogen53_a
+	BigMov	r1, GPIO3_BASE
+	ldr	r0, [r1, #GPIO_DR]
+// turn on power
+	orr	r0, r0, #(1 << 23)
+	str	r0, [r1, #GPIO_DR]
+
+	ldr	r0, [r1, #GPIO_DIR]
+	orr	r0, r0, #(1 << 23)
+	str	r0, [r1, #GPIO_DIR]
+	.endm
+
 #define GP3_MISO_BIT	17
 #define GP3_SS1_BIT	19
 
