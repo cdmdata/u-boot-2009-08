@@ -28,6 +28,12 @@ void print_buf(char* str, int cnt)
 		do {
 			uts = IO_READ(uart, UTS);
 		} while (uts & (1<<4));
+		if (ch == 0x0a) {
+			IO_WRITE(uart, UTXD, 0x0d);
+			do {
+				uts = IO_READ(uart, UTS);
+			} while (uts & (1<<4));
+		}
 		IO_WRITE(uart, UTXD, ch);
 		cnt--;
 	}
