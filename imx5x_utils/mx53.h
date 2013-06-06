@@ -48,10 +48,10 @@
 #define HAB_RVT_FAIL_SAFE_VECT		0xbc
 
 #define CPU_2_BE_32(l) \
-       ((((l) & 0x000000FF) << 24) | \
-	(((l) & 0x0000FF00) << 8)  | \
-	(((l) & 0x00FF0000) >> 8)  | \
-	(((l) & 0xFF000000) >> 24))
+       ((((l) << 24) & 0xff000000) | \
+	(((l) <<  8) & 0x00ff0000) | \
+	(((l) >>  8) & 0x0000ff00) | \
+	(((l) >> 24) & 0x000000ff))
 
 #define MAKE_TAG(tag, len, v) CPU_2_BE_32(( ((tag) << 24) | ((len) << 8) | (v) ))
 #define MXC_DCD_ITEM(addr, val)	.word CPU_2_BE_32(addr), CPU_2_BE_32(val)
