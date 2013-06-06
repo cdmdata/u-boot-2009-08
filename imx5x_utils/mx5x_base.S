@@ -144,9 +144,9 @@ plug_start:
 	push	{r0-r12, lr}
 	hw_init CSP_BASE_REG_PA_AIPS1, CSP_BASE_REG_PA_AIPS2
 	config_uart_clocks
+	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE
 	bl	Basic_Init_IOMux
 	init_gps
-	init_disable_ipu IPU_CM_REG_BASE, IPU_IDMAC_BASE
 
 #if (UART_INIT_MASK & 1)
 	BigMov	r3,UART1_BASE
