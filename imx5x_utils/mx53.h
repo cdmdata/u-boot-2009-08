@@ -644,7 +644,7 @@ app_code_csf:		.word 0x0
 reserv2:		.word 0x0
 
 mfgtool_start:		b	\plug_rtn	//stupid mfgtool assumes start is after reserv2
-boot_data:		.word 0xf8006000
+boot_data:		.word image_base
 image_len:		.word program_length
 plugin:			.word 0x1
 ddr_type:		.word DDR_TYPE
