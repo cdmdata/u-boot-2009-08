@@ -31,7 +31,7 @@
 	.equiv	ARM_CPSR_MODE_SVC,	0x13
 
 	.equiv	ARM_CTRL_MMU,		(1 << 0)
-	.equiv  ARM_CTRL_ALIGNMENT,	(1 << 1)
+	.equiv	ARM_CTRL_ALIGNMENT,	(1 << 1)
 	.equiv	ARM_CTRL_DCACHE,	(1 << 2)
 	.equiv	ARM_CTRL_FLOW,		(1 << 11)
 	.equiv	ARM_CTRL_ICACHE,	(1 << 12)
