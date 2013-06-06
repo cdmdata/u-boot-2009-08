@@ -310,7 +310,7 @@ setup_uart:
 	addeq	r1,r1,#4
 	cmp	r6,r7
 	bne	1b
-	mov	pc, lr
+	bx	lr
 init_tab:
 	.short	0x0001		//UCR1 (0x80)
 	.short	0x4027		//UCR2 (0x84)
@@ -338,9 +338,9 @@ init_tab_end:
 #ifdef mx51
 Basic_Init_ESD:
 	test_memory_active
-	movne	pc, lr
+	bxne	lr
 //	test_watchdog_reset
-//	movne	pc, lr
+//	bxne	lr
 	BigMov	r3, ESD_BASE
 	esd_con_req r3
 	adr	r3, ESD_TABLE
@@ -355,7 +355,7 @@ Basic_Init1:
 Basic_Init:
 10:	ldr	r0, [r3], #4
 	cmp	r0,#0
-	moveq	pc, lr
+	bxeq	lr
 
 	mov	r1, r2
 11:	subs	r1, r1, #1
@@ -385,32 +385,32 @@ chain_ivt:
 	.section .text.get_ram_base,"x"
 get_ram_base:
 	BigMov	r0,RAM_BASE
-	mov	pc, lr
+	bx	lr
 
 	.section .text.get_ram_size,"x"
 get_ram_size:
 	ddr_get_size
-	mov	pc, lr
+	bx	lr
 
 	.section .text.get_tapeout_version,"x"
 get_tapeout_version:
 	ddr_get_tapeout
-	mov	pc, lr
+	bx	lr
 
 	.section .text.get_ecspi_base,"x"
 get_ecspi_base:
 	BigMov	r0,ECSPI_BASE
-	mov	pc, lr
+	bx	lr
 
 	.section .text.drive_power_on,"x"
 drive_power_on:
 	keep_power_on
-	mov     pc, lr
+	bx	lr
 
 	.section .text.get_mmc_base,"x"
 get_mmc_base:
 	BigMov	r0,MM_SDMMC_BASE
-	mov	pc, lr
+	bx	lr
 
 	.section .text.iomuxc_setup_ecspi,"x"
 iomuxc_setup_ecspi:
@@ -432,22 +432,22 @@ iomuxc_setup_i2c1:
 	.section .text.ecspi_ss_active,"x"
 ecspi_ss_active:
 	ecspi_ss_make_active
-	mov	pc, lr
+	bx	lr
 
 	.section .text.ecspi_ss_inactive,"x"
 ecspi_ss_inactive:
 	ecspi_ss_make_inactive
-	mov	pc, lr
+	bx	lr
 
 	.section .text.ecspi_read_miso,"x"
 ecspi_read_miso:
 	ecspi_ss_get_miso
-	mov	pc, lr
+	bx	lr
 
 	.section .text.mmc_read_cd,"x"
 mmc_read_cd:
 	mmc_get_cd
-	mov	pc, lr
+	bx	lr
 
 	.global uart_bases
 	.global uart_index
@@ -504,11 +504,11 @@ ReceiveX:
 2:
 	ldrne	r0,[r0,#URXD]
 	andne	r0,r0,#0xff
-	movne	pc,lr			//return
+	bxne	lr			//return
 	subs	r1,r1,#1
 	bne	1b
 	mov	r0,#0
-	mov	pc,lr			//return
+	bx	lr			//return
 
 //IN: r0 - character(s) to transmit, r1 - trashed
 TransmitX:
@@ -544,7 +544,7 @@ TransmitX:
 #endif
 	movs	r0,r0,LSR #8
 	bne	1b
-	mov	pc, lr
+	bx	lr
 
 	.section .text.print_hex,"x"
 print_hex:
@@ -559,7 +559,7 @@ print_hex:
 	mov	r0, r2, LSR #28
 	movs	r2, r2, LSL #4
 	bne	1b
-	mov	pc, r3
+	bx	r3
 
 	.section .text.hw_watchdog_reset,"x"
 hw_watchdog_reset:
@@ -568,7 +568,7 @@ hw_watchdog_reset:
 	strh	r0,[r1, #WDOG_WSR]
 	mov	r0, r0, LSL #1
 	strh	r0,[r1, #WDOG_WSR]
-	mov	pc,lr			//return
+	bx	lr			//return
 
 	.section .text.header_search,"x"
 header_search:
@@ -585,5 +585,5 @@ header_update_end:
 	.section .text.header_present,"x"
 header_present:
 	test_for_header
-	mov	pc,lr			//return
+	bx	lr			//return
 

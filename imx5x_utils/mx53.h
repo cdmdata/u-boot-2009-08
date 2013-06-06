@@ -648,7 +648,7 @@ ddr_type:		.word DDR_TYPE
 			ddr_data
 get_ddr_type_addr:
 	adr	r2,ddr_type
-	mov	pc, lr
+	bx	lr
 	.endm
 
 	.macro header_chain_ivt rtn
