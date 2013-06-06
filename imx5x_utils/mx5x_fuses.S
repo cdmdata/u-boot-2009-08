@@ -145,13 +145,13 @@ transmit_string:
 1:	ldrb	r0, [r2], #1
 	movs	r0, r0
 	moveq	r0, r2
-	moveq	pc, r3
+	bxeq	r3
 2:	bl	TransmitX
 	b	1b
 
 Get_fuse_name_table:
 	adr	rTable,fuse_name_table
-	mov	pc, lr
+	bx	lr
 
 setup_uart:
 	adr	r6,init_tab
@@ -164,7 +164,7 @@ setup_uart:
 	addeq	r1,r1,#4
 	cmp	r6,r7
 	bne	1b
-	mov	pc, lr
+	bx	lr
 init_tab:
 	.short	0x0001		//UCR1 (0x80)
 	.short	0x4027		//UCR2 (0x84)
@@ -193,7 +193,7 @@ Basic_Init1:
 Basic_Init:
 10:	ldr	r0, [r3], #4
 	cmp	r0,#0
-	moveq	pc, lr
+	bxeq	lr
 
 	mov	r1, r2
 11:	subs	r1, r1, #1
@@ -269,7 +269,7 @@ TransmitX:
 #endif
 	movs	r0,r0,LSR #8
 	bne	1b
-	mov	pc, lr
+	bx	lr
 
 TransmitCRLF:
 	BigMov	r0,L2(CR,LF)
@@ -292,7 +292,7 @@ print_hex1:
 	mov	r0, r2, LSR #28
 	movs	r2, r2, LSL #4
 	bne	1b
-	mov	pc, r3
+	bx	r3
 
 print_hex_byte:
 	mov	r0, r0, LSL #24
