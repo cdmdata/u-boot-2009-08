@@ -18,6 +18,10 @@
 #define DDR_TYPE	H5PS1G83EFR_S6C			//512MB, 400 MHz
 #endif
 
+#ifdef CONFIG_H5PS1G83EFR_S6C_X16
+#define DDR_TYPE	H5PS1G83EFR_S6C_X16		//256MB
+#endif
+
 #ifndef DDR_TYPE
 #define DDR_TYPE	H5PS1G83EFR_S6C			//512MB, 400 MHz
 #endif
@@ -34,6 +38,7 @@
 #define H5PS2G83AFR_S5		7	//1GB
 #define MT47H64M8CF_25E		8	//256MB
 #define H5PS1G83EFR_S6C		9	//512MB, 400 MHz, CL 6, tRCD 6, tRP 6
+#define H5PS1G83EFR_S6C_X16	10	//256MB, 400 MHz, CL 6, tRCD 6, tRP 6, 16 bit wide
 
 #define HAB_RVT_HDR			0x94
 #define HAB_RVT_ENTRY			0x98
@@ -210,6 +215,12 @@
  * (3 bits)wr - write recovery for autoprecharge 1-6,  ddr2-400(2-3), ddr2-533(2-4), ddr2-667(2-5), ddr2-800(2-6)
  * (3 bits)rcd - 1-6
  * (3 bits)rp - 1-6
+ * (8 bits)_DP_OP_\ddr_freq
+ * (13 bits)_DP_CTL_\ddr_freq
+ * (1 bit)ddr_width - 0 (16 bit), 1(32 bit)
+ * (2 bits)spare
+ * (8 bits)_DP_MFD_\ddr_freq
+ * (8 bits)_DP_MFN_\ddr_freq
  * dgctrl0, dgctrl1, rddlctl, wrdlctl
  */
 	.equiv	ddr_type_offs, 0x0
@@ -223,9 +234,9 @@
 	.equiv	ddr_wrdlctl_offs, 0x14
 	.equiv	ddr_data_size, 0x18
 
-	.macro ddr_type	type, tapeout, ddr_freq, bank_bits, row_bits, column_bits, rl, wl, wr, rcd, rp, dgctrl0, dgctrl1, rddlctl, wrdlctl
+	.macro ddr_type	type, tapeout, ddr_freq, bank_bits, row_bits, column_bits, width_bits, rl, wl, wr, rcd, rp, dgctrl0, dgctrl1, rddlctl, wrdlctl
 	.word	(\type) | ((\tapeout - 1) << 4) | ((\bank_bits - 2) << 5) | ((\row_bits - 11) << 6) | ((\column_bits - 9) << 9) | ((\rl - 3) << 11) | ((\wl - 2) << 13) | ((\wr - 1) << 15) | ((\rcd - 1) << 18) | ((\rp - 1) << 21) | ((_DP_OP_\ddr_freq) << 24)
-	.word	(_DP_MFN_\ddr_freq << 24) | (_DP_MFD_\ddr_freq << 16) | _DP_CTL_\ddr_freq
+	.word	(_DP_MFN_\ddr_freq << 24) | (_DP_MFD_\ddr_freq << 16) | ((\width_bits - 1) << 13) | _DP_CTL_\ddr_freq
 	.word	\dgctrl0
 	.word	\dgctrl1
 	.word	\rddlctl
@@ -267,45 +278,52 @@
 	ddr_field \rResult, \result_bit, \rfields, 21, 3, (1 + \fadd)
 	.endm
 
+	.macro ddr_dp_ctl_bits rResult
+	bic	r0, r0, #0x7 << 13
+	.endm
+	.macro ddr_width rResult, result_bit, rfields, fadd
+	ddr_field \rResult, \result_bit, \rfields, 13, 1, (1 + \fadd)
+	.endm
+
 	.macro ddr_data
 //Micron Memory
 	//MT47H128M8CF_3  DDR2-667(333MHz), tck=3ns(333Mhz), CL=5 wr=15 ns, rcd=15 ns, rp=15 ns
 	//512MB = 3 bank bits(8 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 29 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014a014a, 0x0148014c, 0x2a282a28, 0x4e4a5047	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014b014f, 0x01520134, 0x29292929, 0x524d5248	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0141013d, 0x01460149, 0x2a282a2a, 0x4d475143	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0148014c, 0x014c0130, 0x2a2a2c28, 0x514b5249	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014f014f, 0x01520132, 0x29292929, 0x524d5248	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014e0151, 0x01510133, 0x28282828, 0x514c5348	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0141013f, 0x01480149, 0x2a262a2a, 0x4f475345	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x01450145, 0x01480145, 0x2c2a2c28, 0x4f4b5245	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014c0132, 0x015a0156, 0x29292929, 0x514b5349	//v
-//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x014b0132, 0x01520156, 0x2b252b2b, 0x514b544b	//v 2e:7b
-//	ddr_type	MT47H128M8CF_3,        2, 333, 3, 14, 10, 5, 4, 5, 5, 5, 0x01490131, 0x01500156, 0x29272b2b, 0x4f4c534a	//v 2e:7b
-	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 5, 4, 6, 5, 5, 0x01490131, 0x01520156, 0x29262b29, 0x4f4c534a	//v 2e:7b
-	ddr_type	MT47H128M8CF_3,        1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0127012b, 0x0127012c, 0x282a2c2c, 0x42403b3b	//v
-	ddr_type	MT47H128M8CF_3_REV1,   1, 336, 3, 14, 10, 5, 4, 5, 5, 5, 0x0165021a, 0x0154015b, 0x27292930, 0x5a4b615c
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x015b015d, 0x01630163, 0x24242426, 0x534b5549	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x014a014a, 0x0148014c, 0x2a282a28, 0x4e4a5047	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x014b014f, 0x01520134, 0x29292929, 0x524d5248	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x0141013d, 0x01460149, 0x2a282a2a, 0x4d475143	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x0148014c, 0x014c0130, 0x2a2a2c28, 0x514b5249	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x014f014f, 0x01520132, 0x29292929, 0x524d5248	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x014e0151, 0x01510133, 0x28282828, 0x514c5348	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x0141013f, 0x01480149, 0x2a262a2a, 0x4f475345	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x01450145, 0x01480145, 0x2c2a2c28, 0x4f4b5245	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x014c0132, 0x015a0156, 0x29292929, 0x514b5349	//v
+//	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x014b0132, 0x01520156, 0x2b252b2b, 0x514b544b	//v 2e:7b
+//	ddr_type	MT47H128M8CF_3,        2, 333, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x01490131, 0x01500156, 0x29272b2b, 0x4f4c534a	//v 2e:7b
+	ddr_type	MT47H128M8CF_3,        2, 336, 3, 14, 10, 2, 5, 4, 6, 5, 5, 0x01490131, 0x01520156, 0x29262b29, 0x4f4c534a	//v 2e:7b
+	ddr_type	MT47H128M8CF_3,        1, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x0127012b, 0x0127012c, 0x282a2c2c, 0x42403b3b	//v
+	ddr_type	MT47H128M8CF_3_REV1,   1, 336, 3, 14, 10, 2, 5, 4, 5, 5, 5, 0x0165021a, 0x0154015b, 0x27292930, 0x5a4b615c
 
 	//MT47H128M8CF_25E tck=2.5ns(400Mhz), CL=5, wr=15 ns, rcd=12.5 ns, rp=12.5 ns
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-//	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01730205, 0x020a020a, 0x201e1e20, 0x57525f4d //v
-//	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x016c016a, 0x013e013e, 0x23252523, 0x534e554a //v
-	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x016e013d, 0x01750179, 0x24222626, 0x534e574c //v 2e:7b
-	ddr_type	MT47H128M8CF_25E,      1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x01780131, 0x0139017d, 0x27292930, 0x57504949
-	ddr_type	MT47H128M8CF_25E_REV1, 1, 400, 3, 14, 10, 5, 4, 6, 5, 5, 0x013a013c, 0x013a0145, 0x34313634, 0x433e3e3e
+//	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 2, 5, 4, 6, 5, 5, 0x01730205, 0x020a020a, 0x201e1e20, 0x57525f4d //v
+//	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 2, 5, 4, 6, 5, 5, 0x016c016a, 0x013e013e, 0x23252523, 0x534e554a //v
+	ddr_type	MT47H128M8CF_25E,      2, 400, 3, 14, 10, 2, 5, 4, 6, 5, 5, 0x016e013d, 0x01750179, 0x24222626, 0x534e574c //v 2e:7b
+	ddr_type	MT47H128M8CF_25E,      1, 400, 3, 14, 10, 2, 5, 4, 6, 5, 5, 0x01780131, 0x0139017d, 0x27292930, 0x57504949
+	ddr_type	MT47H128M8CF_25E_REV1, 1, 400, 3, 14, 10, 2, 5, 4, 6, 5, 5, 0x013a013c, 0x013a0145, 0x34313634, 0x433e3e3e
 
 	//MT47H128M8CF_5 tck=5ns(200Mhz), CL=3, wr=15 ns, rcd=15 ns, rp=15 ns
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-//	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
-	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01100111, 0x01140113, 0x34343434, 0x4b484c46	//v
-	ddr_type	MT47H128M8CF_5,        1, 200, 3, 14, 10, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
+//	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 2, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
+	ddr_type	MT47H128M8CF_5,        2, 200, 3, 14, 10, 2, 3, 2, 3, 3, 3, 0x01100111, 0x01140113, 0x34343434, 0x4b484c46	//v
+	ddr_type	MT47H128M8CF_5,        1, 200, 3, 14, 10, 2, 3, 2, 3, 3, 3, 0x01190117, 0x01160117, 0x2e2d2c2c, 0x5151584a
 
 	//MT47H64M8CF_25E, tck=2.5 ns(400Mhz), CL=5, WR=15ns, tRCD=12.5ns, tRP=12.5ns
 	//256MB = 2 bank bits(4 banks) + 14 row bits + 10 column bits + 2 bits(32 bit width) = 28 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	MT47H64M8CF_25E,       2, 400, 2, 14, 10, 5, 4, 6, 5, 5, 0x01460204, 0x0146014a, 0x1f1c211f, 0x4f485646
+	ddr_type	MT47H64M8CF_25E,       2, 400, 2, 14, 10, 2, 5, 4, 6, 5, 5, 0x01460204, 0x0146014a, 0x1f1c211f, 0x4f485646
 
 //Hynix Memory
 	//H5PS2G83AFR_S6  DDR2-800(400Mhz), RL=6, WR=15ns, tRCD=6, tRP=6
@@ -315,12 +333,12 @@
 #ifndef CONFIG_H5PS2G83AFR_S6_CALIBRATION
 #define CONFIG_H5PS2G83AFR_S6_CALIBRATION	0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
 #endif
-	ddr_type	H5PS2G83AFR_S6,        2, 400, 3, 15, 10, 6, 5, 6, 6, 6, CONFIG_H5PS2G83AFR_S6_CALIBRATION
+	ddr_type	H5PS2G83AFR_S6,        2, 400, 3, 15, 10, 2, 6, 5, 6, 6, 6, CONFIG_H5PS2G83AFR_S6_CALIBRATION
 
 	//H5PS2G83AFR_S5  DDR2-800(400Mhz), RL=5, WR=15ns, tRCD=5, tRP=5
 	//1GB   = 3 bank bits(8 banks) + 15 row bits + 10 column bits + 2 bits(32 bit width) = 30 bits
 	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
-	ddr_type	H5PS2G83AFR_S5,        2, 400, 3, 15, 10, 5, 4, 6, 5, 5, 0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
+	ddr_type	H5PS2G83AFR_S5,        2, 400, 3, 15, 10, 2, 5, 4, 6, 5, 5, 0x0173017b, 0x01400200, 0x1f1d221f, 0x504b5546
 
 	//H5PS1G83EFR_S6C DDR2-800(400Mhz), CL=6, tRCD=6, tRP=6
 	//512MB = 3 bank bits(8 banks) + 14 Row bits, 10 Column bits, + 2 bits(32 bit width) = 29 bits
@@ -328,7 +346,15 @@
 #ifndef CONFIG_H5PS1G83EFR_S6C_CALIBRATION
 #define CONFIG_H5PS1G83EFR_S6C_CALIBRATION	0x01770172, 0x0177017b, 0x25232523, 0x5250564b
 #endif
-	ddr_type	H5PS1G83EFR_S6C,       2, 400, 3, 14, 10, 6, 5, 6, 6, 6, CONFIG_H5PS1G83EFR_S6C_CALIBRATION //v 2e:84
+	ddr_type	H5PS1G83EFR_S6C,       2, 400, 3, 14, 10, 2, 6, 5, 6, 6, 6, CONFIG_H5PS1G83EFR_S6C_CALIBRATION //v 2e:84
+
+	//H5PS1G83EFR_S6C_X16 DDR2-800(400Mhz), CL=6, tRCD=6, tRP=6
+	//256MB = 3 bank bits(8 banks) + 14 Row bits, 10 Column bits, + 1 bits(16 bit width) = 28 bits
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+#ifndef CONFIG_H5PS1G83EFR_S6C_X16_CALIBRATION
+#define CONFIG_H5PS1G83EFR_S6C_X16_CALIBRATION	0x01770172, 0x0177017b, 0x25232523, 0x5250564b
+#endif
+	ddr_type	H5PS1G83EFR_S6C_X16,   2, 400, 3, 14, 10, 1, 6, 5, 6, 6, 6, CONFIG_H5PS1G83EFR_S6C_X16_CALIBRATION //v 2e:84
 
 	.word		0
 	.endm
@@ -369,6 +395,7 @@
 
 	.macro ddr_start_pll r_pll, r_ddr
 	ldrh r0, [\r_ddr, #ddr_dp_ctl_offs]
+	ddr_dp_ctl_bits r0
 	str r0, [\r_pll, #PLL_DP_CTL] /* Set DPLL ON (set UPEN bit) */
 1:	ldr r0, [\r_pll, #PLL_DP_CTL]
 	tst r0, #0x1
@@ -494,9 +521,11 @@
 
 /* 0x84110000, 0xc4110000 ESDCTL, (4)15 rows, (1)10 columns (0)BL 4,  (1)32 bit width*/
 /* 0x83110000, 0xc3110000 ESDCTL, (3)14 rows, (1)10 columns (0)BL 4,  (1)32 bit width*/
-	BigMov	r1, (0x00010000 | CS_ENABLES)
+	BigMov	r1, (CS_ENABLES)
 	ddr_row	r1, 24, r5, -11
 	ddr_column r1, 20, r5, -9
+	ldrh r0, [r3, #ddr_dp_ctl_offs]
+	ddr_width r1, 16, r0, -1
 	str	r1, [r4, #ESD_CTL]
 
 	ldr	r1, =0x4d5122d0
