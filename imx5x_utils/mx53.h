@@ -18,6 +18,10 @@
 #define DDR_TYPE	H5PS1G83EFR_S6C			//512MB, 400 MHz
 #endif
 
+#ifdef CONFIG_H5PS1G83EFR_S6C_200
+#define DDR_TYPE	H5PS1G83EFR_S6C_200		//512MB, 200 MHz
+#endif
+
 #ifdef CONFIG_H5PS1G83EFR_S6C_X16
 #define DDR_TYPE	H5PS1G83EFR_S6C_X16		//256MB
 #endif
@@ -38,7 +42,8 @@
 #define H5PS2G83AFR_S5		7	//1GB
 #define MT47H64M8CF_25E		8	//256MB
 #define H5PS1G83EFR_S6C		9	//512MB, 400 MHz, CL 6, tRCD 6, tRP 6
-#define H5PS1G83EFR_S6C_X16	10	//256MB, 400 MHz, CL 6, tRCD 6, tRP 6, 16 bit wide
+#define H5PS1G83EFR_S6C_200	10	//512MB, 200 MHz, CL 6, tRCD 6, tRP 6
+#define H5PS1G83EFR_S6C_X16	11	//256MB, 400 MHz, CL 6, tRCD 6, tRP 6, 16 bit wide
 
 #define HAB_RVT_HDR			0x94
 #define HAB_RVT_ENTRY			0x98
@@ -347,6 +352,14 @@
 #define CONFIG_H5PS1G83EFR_S6C_CALIBRATION	0x01770172, 0x0177017b, 0x25232523, 0x5250564b
 #endif
 	ddr_type	H5PS1G83EFR_S6C,       2, 400, 3, 14, 10, 2, 6, 5, 6, 6, 6, CONFIG_H5PS1G83EFR_S6C_CALIBRATION //v 2e:84
+
+	//H5PS1G83EFR_S6C_200 DDR2-400(200Mhz), CL=6, tRCD=6, tRP=6
+	//512MB = 3 bank bits(8 banks) + 14 Row bits, 10 Column bits, + 2 bits(32 bit width) = 29 bits
+	//		ddr type,	      to,freq, b,  r,  c,rl,wl,wr,rcd,rp,   dgctrl0,    dgctrl1,    rddlctl,    wrdlctl
+#ifndef CONFIG_H5PS1G83EFR_S6C_200_CALIBRATION
+#define CONFIG_H5PS1G83EFR_S6C_200_CALIBRATION	0x017d0204, 0x02040206, 0x25232723, 0x524c544a
+#endif
+	ddr_type	H5PS1G83EFR_S6C_200,   2, 200, 3, 14, 10, 2, 6, 5, 6, 6, 6, CONFIG_H5PS1G83EFR_S6C_200_CALIBRATION //v 2e:84
 
 	//H5PS1G83EFR_S6C_X16 DDR2-800(400Mhz), CL=6, tRCD=6, tRP=6
 	//256MB = 3 bank bits(8 banks) + 14 Row bits, 10 Column bits, + 1 bits(16 bit width) = 28 bits
