@@ -706,6 +706,7 @@ mfgtool_start2:		b	\rtn		//stupid mfgtool assumes start is after reserv2
 	.endm
 
 	.macro plug_entry_setup
+	orr	r0, r0, #1	//don't rely on ROM to handle errors
 	.endm
 
 #define HEADER_SEARCH		mx53_header_search
