@@ -55,7 +55,7 @@
 #define HAB_RVT_ASSERT			0xb0
 #define HAB_RVT_REPORT_EVENT		0xb4
 #define HAB_RVT_REPORT_STATUS		0xb8
-#define HAB_RVT_FAIL_SAFE_VECT		0xbc
+//#define HAB_RVT_FAIL_SAFE_VECT		0xbc
 
 #define CPU_2_BE_32(l) \
        ((((l) << 24) & 0xff000000) | \
