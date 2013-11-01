@@ -3326,6 +3326,7 @@ nitrogen_config		: unconfig
 	@$(MKCONFIG) $(@:_config=) arm arm_cortexa8 nitrogen boundary mx51
 
 nitrogen53_1g_config \
+nitrogen53a_micron_config \
 nitrogen53a_rev1_config \
 nitrogen53a_rev2_config \
 nitrogen53a_config \
