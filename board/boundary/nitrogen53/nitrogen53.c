@@ -1994,10 +1994,17 @@ struct button_key {
 };
 
 static struct button_key const buttons[] = {
+#if CONFIG_MACH_TYPE == MACH_TYPE_MX53_NITROGEN_K
+       {"back",		GPIO_NUMBER(6, 16),	'B'},
+       {"home",		GPIO_NUMBER(3, 29),	'H'},
+       {"menu",		GPIO_NUMBER(1, 4),	'M'},
+       {"search",	GPIO_NUMBER(3, 27),	'S'},
+#else
        {"back",		GPIO_NUMBER(3, 26),	'B'},
        {"home",		GPIO_NUMBER(3, 29),	'H'},
        {"menu",		GPIO_NUMBER(3, 31),	'M'},
        {"search",	GPIO_NUMBER(3, 27),	'S'},
+#endif
 };
 
 /*
