@@ -90,5 +90,13 @@
 	"bootargs=earlyprintk ldb=single,di=0,ch0_map=SPWG\0" \
 	"lvds=1,1\0"
 
-
+#undef CONFIG_BOOTCOMMAND
+#define CONFIG_BOOTCOMMAND	"if kbd ; then errmsg=\"Button pressed, boot stopped\" ; "				\
+				"else "											\
+					"if fatload mmc 0 70008000 nitrogen53_bootscript* ; then source 70008000 ; "	\
+					"elif fatload mmc 1 70008000 nitrogen53_bootscript* ; then source 70008000 ; "	\
+					"fi ; "										\
+					"errmsg=\"Error running bootscript!\" ; "					\
+				"fi ; "											\
+				"lecho $errmsg ; echo $errmsg "
 #endif
